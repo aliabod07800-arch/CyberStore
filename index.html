@@ -2,7 +2,10 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#030407">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>CyberStore | Global Enterprise</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -31,21 +34,20 @@
         .nav-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
 
         .btn-cyber { background: transparent; color: var(--text-main); border: 1px solid var(--primary-neon); padding: 8px 18px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 700; transition: 0.3s; box-shadow: 0 0 10px rgba(0, 243, 255, 0.1) inset; }
-        .btn-cyber:hover { background: var(--primary-neon); color: #000; box-shadow: var(--glow-cyan); transform: translateY(-2px); }
+        .btn-cyber:hover:not(:disabled) { background: var(--primary-neon); color: #000; box-shadow: var(--glow-cyan); transform: translateY(-2px); }
+        .btn-cyber:disabled { opacity: 0.5; cursor: not-allowed; }
         .btn-alt { border-color: var(--secondary-neon); }
-        .btn-alt:hover { background: var(--secondary-neon); box-shadow: var(--glow-purple); }
+        .btn-alt:hover:not(:disabled) { background: var(--secondary-neon); box-shadow: var(--glow-purple); }
 
         .store-container { padding: 40px; flex: 1; max-width: 1600px; margin: 0 auto; width: 100%; }
         
-        .cyber-hero { text-align: center; margin-bottom: 40px; padding: 50px 20px; background: var(--bg-surface); border: 1px solid var(--border-neon); border-radius: 20px; backdrop-filter: blur(15px); position: relative; overflow: hidden; }
+        .cyber-hero { text-align: center; margin-bottom: 40px; padding: 50px 20px; background: var(--bg-surface); border: 1px solid var(--border-neon); border-radius: 20px; backdrop-filter: blur(15px); }
         .cyber-hero h1 { font-size: 38px; font-weight: 900; margin-bottom: 15px; color: #fff; text-shadow: var(--glow-cyan); }
         .cyber-hero p { color: var(--text-muted); font-size: 16px; max-width: 700px; margin: 0 auto; }
 
-        /* شريط البحث والفلترة */
         .tools-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; gap: 20px; flex-wrap: wrap; background: rgba(0,0,0,0.4); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); }
         .search-box { flex: 1; min-width: 250px; }
         .search-box input { width: 100%; padding: 12px 20px; border-radius: 30px; border: 1px solid var(--border-neon); background: rgba(0,0,0,0.6); color: #fff; outline: none; transition: 0.3s; }
-        .search-box input:focus { box-shadow: var(--glow-cyan); }
         .category-filters { display: flex; gap: 10px; flex-wrap: wrap; }
         .filter-btn { background: rgba(255,255,255,0.05); border: 1px solid transparent; padding: 8px 16px; border-radius: 20px; color: #fff; cursor: pointer; transition: 0.3s; }
         .filter-btn.active, .filter-btn:hover { background: var(--secondary-neon); border-color: var(--secondary-neon); box-shadow: var(--glow-purple); }
@@ -57,33 +59,37 @@
         .product-card img { width: 100%; height: 100%; object-fit: cover; transition: 0.5s; }
         .product-card:hover img { transform: scale(1.1); }
         .product-card h3 { font-size: 17px; margin-bottom: 5px; }
-        .rating { color: var(--accent-gold); font-size: 14px; margin-bottom: 10px; }
+        .rating { color: var(--accent-gold); font-size: 14px; margin-bottom: 10px; cursor: pointer; }
         .product-price { color: var(--primary-neon); font-size: 18px; font-weight: 900; margin-bottom: 15px; }
 
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0, 0.85); backdrop-filter: blur(10px); display: flex; justify-content: center; align-items: center; z-index: 2000; opacity: 0; pointer-events: none; transition: 0.3s; }
         .modal-overlay.active { opacity: 1; pointer-events: all; }
-        .modal-box { background: rgba(12, 14, 22, 0.95); padding: 30px; border-radius: 20px; border: 1px solid var(--primary-neon); width: 450px; max-width: 95%; max-height: 90vh; overflow-y: auto; text-align: right; }
+        .modal-box { background: rgba(12, 14, 22, 0.95); padding: 30px; border-radius: 20px; border: 1px solid var(--primary-neon); width: 450px; max-width: 95%; max-height: 90vh; overflow-y: auto; text-align: right; position: relative; }
         .modal-box h2 { text-align: center; color: var(--primary-neon); margin-bottom: 20px; }
         .input-group { margin-bottom: 15px; }
         .input-group label { display: block; margin-bottom: 6px; color: var(--text-muted); font-size: 13px; }
-        .input-group input, .input-group textarea, .input-group select { width: 100%; padding: 12px; background: rgba(0,0,0, 0.6); border: 1px solid var(--border-neon); color: #fff; border-radius: 8px; outline: none; font-family: inherit; }
+        .input-group input, .input-group textarea, .input-group select { width: 100%; padding: 12px; background: rgba(0,0,0, 0.6); border: 1px solid var(--border-neon); color: #fff; border-radius: 8px; outline: none; }
+        
         .payment-methods { display: flex; gap: 10px; margin-bottom: 15px; }
-        .pay-method { flex: 1; text-align: center; padding: 10px; border: 1px solid var(--border-neon); border-radius: 8px; cursor: pointer; transition: 0.3s; font-size: 14px; }
+        .pay-method { flex: 1; text-align: center; padding: 10px; border: 1px solid var(--border-neon); border-radius: 8px; cursor: pointer; transition: 0.3s; font-size: 13px; }
         .pay-method.selected { background: var(--primary-neon); color: #000; font-weight: bold; box-shadow: var(--glow-cyan); }
 
         .dashboard-container { display: none; height: 100vh; display: flex; width: 100vw; position: fixed; top: 0; left: 0; z-index: 3000; background: var(--bg-base); }
         .sidebar { width: 260px; background: rgba(6, 8, 13, 0.98); border-left: 1px solid var(--border-neon); padding: 30px 15px; display: flex; flex-direction: column; }
         .sidebar h3 { color: var(--secondary-neon); margin-bottom: 30px; font-size: 20px; text-align: center; }
-        .sidebar-links a { display: block; color: var(--text-muted); text-decoration: none; padding: 12px 15px; margin-bottom: 10px; border-radius: 8px; cursor: pointer; transition: 0.3s; font-weight: 500; }
+        .sidebar-links a { display: block; color: var(--text-muted); text-decoration: none; padding: 12px 15px; margin-bottom: 10px; border-radius: 8px; cursor: pointer; transition: 0.3s; }
         .sidebar-links a.active { background: rgba(188, 19, 254, 0.15); color: #fff; border-right: 4px solid var(--secondary-neon); }
         .dashboard-content { flex: 1; padding: 30px; overflow-y: auto; }
         .admin-section { display: none; }
         .admin-section.active-section { display: block; }
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
-        .stat-card { background: var(--bg-surface); padding: 20px; border-radius: 12px; border: 1px solid var(--border-neon); text-align: center; }
-        .stat-card h4 { color: var(--text-muted); margin-bottom: 10px; font-size: 14px; }
-        .stat-card p { color: var(--primary-neon); font-size: 28px; font-weight: bold; text-shadow: var(--glow-cyan); }
-        .chart-container { background: var(--bg-surface); padding: 20px; border-radius: 16px; border: 1px solid var(--border-neon); margin-bottom: 30px; max-width: 800px;}
+        
+        .order-card { background: var(--bg-surface); padding: 20px; border-radius: 16px; border: 1px solid var(--border-neon); margin-bottom: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+        .order-card select { background: #000; color: var(--accent-green); border: 1px solid var(--border-neon); padding: 5px; border-radius: 5px; }
+
+        /* شاشة معالجة الدفع الوهمية */
+        .processing-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); border-radius: 20px; display:flex; flex-direction:column; justify-content:center; align-items:center; z-index: 10; display: none; }
+        .spinner { width: 50px; height: 50px; border: 5px solid rgba(0,243,255,0.2); border-top-color: var(--primary-neon); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
         footer { background: rgba(3, 4, 7, 0.95); border-top: 1px solid var(--border-neon); padding: 30px; text-align: center; margin-top: auto; }
         .hidden-el { display: none !important; }
@@ -92,7 +98,7 @@
             nav { flex-direction: column; gap: 15px; padding: 15px; }
             .nav-actions { justify-content: center; }
             .dashboard-container { flex-direction: column; }
-            .sidebar { width: 100%; border-left: none; border-bottom: 1px solid var(--border-neon); padding: 15px; }
+            .sidebar { width: 100%; border-bottom: 1px solid var(--border-neon); padding: 15px; }
             .store-container { padding: 20px; }
             .tools-bar { flex-direction: column; }
         }
@@ -112,7 +118,7 @@
     <div id="store-view" class="store-container">
         <div class="cyber-hero">
             <h1>التجربة العالمية للتسوق الرقمي</h1>
-            <p>أحدث الأجهزة الإلكترونية، بطاقات الألعاب، وتجميعات الـ PC تصلك أينما كنت في العراق مع خيارات دفع آمنة ومتعددة.</p>
+            <p>أحدث الأجهزة، بطاقات الألعاب، وتجميعات الـ PC تصلك أينما كنت مع خيارات دفع آمنة (زين كاش، كي كارد، والدفع المباشر).</p>
         </div>
 
         <div class="tools-bar">
@@ -132,27 +138,24 @@
         </div>
     </div>
 
-    <!-- لوحة التحكم الإدارية مع الرسوم البيانية -->
+    <!-- لوحة الإدارة المتطورة -->
     <div id="dashboard-view" class="dashboard-container hidden-el">
         <div class="sidebar">
             <h3>Enterprise Admin</h3>
             <div class="sidebar-links">
                 <a onclick="switchTab('analytics')" id="tab-analytics" class="active">📊 نظرة عامة</a>
                 <a onclick="switchTab('add-product')" id="tab-add">➕ إضافة منتج</a>
-                <a onclick="switchTab('view-orders')" id="tab-orders">📦 إدارة الطلبات</a>
+                <a onclick="switchTab('view-orders')" id="tab-orders">📦 إدارة الطلبات (متقدم)</a>
                 <a style="color: var(--danger); margin-top: 30px;" onclick="logout()">خروج</a>
             </div>
         </div>
         <div class="dashboard-content">
             <div id="sec-analytics" class="admin-section active-section">
                 <h2>إحصائيات المنصة</h2><br>
-                <div class="stats-grid">
-                    <div class="stat-card"><h4>إجمالي الطلبات</h4><p id="stat-orders">0</p></div>
-                    <div class="stat-card"><h4>طلبات قيد المعالجة</h4><p id="stat-pending">0</p></div>
-                    <div class="stat-card"><h4>إجمالي المنتجات</h4><p id="stat-products">0</p></div>
-                </div>
-                <div class="chart-container">
-                    <canvas id="salesChart"></canvas>
+                <div style="display: flex; gap:20px; margin-bottom: 30px; flex-wrap: wrap;">
+                    <div style="flex:1; background:var(--bg-surface); padding:20px; border-radius:12px; border:1px solid var(--border-neon); text-align:center;"><h4>إجمالي الطلبات</h4><p id="stat-orders" style="font-size:28px; color:var(--primary-neon);">0</p></div>
+                    <div style="flex:1; background:var(--bg-surface); padding:20px; border-radius:12px; border:1px solid var(--border-neon); text-align:center;"><h4>المنتجات</h4><p id="stat-products" style="font-size:28px; color:var(--secondary-neon);">0</p></div>
+                    <div style="flex:1; background:var(--bg-surface); padding:20px; border-radius:12px; border:1px solid var(--border-neon); text-align:center;"><h4>قيد المعالجة</h4><p id="stat-pending" style="font-size:28px; color:var(--accent-green);">0</p></div>
                 </div>
             </div>
 
@@ -160,12 +163,10 @@
                 <div style="background: var(--bg-surface); padding: 30px; border-radius: 16px; border: 1px solid var(--border-neon); max-width: 600px;">
                     <h2 style="color: var(--primary-neon); margin-bottom: 20px;">نشر منتج</h2>
                     <div class="input-group"><label>اسم المنتج</label><input type="text" id="p-name"></div>
-                    <div class="input-group"><label>السعر (IQD)</label><input type="text" id="p-price"></div>
+                    <div class="input-group"><label>السعر (IQD)</label><input type="number" id="p-price"></div>
                     <div class="input-group"><label>التصنيف</label>
                         <select id="p-category">
-                            <option value="أجهزة">أجهزة و PC</option>
-                            <option value="ألعاب">ألعاب وبطاقات</option>
-                            <option value="إكسسوارات">إكسسوارات</option>
+                            <option value="أجهزة">أجهزة و PC</option><option value="ألعاب">ألعاب وبطاقات</option><option value="إكسسوارات">إكسسوارات</option>
                         </select>
                     </div>
                     <div class="input-group"><label>رابط الصورة</label><input type="text" id="p-image"></div>
@@ -174,17 +175,23 @@
             </div>
 
             <div id="sec-view-orders" class="admin-section">
-                <h2>الطلبات الواردة</h2><br>
+                <h2>إدارة الطلبات وتحديث الحالة</h2><br>
                 <div id="orders-container"></div>
             </div>
         </div>
     </div>
 
-    <!-- نافذة السلة -->
+    <!-- نافذة السلة مع الكوبونات -->
     <div class="modal-overlay" id="cart-modal">
         <div class="modal-box">
             <h2>السلة 🛒</h2>
             <div id="cart-items-container" class="cart-items-list"></div>
+            
+            <div class="input-group" style="display:flex; gap:10px; margin-top:10px;">
+                <input type="text" id="promo-code" placeholder="أدخل كود الخصم (جرب CYBER20)" style="flex:1;">
+                <button class="btn-cyber" onclick="applyCoupon()">تفعيل</button>
+            </div>
+
             <div style="margin: 20px 0; font-size: 18px; font-weight: bold; display: flex; justify-content: space-between; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
                 <span>المجموع:</span><span id="cart-total" style="color: var(--primary-neon);">0 IQD</span>
             </div>
@@ -193,35 +200,53 @@
         </div>
     </div>
 
-    <!-- نافذة الدفع (خيارات الدفع العراقية) -->
+    <!-- نافذة الدفع المتطورة (محاكاة بوابات الدفع) -->
     <div class="modal-overlay" id="checkout-modal">
         <div class="modal-box">
-            <h2>بوابة الدفع والتوصيل 🚚</h2>
-            <div class="input-group"><label>الاسم</label><input type="text" id="cust-name"></div>
-            <div class="input-group"><label>رقم الهاتف</label><input type="tel" id="cust-phone" placeholder="07XXXXXXXXX"></div>
-            <div class="input-group"><label>العنوان الكامل (مثال: بغداد، الكرادة، قرب...)</label><textarea id="cust-address" rows="2"></textarea></div>
+            <div id="payment-processor" class="processing-overlay">
+                <div class="spinner"></div>
+                <h3 style="color: var(--primary-neon); margin-top:20px; text-shadow: var(--glow-cyan);" id="process-text">جاري الاتصال ببوابة الدفع...</h3>
+            </div>
             
-            <label style="color: var(--text-muted); font-size: 13px; margin-bottom: 8px; display: block; text-align: right;">طريقة الدفع:</label>
+            <h2>بوابة الدفع الآمن 🔒</h2>
+            <div class="input-group"><label>الاسم الكامل</label><input type="text" id="cust-name"></div>
+            <div class="input-group"><label>رقم الهاتف</label><input type="tel" id="cust-phone"></div>
+            <div class="input-group"><label>العنوان بالتفصيل</label><textarea id="cust-address" rows="2"></textarea></div>
+            
+            <label style="color: var(--text-muted); font-size: 13px; margin-bottom: 8px; display: block; text-align: right;">اختر بوابة الدفع:</label>
             <div class="payment-methods">
-                <div class="pay-method selected" onclick="selectPayment(this, 'الدفع عند الاستلام')">الدفع عند الاستلام 💵</div>
+                <div class="pay-method selected" onclick="selectPayment(this, 'الدفع عند الاستلام')">نقداً 💵</div>
                 <div class="pay-method" onclick="selectPayment(this, 'زين كاش')">زين كاش 📱</div>
                 <div class="pay-method" onclick="selectPayment(this, 'كي كارد')">Qi Card 💳</div>
             </div>
             <input type="hidden" id="selected-payment" value="الدفع عند الاستلام">
             
-            <button class="btn-cyber btn-alt" style="width: 100%; padding: 12px; margin-bottom: 10px;" onclick="submitFinalOrder()">إرسال الطلب ✅</button>
-            <button style="background: none; border: none; color: var(--text-muted); cursor: pointer; width: 100%;" onclick="closeCheckoutModal()">إلغاء</button>
+            <button class="btn-cyber btn-alt" style="width: 100%; padding: 12px; margin-bottom: 10px;" onclick="submitFinalOrder()">إتمام الطلب والدفع ✅</button>
+            <button style="background: none; border: none; color: var(--text-muted); cursor: pointer; width: 100%;" onclick="closeCheckoutModal()">الرجوع</button>
         </div>
     </div>
 
     <!-- تتبع الطلبات -->
     <div class="modal-overlay" id="track-modal">
         <div class="modal-box">
-            <h2>تتبع طلبك 📍</h2>
-            <div class="input-group"><label>أدخل رقم هاتفك الذي سجلت به الطلب</label><input type="tel" id="track-phone" placeholder="07XXXXXXXXX"></div>
+            <h2>تتبع حالة الطلب 📍</h2>
+            <div class="input-group"><label>رقم الهاتف المسجل بالطلب</label><input type="tel" id="track-phone"></div>
             <button class="btn-cyber" style="width: 100%; padding: 12px; margin-bottom: 15px;" onclick="trackMyOrder()">بحث 🔎</button>
-            <div id="track-results" style="text-align: right; max-height: 200px; overflow-y: auto;"></div>
+            <div id="track-results" style="text-align: right; max-height: 250px; overflow-y: auto;"></div>
             <button style="background: none; border: none; color: var(--text-muted); cursor: pointer; width: 100%; margin-top:10px;" onclick="closeTrackModal()">إغلاق</button>
+        </div>
+    </div>
+
+    <!-- نافذة المراجعات والتقييم (Reviews) -->
+    <div class="modal-overlay" id="review-modal">
+        <div class="modal-box">
+            <h2>تقييم المنتج ⭐</h2>
+            <input type="hidden" id="review-product-id">
+            <div class="input-group"><label>اسمك</label><input type="text" id="review-name"></div>
+            <div class="input-group"><label>التقييم (من 1 إلى 5)</label><input type="number" id="review-rating" min="1" max="5" value="5"></div>
+            <div class="input-group"><label>رأيك بالمنتج</label><textarea id="review-comment" rows="3"></textarea></div>
+            <button class="btn-cyber" style="width: 100%; padding: 12px; margin-bottom: 10px;" onclick="submitReview()">إرسال التقييم</button>
+            <button style="background: none; border: none; color: var(--text-muted); cursor: pointer; width:100%;" onclick="document.getElementById('review-modal').classList.remove('active');">إلغاء</button>
         </div>
     </div>
 
@@ -230,15 +255,15 @@
         <div class="modal-box">
             <h2 id="auth-title">تسجيل الدخول</h2>
             <div id="step-phone">
-                <div class="input-group"><label>رقم الهاتف</label><input type="tel" id="phone-number"></div>
+                <div class="input-group"><label>رقم الواتساب</label><input type="tel" id="phone-number"></div>
                 <button class="btn-cyber" style="width: 100%;" onclick="sendWhatsAppCode()">إرسال الكود</button>
             </div>
             <div id="step-otp" class="hidden-el">
-                <div class="input-group"><label>رمز التحقق</label><input type="text" id="otp-code" style="text-align: center; letter-spacing: 5px;"></div>
-                <button class="btn-cyber" style="width: 100%;" onclick="verifyOTP()">دخول</button>
-                <button style="background: none; border: none; color: var(--text-muted); margin-top: 10px; cursor:pointer;" onclick="resetAuth()">رجوع</button>
+                <div class="input-group"><label>الرمز السري</label><input type="text" id="otp-code" style="text-align: center; letter-spacing: 5px;"></div>
+                <button class="btn-cyber" style="width: 100%;" onclick="verifyOTP()">تأكيد الدخول</button>
+                <button style="background:none; border:none; color:var(--text-muted); margin-top:10px; cursor:pointer;" onclick="resetAuth()">رجوع</button>
             </div>
-            <button style="background: none; border: none; color: var(--text-muted); margin-top: 20px; cursor:pointer;" onclick="closeAuthModal()">إلغاء</button>
+            <button style="background:none; border:none; color:var(--text-muted); margin-top:20px; cursor:pointer;" onclick="closeAuthModal()">إلغاء</button>
         </div>
     </div>
 
@@ -250,27 +275,20 @@
         let allProducts = [];
         let userCart = [];
         let currentUser = null;
-        let adminChart = null;
+        let discountMultiplier = 1; // 1 = no discount, 0.8 = 20% discount
 
-        window.onload = function() {
-            loadProducts();
-            checkSavedSession();
-        };
+        window.onload = function() { loadProducts(); checkSavedSession(); };
 
         function checkSavedSession() {
             const saved = localStorage.getItem('cyberstore_user');
             if (saved) { currentUser = JSON.parse(saved); updateAuthUI(); }
-            updateAuthUI();
         }
 
         function updateAuthUI() {
             const nav = document.getElementById('auth-nav-container');
             if (currentUser) {
-                if (currentUser.role === 'admin') {
-                    nav.innerHTML = `<button class="btn-cyber" onclick="showDashboard()">لوحة الإدارة ⚙️</button>`;
-                } else {
-                    nav.innerHTML = `<span style="color:var(--primary-neon); margin-left:10px;">${currentUser.phone}</span> <button class="btn-cyber" style="border-color:var(--danger);" onclick="logout()">خروج</button>`;
-                }
+                if (currentUser.role === 'admin') nav.innerHTML = `<button class="btn-cyber" onclick="showDashboard()">المدير ⚙️</button>`;
+                else nav.innerHTML = `<span style="color:var(--primary-neon); margin-left:10px;">${currentUser.phone}</span> <button class="btn-cyber" style="border-color:var(--danger);" onclick="logout()">خروج</button>`;
             } else { nav.innerHTML = `<button class="btn-cyber" onclick="openAuthModal()">دخول</button>`; }
         }
 
@@ -284,16 +302,21 @@
 
         function renderProducts(products) {
             const grid = document.getElementById('products-list');
-            if (products.length === 0) { grid.innerHTML = '<p style="text-align:center; width:100%;">لا توجد منتجات مطابقة.</p>'; return; }
+            if (products.length === 0) { grid.innerHTML = '<p style="text-align:center; width:100%;">لا توجد منتجات.</p>'; return; }
             grid.innerHTML = '';
             products.forEach(p => {
+                let avgRating = 5;
+                if(p.reviews && p.reviews.length > 0) {
+                    let sum = p.reviews.reduce((a,b) => a + b.rating, 0);
+                    avgRating = (sum / p.reviews.length).toFixed(1);
+                }
                 grid.innerHTML += `
                     <div class="product-card">
                         <div>
                             <div class="product-image-wrap"><img src="${p.image || 'https://via.placeholder.com/300'}" alt=""></div>
-                            <span style="font-size: 11px; color: var(--text-muted); background:rgba(255,255,255,0.1); padding:2px 8px; border-radius:10px;">${p.category || 'عام'}</span>
+                            <span style="font-size: 11px; color: var(--text-muted); background:rgba(255,255,255,0.1); padding:2px 8px; border-radius:10px;">${p.category}</span>
                             <h3 style="margin-top:10px;">${p.name}</h3>
-                            <div class="rating">★★★★★ (تقييم ممتاز)</div>
+                            <div class="rating" onclick="openReviewModal('${p._id}')">⭐ ${avgRating}/5 (${p.reviews ? p.reviews.length : 0} تقييم) - اضغط للتقييم</div>
                             <div class="product-price">${p.price} IQD</div>
                         </div>
                         <button class="btn-cyber" onclick='addToCart(${JSON.stringify(p)})'>إضافة للسلة 🛒</button>
@@ -313,25 +336,38 @@
             renderProducts(allProducts.filter(p => p.name.toLowerCase().includes(term)));
         }
 
-        function addToCart(product) { userCart.push(product); document.getElementById('cart-count').innerText = userCart.length; }
-        
+        function addToCart(product) { userCart.push(product); document.getElementById('cart-count').innerText = userCart.length; updateCartModal(); }
         function openCartModal() { document.getElementById('cart-modal').classList.add('active'); updateCartModal(); }
         function closeCartModal() { document.getElementById('cart-modal').classList.remove('active'); }
         
         function updateCartModal() {
             const cont = document.getElementById('cart-items-container');
             if (userCart.length === 0) { cont.innerHTML = '<p>السلة فارغة</p>'; document.getElementById('cart-total').innerText='0 IQD'; return; }
-            cont.innerHTML = ''; let total = 0;
+            cont.innerHTML = ''; let sum = 0;
             userCart.forEach((item, i) => {
-                total += Number(item.price.replace(/[^0-9]/g, '')) || 0;
+                sum += Number(item.price.replace(/[^0-9]/g, '')) || 0;
                 cont.innerHTML += `<div class="cart-item"><span>${item.name}</span><span style="color:var(--primary-neon);">${item.price}</span><button style="background:none;border:none;color:red;cursor:pointer;" onclick="removeFromCart(${i})">✕</button></div>`;
             });
-            document.getElementById('cart-total').innerText = total.toLocaleString() + ' IQD';
+            let finalTotal = sum * discountMultiplier;
+            document.getElementById('cart-total').innerText = finalTotal.toLocaleString() + ' IQD' + (discountMultiplier < 1 ? ' (بعد الخصم)' : '');
         }
+
         function removeFromCart(i) { userCart.splice(i, 1); document.getElementById('cart-count').innerText = userCart.length; updateCartModal(); }
 
+        async function applyCoupon() {
+            const code = document.getElementById('promo-code').value.toUpperCase();
+            if(!code) return;
+            const res = await fetch('/api/validate-coupon', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({code}) });
+            const data = await res.json();
+            if(data.success) {
+                alert(`تم تفعيل الخصم بنسبة ${data.discount}% !`);
+                discountMultiplier = 1 - (data.discount / 100);
+                updateCartModal();
+            } else { alert(data.message); }
+        }
+
         function openCheckoutModal() { if(userCart.length===0) return; closeCartModal(); document.getElementById('checkout-modal').classList.add('active'); }
-        function closeCheckoutModal() { document.getElementById('checkout-modal').classList.remove('active'); }
+        function closeCheckoutModal() { document.getElementById('checkout-modal').classList.remove('active'); document.getElementById('payment-processor').style.display = 'none'; }
         
         function selectPayment(element, method) {
             document.querySelectorAll('.pay-method').forEach(el => el.classList.remove('selected'));
@@ -344,19 +380,34 @@
             const phone = document.getElementById('cust-phone').value;
             const address = document.getElementById('cust-address').value;
             const method = document.getElementById('selected-payment').value;
-            if(!name || !phone || !address) return alert("أكمل البيانات");
-            let total = 0; userCart.forEach(i => total += Number(i.price.replace(/[^0-9]/g, '')) || 0);
+            if(!name || !phone || !address) return alert("الرجاء إكمال البيانات");
+
+            // محاكاة الاتصال ببوابة الدفع (Zain Cash / Qi Card)
+            if(method !== 'الدفع عند الاستلام') {
+                const processor = document.getElementById('payment-processor');
+                processor.style.display = 'flex';
+                document.getElementById('process-text').innerText = `جاري التحويل لبوابة ${method}...`;
+                await new Promise(r => setTimeout(r, 2000));
+                document.getElementById('process-text').innerText = "جاري معالجة الدفع والمصادقة...";
+                await new Promise(r => setTimeout(r, 2000));
+                document.getElementById('process-text').innerText = "تم الدفع بنجاح! جاري تسجيل الطلب...";
+                await new Promise(r => setTimeout(r, 1000));
+            }
+
+            let sum = 0; userCart.forEach(i => sum += Number(i.price.replace(/[^0-9]/g, '')) || 0);
+            let finalTotal = (sum * discountMultiplier).toLocaleString() + ' IQD';
+
             try {
                 const res = await fetch('/api/orders', {
                     method: 'POST', headers:{'Content-Type':'application/json'},
-                    body: JSON.stringify({ customerName: name, customerPhone: phone, customerAddress: address, paymentMethod: method, notes: '', items: userCart, total: total.toLocaleString()+' IQD' })
+                    body: JSON.stringify({ customerName: name, customerPhone: phone, customerAddress: address, paymentMethod: method, notes: '', items: userCart, total: finalTotal, discountApplied: discountMultiplier < 1 })
                 });
                 const data = await res.json();
                 if(data.success) {
-                    alert(`تم الطلب بنجاح! الدفع عبر: ${method}`);
-                    userCart=[]; document.getElementById('cart-count').innerText='0'; closeCheckoutModal();
+                    alert("🌟 تم تسجيل الطلب بنجاح في النظام العالمي!");
+                    userCart=[]; document.getElementById('cart-count').innerText='0'; discountMultiplier = 1; closeCheckoutModal();
                 }
-            } catch(e) {}
+            } catch(e) { alert("حدث خطأ."); }
         }
 
         function openTrackModal() { document.getElementById('track-modal').classList.add('active'); }
@@ -368,14 +419,87 @@
             const data = await res.json();
             const cont = document.getElementById('track-results');
             if(data.orders && data.orders.length > 0) {
-                cont.innerHTML = data.orders.map(o => `<div style="background:rgba(255,255,255,0.05); padding:10px; border-radius:8px; margin-bottom:10px;">طلب بتاريخ ${new Date(o.createdAt).toLocaleDateString()} - <span style="color:var(--accent-green)">${o.status}</span></div>`).join('');
-            } else { cont.innerHTML = '<p>لا توجد طلبات مسجلة بهذا الرقم.</p>'; }
+                cont.innerHTML = data.orders.map(o => `<div style="background:rgba(255,255,255,0.05); padding:15px; border-radius:8px; margin-bottom:10px; border-right: 4px solid var(--primary-neon);">
+                    <p style="margin-bottom:5px;">رقم الطلب: ${o._id.substring(18)}</p>
+                    <p style="margin-bottom:5px;">التاريخ: ${new Date(o.createdAt).toLocaleDateString()}</p>
+                    <h3 style="color:var(--accent-green)">الحالة: ${o.status}</h3>
+                </div>`).join('');
+            } else { cont.innerHTML = '<p>لا توجد طلبات مسجلة.</p>'; }
         }
 
-        /* دوال الإدارة والمصادقة */
+        function openReviewModal(id) {
+            document.getElementById('review-product-id').value = id;
+            document.getElementById('review-modal').classList.add('active');
+        }
+        async function submitReview() {
+            const id = document.getElementById('review-product-id').value;
+            const userName = document.getElementById('review-name').value || 'مستخدم مجهول';
+            const rating = document.getElementById('review-rating').value;
+            const comment = document.getElementById('review-comment').value;
+            await fetch(`/api/products/${id}/review`, { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({userName, rating, comment}) });
+            alert("تم إرسال تقييمك بنجاح، شكراً لك!");
+            document.getElementById('review-modal').classList.remove('active');
+            loadProducts();
+        }
+
+        /* --- الإدارة --- */
+        async function showDashboard() {
+            document.getElementById('store-view').classList.add('hidden-el'); document.getElementById('main-nav').classList.add('hidden-el');
+            document.getElementById('dashboard-view').classList.remove('hidden-el'); document.getElementById('dashboard-view').style.display = "flex";
+            switchTab('analytics');
+        }
+        function logout() { currentUser = null; localStorage.removeItem('cyberstore_user'); location.reload(); }
+        function switchTab(tab) {
+            document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active-section'));
+            document.querySelectorAll('.sidebar-links a').forEach(a => a.classList.remove('active'));
+            document.getElementById('sec-' + tab).classList.add('active-section');
+            document.getElementById('tab-' + tab).classList.add('active');
+            if(tab === 'view-orders') loadAdminOrders();
+            if(tab === 'analytics') loadAdminStats();
+        }
+        async function loadAdminStats() {
+            const res = await fetch('/api/stats'); const stats = await res.json();
+            document.getElementById('stat-orders').innerText = stats.ordersCount;
+            document.getElementById('stat-products').innerText = stats.productsCount;
+            document.getElementById('stat-pending').innerText = stats.pendingOrders;
+        }
+        async function addNewProduct() {
+            const name = document.getElementById('p-name').value; const price = document.getElementById('p-price').value;
+            const category = document.getElementById('p-category').value; const image = document.getElementById('p-image').value;
+            if(!name || !price) return;
+            await fetch('/api/products', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, price, image, category }) });
+            alert("تم النشر!"); loadProducts();
+        }
+
+        async function loadAdminOrders() {
+            const res = await fetch('/api/orders'); const orders = await res.json();
+            const cont = document.getElementById('orders-container');
+            cont.innerHTML = orders.map((o, i) => `
+                <div class="order-card">
+                    <h3 style="color:var(--secondary-neon);">طلب #${orders.length - i}</h3>
+                    <p><b>العميل:</b> ${o.customerName} | <b>الهاتف:</b> ${o.customerPhone}</p>
+                    <p><b>الدفع عبر:</b> ${o.paymentMethod}</p>
+                    <p style="color: var(--primary-neon); font-weight:bold;">المجموع: ${o.total}</p>
+                    <div style="margin-top: 15px;">
+                        <label>تحديث حالة الطلب:</label>
+                        <select onchange="updateOrderStatus('${o._id}', this.value)" style="margin-right:10px;">
+                            <option value="قيد المعالجة ⏳" ${o.status === 'قيد المعالجة ⏳' ? 'selected' : ''}>قيد المعالجة ⏳</option>
+                            <option value="جاري الشحن 🚚" ${o.status === 'جاري الشحن 🚚' ? 'selected' : ''}>جاري الشحن 🚚</option>
+                            <option value="تم التوصيل ✅" ${o.status === 'تم التوصيل ✅' ? 'selected' : ''}>تم التوصيل ✅</option>
+                            <option value="ملغي ❌" ${o.status === 'ملغي ❌' ? 'selected' : ''}>ملغي ❌</option>
+                        </select>
+                    </div>
+                </div>`).join('');
+        }
+
+        async function updateOrderStatus(id, newStatus) {
+            await fetch(`/api/orders/${id}/status`, { method: 'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({status: newStatus}) });
+            alert("تم تحديث حالة الطلب، وسيتمكن العميل من رؤيتها الآن!");
+        }
+
         function openAuthModal() { document.getElementById('auth-modal').classList.add('active'); }
         function closeAuthModal() { document.getElementById('auth-modal').classList.remove('active'); resetAuth(); }
-        async function sendWhatsAppCode() { /* ...نفس الكود السابق... */ 
+        async function sendWhatsAppCode() { 
             const phone = document.getElementById('phone-number').value;
             const res = await fetch('/api/send-otp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone }) });
             const data = await res.json();
@@ -393,58 +517,6 @@
             }
         }
         function resetAuth() { document.getElementById('step-phone').classList.remove('hidden-el'); document.getElementById('step-otp').classList.add('hidden-el'); }
-
-        async function showDashboard() {
-            document.getElementById('store-view').classList.add('hidden-el'); document.getElementById('main-nav').classList.add('hidden-el');
-            document.getElementById('dashboard-view').classList.remove('hidden-el'); document.getElementById('dashboard-view').style.display = "flex";
-            switchTab('analytics');
-        }
-        function logout() { currentUser = null; localStorage.removeItem('cyberstore_user'); location.reload(); }
-
-        function switchTab(tab) {
-            document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active-section'));
-            document.querySelectorAll('.sidebar-links a').forEach(a => a.classList.remove('active'));
-            document.getElementById('sec-' + tab).classList.add('active-section');
-            document.getElementById('tab-' + tab).classList.add('active');
-            if(tab === 'view-orders') loadAdminOrders();
-            if(tab === 'analytics') loadAdminStats();
-        }
-
-        async function loadAdminStats() {
-            const res = await fetch('/api/stats'); const stats = await res.json();
-            document.getElementById('stat-orders').innerText = stats.ordersCount;
-            document.getElementById('stat-products').innerText = stats.productsCount;
-            document.getElementById('stat-pending').innerText = stats.pendingOrders;
-            
-            if(adminChart) adminChart.destroy();
-            const ctx = document.getElementById('salesChart').getContext('2d');
-            adminChart = new Chart(ctx, {
-                type: 'bar',
-                data: { labels: ['المنتجات', 'الطلبات', 'قيد التجهيز'], datasets: [{ label: 'العدد', data: [stats.productsCount, stats.ordersCount, stats.pendingOrders], backgroundColor: ['#00f3ff', '#bc13fe', '#00ff66'] }] },
-                options: { responsive: true, plugins: { legend: { labels: { color: 'white' } } }, scales: { y: { ticks: { color: 'white' } }, x: { ticks: { color: 'white' } } } }
-            });
-        }
-
-        async function addNewProduct() {
-            const name = document.getElementById('p-name').value; const price = document.getElementById('p-price').value;
-            const category = document.getElementById('p-category').value; const image = document.getElementById('p-image').value;
-            if(!name || !price) return;
-            await fetch('/api/products', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, price, image, category }) });
-            alert("تم النشر!"); loadProducts();
-        }
-
-        async function loadAdminOrders() {
-            const res = await fetch('/api/orders'); const orders = await res.json();
-            const cont = document.getElementById('orders-container');
-            cont.innerHTML = orders.map((o, i) => `
-                <div class="order-card">
-                    <h3 style="color:var(--secondary-neon);">طلب #${orders.length - i}</h3>
-                    <p><b>العميل:</b> ${o.customerName} | <b>الهاتف:</b> ${o.customerPhone}</p>
-                    <p><b>الدفع عبر:</b> ${o.paymentMethod || 'غير محدد'}</p>
-                    <p><b>العنوان:</b> ${o.customerAddress}</p>
-                    <p style="font-weight:bold; color:var(--primary-neon); margin-top:10px;">المجموع: ${o.total}</p>
-                </div>`).join('');
-        }
     </script>
 </body>
 </html>
