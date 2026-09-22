@@ -7,25 +7,25 @@ const path = require('path');
 const app = express();
 app.use(express.json());
 app.use(cors());
-
 app.use(express.static(__dirname));
 
 const dbURI = 'mongodb+srv://aliabod07800_db_user:CYBER12300@cluster0.vnvizqu.mongodb.net/cyberstore?retryWrites=true&w=majority&appName=Cluster0';
 
 mongoose.connect(dbURI, { serverSelectionTimeoutMS: 30000 })
-    .then(() => console.log('✅ تم الاتصال بقاعدة البيانات السحابية بنجاح!'))
-    .catch((err) => console.error('❌ خطأ في الاتصال بقاعدة البيانات:', err.message));
+    .then(() => console.log('✅ تم الاتصال بقاعدة البيانات السحابية!'))
+    .catch((err) => console.error('❌ خطأ في الاتصال:', err.message));
 
-// تحديث هيكل المنتج ليشمل التصنيف
+// هيكل المنتج مع المراجعات
 const Product = mongoose.model('Product', new mongoose.Schema({
     name: String,
     price: String,
     image: String,
     category: { type: String, default: 'أخرى' },
+    reviews: [{ userName: String, rating: Number, comment: String, date: { type: Date, default: Date.now } }],
     createdAt: { type: Date, default: Date.now }
 }));
 
-// تحديث هيكل الطلب ليشمل طريقة الدفع
+// هيكل الطلبات المتقدم
 const Order = mongoose.model('Order', new mongoose.Schema({
     customerName: String,
     customerPhone: String,
@@ -34,13 +34,21 @@ const Order = mongoose.model('Order', new mongoose.Schema({
     notes: String,
     items: Array,
     total: String,
-    status: { type: String, default: 'قيد المعالجة' },
+    discountApplied: { type: Boolean, default: false },
+    status: { type: String, default: 'قيد المعالجة ⏳' }, // الحالات: قيد المعالجة، جاري الشحن، تم التوصيل
     createdAt: { type: Date, default: Date.now }
+}));
+
+// هيكل الكوبونات
+const Coupon = mongoose.model('Coupon', new mongoose.Schema({
+    code: String,
+    discountPercent: Number,
+    isActive: { type: Boolean, default: true }
 }));
 
 const otpDatabase = {};
 
-// مسارات المنتجات
+// --- مسارات المنتجات والمراجعات ---
 app.get('/api/products', async (req, res) => {
     try {
         const products = await Product.find().sort({ createdAt: -1 });
@@ -54,17 +62,26 @@ app.post('/api/products', async (req, res) => {
         const newProduct = new Product({ name, price, image, category });
         await newProduct.save();
         res.json({ success: true, product: newProduct });
-    } catch (err) { res.status(500).json({ success: false, error: err.message }); }
+    } catch (err) { res.status(500).json({ success: false }); }
 });
 
-// مسارات الطلبات وتتبعها
+app.post('/api/products/:id/review', async (req, res) => {
+    try {
+        const { userName, rating, comment } = req.body;
+        const product = await Product.findById(req.params.id);
+        product.reviews.push({ userName, rating, comment });
+        await product.save();
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ success: false }); }
+});
+
+// --- مسارات الطلبات وإدارتها ---
 app.post('/api/orders', async (req, res) => {
     try {
-        const { customerName, customerPhone, customerAddress, paymentMethod, notes, items, total } = req.body;
-        const newOrder = new Order({ customerName, customerPhone, customerAddress, paymentMethod, notes, items, total });
+        const newOrder = new Order(req.body);
         await newOrder.save();
         res.json({ success: true, order: newOrder });
-    } catch (err) { res.status(500).json({ success: false, error: err.message }); }
+    } catch (err) { res.status(500).json({ success: false }); }
 });
 
 app.get('/api/orders', async (req, res) => {
@@ -74,7 +91,14 @@ app.get('/api/orders', async (req, res) => {
     } catch (err) { res.json([]); }
 });
 
-// مسار تتبع الطلب الخاص بالعميل
+app.put('/api/orders/:id/status', async (req, res) => {
+    try {
+        const { status } = req.body;
+        await Order.findByIdAndUpdate(req.params.id, { status });
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ success: false }); }
+});
+
 app.post('/api/track-order', async (req, res) => {
     try {
         const { phone } = req.body;
@@ -83,17 +107,27 @@ app.post('/api/track-order', async (req, res) => {
     } catch (err) { res.status(500).json({ success: false }); }
 });
 
-// إحصائيات لوحة التحكم
+// --- نظام الكوبونات ---
+app.post('/api/validate-coupon', async (req, res) => {
+    try {
+        const { code } = req.body;
+        const coupon = await Coupon.findOne({ code: code, isActive: true });
+        if (coupon) res.json({ success: true, discount: coupon.discountPercent });
+        else res.json({ success: false, message: 'الكوبون غير صالح أو منتهي' });
+    } catch (err) { res.status(500).json({ success: false }); }
+});
+
+// --- الإحصائيات ---
 app.get('/api/stats', async (req, res) => {
     try {
         const ordersCount = await Order.countDocuments();
         const productsCount = await Product.countDocuments();
-        const pendingOrders = await Order.countDocuments({ status: 'قيد المعالجة' });
+        const pendingOrders = await Order.countDocuments({ status: 'قيد المعالجة ⏳' });
         res.json({ ordersCount, productsCount, pendingOrders });
     } catch (err) { res.json({ ordersCount: 0, productsCount: 0, pendingOrders: 0 }); }
 });
 
-// مصادقة الواتساب
+// --- المصادقة ---
 app.post('/api/send-otp', async (req, res) => {
     const { phone } = req.body;
     if (!phone) return res.status(400).json({ success: false, message: 'يرجى إرسال رقم الهاتف' });
@@ -101,10 +135,10 @@ app.post('/api/send-otp', async (req, res) => {
     otpDatabase[phone] = otp;
     try {
         await axios.post('https://api.ultramsg.com/instance192290/messages/chat', {
-            token: 'm0sarufyh678vh54', to: phone, body: `مرحباً بك في CyberStore ⚡\nكود التحقق الخاص بك هو: *${otp}*`
+            token: 'm0sarufyh678vh54', to: phone, body: `CyberStore ⚡\nرمز الدخول الآمن: *${otp}*`
         });
-        res.json({ success: true, message: 'تم إرسال الكود' });
-    } catch (error) { res.status(500).json({ success: false, message: 'خطأ في الإرسال' }); }
+        res.json({ success: true });
+    } catch (error) { res.status(500).json({ success: false }); }
 });
 
 app.post('/api/verify-otp', (req, res) => {
@@ -112,15 +146,21 @@ app.post('/api/verify-otp', (req, res) => {
     if (otpDatabase[phone] && otpDatabase[phone].toString() === otp.toString()) {
         delete otpDatabase[phone];
         if (phone === "+9647831333337" || phone === "9647831333337") {
-            res.json({ success: true, role: 'admin', phone, message: 'مرحباً عبدالله' });
+            res.json({ success: true, role: 'admin', phone });
         } else {
-            res.json({ success: true, role: 'user', phone, message: 'تم تسجيل الدخول' });
+            res.json({ success: true, role: 'user', phone });
         }
     } else {
-        res.status(401).json({ success: false, message: 'الكود غير صحيح' });
+        res.status(401).json({ success: false });
     }
 });
 
 app.get('/', (req, res) => { res.sendFile(path.join(__dirname, 'index.html')); });
+
+// إنشاء كوبون افتراضي لأغراض الاختبار (CYBER20) يخصم 20%
+Coupon.findOne({ code: 'CYBER20' }).then(c => {
+    if(!c) new Coupon({ code: 'CYBER20', discountPercent: 20 }).save();
+});
+
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🚀 الخادم يعمل على المنفذ: ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 الخادم جاهز على منفذ: ${PORT}`));
