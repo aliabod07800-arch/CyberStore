@@ -10,39 +10,35 @@ app.use(cors());
 
 app.use(express.static(__dirname));
 
-// 1. الاتصال بقاعدة البيانات السحابية (MongoDB)
+// الاتصال بقاعدة البيانات مع تخطي الأخطاء لكي لا يتعطل الموقع
 const dbURI = 'mongodb+srv://aliabod07800_db_user:2vmOHty4u0hf7hFT@cluster0.vnvizqu.mongodb.net/cyberstore?retryWrites=true&w=majority&appName=Cluster0';
 
 mongoose.connect(dbURI)
     .then(() => console.log('✅ تم الاتصال بقاعدة البيانات السحابية بنجاح!'))
     .catch((err) => console.error('❌ خطأ في الاتصال بقاعدة البيانات:', err.message));
 
-// 2. هياكل البيانات
-const productSchema = new mongoose.Schema({
+const Product = mongoose.model('Product', new mongoose.Schema({
     name: String,
     price: String,
     image: String,
     createdAt: { type: Date, default: Date.now }
-});
-const Product = mongoose.model('Product', productSchema);
+}));
 
-const orderSchema = new mongoose.Schema({
+const Order = mongoose.model('Order', new mongoose.Schema({
     items: Array,
     total: String,
     createdAt: { type: Date, default: Date.now }
-});
-const Order = mongoose.model('Order', orderSchema);
+}));
 
 const otpDatabase = {};
 
-// 3. مسارات المنتجات (مع حماية لكي لا يتعطل الموقع لو حدث خطأ)
+// مسارات المنتجات
 app.get('/api/products', async (req, res) => {
     try {
         const products = await Product.find().sort({ createdAt: -1 });
         res.json(products);
     } catch (err) {
-        console.error("خطأ جلب المنتجات:", err.message);
-        res.json([]); // إرجاع مصفوفة فارغة بدلاً من خطأ 500
+        res.json([]);
     }
 });
 
@@ -53,12 +49,11 @@ app.post('/api/products', async (req, res) => {
         await newProduct.save();
         res.json({ success: true, product: newProduct });
     } catch (err) {
-        console.error("خطأ حفظ المنتج:", err.message);
         res.status(500).json({ success: false, error: err.message });
     }
 });
 
-// 4. مسارات الطلبات
+// مسارات الطلبات
 app.post('/api/orders', async (req, res) => {
     try {
         const { items, total } = req.body;
@@ -79,7 +74,7 @@ app.get('/api/orders', async (req, res) => {
     }
 });
 
-// 5. مسار إرسال الواتساب
+// مصادقة الواتساب
 app.post('/api/send-otp', async (req, res) => {
     const { phone } = req.body;
     if (!phone) return res.status(400).json({ success: false, message: 'يرجى إرسال رقم الهاتف' });
@@ -87,31 +82,26 @@ app.post('/api/send-otp', async (req, res) => {
     const otp = Math.floor(100000 + Math.random() * 900000);
     otpDatabase[phone] = otp;
 
-    const instanceId = 'instance192290';
-    const token = 'm0sarufyh678vh54';
-    const message = `مرحباً بك في CyberStore 🎮\nكود التحقق الخاص بك هو: *${otp}*`;
-    
     try {
-        await axios.post(`https://api.ultramsg.com/${instanceId}/messages/chat`, {
-            token: token, to: phone, body: message
+        await axios.post('https://api.ultramsg.com/instance192290/messages/chat', {
+            token: 'm0sarufyh678vh54', 
+            to: phone, 
+            body: `مرحباً بك في CyberStore 🎮\nكود التحقق الخاص بك هو: *${otp}*`
         });
         res.json({ success: true, message: 'تم إرسال كود التحقق عبر الواتساب' });
     } catch (error) {
-        res.status(500).json({ success: false, message: 'حدث خطأ أثناء إرسال رسالة الواتساب' });
+        res.status(500).json({ success: false, message: 'خطأ في إرسال الواتساب' });
     }
 });
 
-// 6. التحقق من الكود والدخول
 app.post('/api/verify-otp', (req, res) => {
     const { phone, otp } = req.body;
-
     if (otpDatabase[phone] && otpDatabase[phone].toString() === otp.toString()) {
         delete otpDatabase[phone];
-        
         if (phone === "+9647831333337" || phone === "9647831333337") {
-            res.json({ success: true, role: 'admin', message: 'مرحباً عبدالله، تم تسجيل دخولك كمدير' });
+            res.json({ success: true, role: 'admin', message: 'مرحباً عبدالله' });
         } else {
-            res.json({ success: true, role: 'user', message: 'تم تسجيل الدخول بنجاح كمستخدم!' });
+            res.json({ success: true, role: 'user', message: 'تم تسجيل الدخول بنجاح' });
         }
     } else {
         res.status(401).json({ success: false, message: 'كود التحقق غير صحيح' });
@@ -123,4 +113,4 @@ app.get('/', (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🚀 الخادم يعمل بنجاح على المنفذ: ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 الخادم يعمل على المنفذ: ${PORT}`));
