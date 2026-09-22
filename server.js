@@ -8,7 +8,7 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-// دمج ملفات الواجهة الأمامية ليتم عرضها ككتلة واحدة (مهم جداً للاستضافة)
+// دمج ملفات الواجهة الأمامية ليتم عرضها ككتلة واحدة
 app.use(express.static(__dirname));
 
 // 1. الاتصال بقاعدة البيانات السحابية (MongoDB)
@@ -18,28 +18,35 @@ mongoose.connect(dbURI)
     .then(() => console.log('✅ تم الاتصال بقاعدة البيانات السحابية بنجاح!'))
     .catch((err) => console.error('❌ خطأ في الاتصال بقاعدة البيانات:', err));
 
-// 2. تصميم هيكل المنتج في قاعدة البيانات
+// 2. هياكل البيانات في قاعدة البيانات
 const productSchema = new mongoose.Schema({
     name: String,
     price: String,
     image: String,
     createdAt: { type: Date, default: Date.now }
 });
-
 const Product = mongoose.model('Product', productSchema);
+
+// هيكل جديد للطلبات
+const orderSchema = new mongoose.Schema({
+    items: Array,
+    total: String,
+    createdAt: { type: Date, default: Date.now }
+});
+const Order = mongoose.model('Order', orderSchema);
+
 const otpDatabase = {}; // ذاكرة مؤقتة لأكواد الواتساب
 
-// 3. مسار جلب المنتجات من السحابة وعرضها في المتجر
+// 3. مسارات المنتجات
 app.get('/api/products', async (req, res) => {
     try {
         const products = await Product.find().sort({ createdAt: -1 });
         res.json(products);
     } catch (err) {
-        res.status(500).json({ error: 'فشل في جلب المنتجات من قاعدة البيانات' });
+        res.status(500).json({ error: 'فشل في جلب المنتجات' });
     }
 });
 
-// 4. مسار إضافة منتج جديد إلى السحابة
 app.post('/api/products', async (req, res) => {
     try {
         const { name, price, image } = req.body;
@@ -48,6 +55,27 @@ app.post('/api/products', async (req, res) => {
         res.json({ success: true, product: newProduct });
     } catch (err) {
         res.status(500).json({ success: false, error: 'فشل في حفظ المنتج' });
+    }
+});
+
+// 4. مسارات الطلبات الجديدة
+app.post('/api/orders', async (req, res) => {
+    try {
+        const { items, total } = req.body;
+        const newOrder = new Order({ items, total });
+        await newOrder.save();
+        res.json({ success: true, order: newOrder });
+    } catch (err) {
+        res.status(500).json({ success: false, error: 'فشل في حفظ الطلب' });
+    }
+});
+
+app.get('/api/orders', async (req, res) => {
+    try {
+        const orders = await Order.find().sort({ createdAt: -1 });
+        res.json(orders);
+    } catch (err) {
+        res.status(500).json({ error: 'فشل في جلب الطلبات' });
     }
 });
 
@@ -80,7 +108,7 @@ app.post('/api/verify-otp', (req, res) => {
     if (otpDatabase[phone] && otpDatabase[phone].toString() === otp.toString()) {
         delete otpDatabase[phone];
         
-        // رقم الإدارة الخاص بك (يتم قبوله بالصيغتين)
+        // رقم الإدارة الخاص بك
         if (phone === "+9647831333337" || phone === "9647831333337") {
             res.json({ success: true, role: 'admin', message: 'مرحباً عبدالله، تم تسجيل دخولك كمدير' });
         } else {
@@ -91,11 +119,9 @@ app.post('/api/verify-otp', (req, res) => {
     }
 });
 
-// مسار رئيسي يعيد الواجهة للزائر (تم تعديل المسار لتجنب خطأ Express الجديد)
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// إعداد المنفذ ليتوافق مع خوادم الإنترنت
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`🚀 الخادم يعمل بنجاح على المنفذ: ${PORT}`));
