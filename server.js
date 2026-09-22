@@ -10,7 +10,6 @@ app.use(cors());
 
 app.use(express.static(__dirname));
 
-// الاتصال بقاعدة البيانات مع كلمة المرور الجديدة وزيادة مهلة الانتظار
 const dbURI = 'mongodb+srv://aliabod07800_db_user:CYBER12300@cluster0.vnvizqu.mongodb.net/cyberstore?retryWrites=true&w=majority&appName=Cluster0';
 
 mongoose.connect(dbURI, { serverSelectionTimeoutMS: 30000 })
@@ -24,15 +23,21 @@ const Product = mongoose.model('Product', new mongoose.Schema({
     createdAt: { type: Date, default: Date.now }
 }));
 
-const Order = mongoose.model('Order', new mongoose.Schema({
+// تحديث هيكل الطلب ليشمل معلومات الزبون المدخلة في صفحة الدفع
+const orderSchema = new mongoose.Schema({
+    customerName: String,
+    customerPhone: String,
+    customerAddress: String,
+    notes: String,
     items: Array,
     total: String,
+    status: { type: String, default: 'قيد المعالجة' },
     createdAt: { type: Date, default: Date.now }
-}));
+});
+const Order = mongoose.model('Order', orderSchema);
 
 const otpDatabase = {};
 
-// مسارات المنتجات
 app.get('/api/products', async (req, res) => {
     try {
         const products = await Product.find().sort({ createdAt: -1 });
@@ -53,11 +58,11 @@ app.post('/api/products', async (req, res) => {
     }
 });
 
-// مسارات الطلبات
+// حفظ الطلب مع تفاصيل الزبون الكاملة بدون واتساب
 app.post('/api/orders', async (req, res) => {
     try {
-        const { items, total } = req.body;
-        const newOrder = new Order({ items, total });
+        const { customerName, customerPhone, customerAddress, notes, items, total } = req.body;
+        const newOrder = new Order({ customerName, customerPhone, customerAddress, notes, items, total });
         await newOrder.save();
         res.json({ success: true, order: newOrder });
     } catch (err) {
@@ -74,7 +79,6 @@ app.get('/api/orders', async (req, res) => {
     }
 });
 
-// مصادقة الواتساب
 app.post('/api/send-otp', async (req, res) => {
     const { phone } = req.body;
     if (!phone) return res.status(400).json({ success: false, message: 'يرجى إرسال رقم الهاتف' });
@@ -99,9 +103,9 @@ app.post('/api/verify-otp', (req, res) => {
     if (otpDatabase[phone] && otpDatabase[phone].toString() === otp.toString()) {
         delete otpDatabase[phone];
         if (phone === "+9647831333337" || phone === "9647831333337") {
-            res.json({ success: true, role: 'admin', message: 'مرحباً عبدالله' });
+            res.json({ success: true, role: 'admin', phone, message: 'مرحباً عبدالله' });
         } else {
-            res.json({ success: true, role: 'user', message: 'تم تسجيل الدخول بنجاح' });
+            res.json({ success: true, role: 'user', phone, message: 'تم تسجيل الدخول بنجاح' });
         }
     } else {
         res.status(401).json({ success: false, message: 'كود التحقق غير صحيح' });
