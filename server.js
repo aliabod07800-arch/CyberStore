@@ -10,10 +10,10 @@ app.use(cors());
 
 app.use(express.static(__dirname));
 
-// الاتصال بقاعدة البيانات مع تخطي الأخطاء لكي لا يتعطل الموقع
-const dbURI = 'mongodb+srv://aliabod07800_db_user:2vmOHty4u0hf7hFT@cluster0.vnvizqu.mongodb.net/cyberstore?retryWrites=true&w=majority&appName=Cluster0';
+// الاتصال بقاعدة البيانات مع كلمة المرور الجديدة وزيادة مهلة الانتظار
+const dbURI = 'mongodb+srv://aliabod07800_db_user:CYBER12300@cluster0.vnvizqu.mongodb.net/cyberstore?retryWrites=true&w=majority&appName=Cluster0';
 
-mongoose.connect(dbURI)
+mongoose.connect(dbURI, { serverSelectionTimeoutMS: 30000 })
     .then(() => console.log('✅ تم الاتصال بقاعدة البيانات السحابية بنجاح!'))
     .catch((err) => console.error('❌ خطأ في الاتصال بقاعدة البيانات:', err.message));
 
