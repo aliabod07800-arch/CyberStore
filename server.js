@@ -15,23 +15,34 @@ app.use(express.json());
 app.use(cors());
 app.use(express.static(__dirname));
 
-// إعداد بيئة PayPal
+// ==========================================
+// 1. إعداد بيئة PayPal
+// ==========================================
 const clientId = 'BAAarCxsAmQmJjBovcJ_mgUqM2FkajysgS8f5y7HDhlW-V53-DYO8LiVgxWLZZlkRByf0gmNuNzFBDVRX4';
-const clientSecret = 'ضع_الرقم_السري_الخاص_بك_هنا'; // تأكد من وضعه قبل الرفع لـ Render
+const clientSecret = 'ضع_الرقم_السري_الخاص_بك_هنا'; // ⚠️ تنبيه: لا تنسَ وضع الـ Secret Key الخاص بحسابك هنا
 const environment = new paypal.core.SandboxEnvironment(clientId, clientSecret);
 const paypalClient = new paypal.core.PayPalHttpClient(environment);
 
-// إعداد قاعدة بيانات MySQL (تأكد من متغيرات البيئة لـ Render)
-const sequelize = new Sequelize('cyberstore_db', 'root', '', {
-    host: 'localhost',
+// ==========================================
+// 2. إعداد قاعدة بيانات MySQL (الكود الذكي السحابي)
+// ==========================================
+// هذا الكود هو الذي سيحل مشكلة Render، حيث سيقرأ الرابط السحابي إذا كان موجوداً
+const dbURL = process.env.DATABASE_URL || 'mysql://root:@localhost:3306/cyberstore_db';
+
+const sequelize = new Sequelize(dbURL, {
     dialect: 'mysql',
-    logging: false
+    logging: false,
+    dialectOptions: process.env.DATABASE_URL ? {
+        ssl: {
+            require: true,
+            rejectUnauthorized: false
+        }
+    } : {}
 });
 
 // ==========================================
-// هياكل قواعد البيانات (Models)
+// 3. هياكل قواعد البيانات (Models)
 // ==========================================
-// 1. جدول المستخدمين (الجديد كلياً لتتبع الحسابات)
 const User = sequelize.define('User', {
     phone: { type: DataTypes.STRING, unique: true, allowNull: false },
     role: { type: DataTypes.STRING, defaultValue: 'user' },
@@ -73,19 +84,21 @@ const Coupon = sequelize.define('Coupon', {
 });
 
 sequelize.sync({ alter: true }).then(async () => {
-    console.log('✅ تم تهيئة مركز القيادة وقواعد البيانات بنجاح!');
+    console.log('✅ تم الاتصال بـ MySQL ومزامنة الجداول بنجاح!');
     await Coupon.findOrCreate({ where: { code: 'CYBER20' }, defaults: { discountPercent: 20 } });
+}).catch(err => {
+    console.error('❌ فشل الاتصال بقاعدة البيانات:', err);
 });
 
 const otpDatabase = {};
 
 // ==========================================
-// رادار الزوار المباشر (Live Tracker)
+// 4. رادار الزوار المباشر (Sockets)
 // ==========================================
 let liveVisitors = 0;
 io.on('connection', (socket) => {
     liveVisitors++;
-    io.emit('live_update', liveVisitors); // إرسال العدد الجديد للوحة الإدارة
+    io.emit('live_update', liveVisitors);
     
     socket.on('disconnect', () => {
         liveVisitors--;
@@ -94,16 +107,27 @@ io.on('connection', (socket) => {
 });
 
 // ==========================================
-// مسارات واجهة برمجة التطبيقات (API)
+// 5. مسارات واجهة برمجة التطبيقات (API)
 // ==========================================
 app.get('/api/products', async (req, res) => {
-    const products = await Product.findAll({ include: [{ model: Review, as: 'reviews' }], order: [['createdAt', 'DESC']] });
-    res.json(products);
+    try {
+        const products = await Product.findAll({ include: [{ model: Review, as: 'reviews' }], order: [['createdAt', 'DESC']] });
+        res.json(products);
+    } catch (err) { res.status(500).json([]); }
 });
 
 app.post('/api/products', async (req, res) => {
-    const newProduct = await Product.create(req.body);
-    res.json({ success: true, product: newProduct });
+    try {
+        const newProduct = await Product.create(req.body);
+        res.json({ success: true, product: newProduct });
+    } catch (err) { res.status(500).json({ success: false }); }
+});
+
+app.post('/api/products/:id/review', async (req, res) => {
+    try {
+        await Review.create({ ...req.body, ProductId: req.params.id });
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ success: false }); }
 });
 
 app.post('/api/orders', async (req, res) => {
@@ -122,39 +146,61 @@ app.post('/api/orders', async (req, res) => {
 });
 
 app.get('/api/orders', async (req, res) => {
-    const orders = await Order.findAll({ order: [['createdAt', 'DESC']] });
-    res.json(orders);
+    try {
+        const orders = await Order.findAll({ order: [['createdAt', 'DESC']] });
+        res.json(orders);
+    } catch (err) { res.status(500).json([]); }
 });
 
 app.put('/api/orders/:id/status', async (req, res) => {
-    const { status, paymentStatus } = req.body;
-    const order = await Order.findByPk(req.params.id);
-    
-    // إذا تحولت حالة الدفع إلى مكتمل، أضف المبلغ لرصيد العميل
-    if(paymentStatus === 'مكتمل' && order.paymentStatus !== 'مكتمل') {
-        await User.increment('totalSpent', { by: order.finalTotal, where: { phone: order.customerPhone } });
-    }
-    
-    await Order.update({ status, paymentStatus }, { where: { id: req.params.id } });
-    res.json({ success: true });
+    try {
+        const { status, paymentStatus } = req.body;
+        const order = await Order.findByPk(req.params.id);
+        
+        // تحديث رصيد العميل عند تغيير حالة الطلب لـ "مكتمل"
+        if(paymentStatus === 'مكتمل' && order.paymentStatus !== 'مكتمل') {
+            await User.increment('totalSpent', { by: order.finalTotal, where: { phone: order.customerPhone } });
+        }
+        
+        await Order.update({ status, paymentStatus }, { where: { id: req.params.id } });
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ success: false }); }
 });
 
-// مسار جلب قائمة العملاء للإدارة
 app.get('/api/users', async (req, res) => {
-    const users = await User.findAll({ order: [['totalSpent', 'DESC']] });
-    res.json(users);
+    try {
+        const users = await User.findAll({ order: [['totalSpent', 'DESC']] });
+        res.json(users);
+    } catch (err) { res.status(500).json([]); }
 });
 
 app.get('/api/stats', async (req, res) => {
-    const ordersCount = await Order.count();
-    const productsCount = await Product.count();
-    const usersCount = await User.count();
-    const totalRevenue = await Order.sum('finalTotal', { where: { paymentStatus: 'مكتمل' } }) || 0;
-    res.json({ ordersCount, productsCount, usersCount, totalRevenue });
+    try {
+        const ordersCount = await Order.count();
+        const productsCount = await Product.count();
+        const usersCount = await User.count();
+        const totalRevenue = await Order.sum('finalTotal', { where: { paymentStatus: 'مكتمل' } }) || 0;
+        res.json({ ordersCount, productsCount, usersCount, totalRevenue });
+    } catch (err) { res.json({ ordersCount: 0, productsCount: 0, usersCount: 0, totalRevenue: 0 }); }
+});
+
+app.post('/api/track-order', async (req, res) => {
+    try {
+        const userOrders = await Order.findAll({ where: { customerPhone: req.body.phone }, order: [['createdAt', 'DESC']] });
+        res.json({ success: true, orders: userOrders });
+    } catch (err) { res.status(500).json({ success: false }); }
+});
+
+app.post('/api/validate-coupon', async (req, res) => {
+    try {
+        const coupon = await Coupon.findOne({ where: { code: req.body.code, isActive: true } });
+        if (coupon) res.json({ success: true, discount: coupon.discountPercent });
+        else res.json({ success: false, message: 'الكوبون غير صالح' });
+    } catch (err) { res.status(500).json({ success: false }); }
 });
 
 // ==========================================
-// المصادقة الصارمة وتسجيل الحسابات
+// 6. المصادقة وتسجيل الحسابات
 // ==========================================
 app.post('/api/send-otp', async (req, res) => {
     const { phone } = req.body;
@@ -171,11 +217,9 @@ app.post('/api/verify-otp', async (req, res) => {
     if (otpDatabase[phone] && otpDatabase[phone].toString() === otp.toString()) {
         delete otpDatabase[phone];
         
-        // تسجيل أو جلب المستخدم من قاعدة البيانات
         const [user, created] = await User.findOrCreate({ where: { phone } });
         user.lastLogin = new Date();
         
-        // إعطاء صلاحية المدير لرقمك بأي صيغة كان
         if (phone === "+9647831333337" || phone === "07831333337" || phone === "9647831333337") {
             user.role = 'admin';
         }
@@ -185,7 +229,9 @@ app.post('/api/verify-otp', async (req, res) => {
     } else { res.status(401).json({ success: false }); }
 });
 
-// مسارات بايبال ...
+// ==========================================
+// 7. عمليات الدفع لبايبال (PayPal)
+// ==========================================
 app.post('/api/paypal/create-order', async (req, res) => {
     try {
         const request = new paypal.orders.OrdersCreateRequest();
