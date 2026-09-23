@@ -3,167 +3,103 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#030407">
     <title>CyberStore | Global Enterprise</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- مكتبة PayPal مع الـ Client ID الخاص بك -->
+    <script src="https://www.paypal.com/sdk/js?client-id=BAAarCxsAmQmJjBovcJ_mgUqM2FkajysgS8f5y7HDhlW-V53-DYO8LiVgxWLZZlkRByf0gmNuNzFBDVRX4&currency=USD"></script>
+    
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;900&display=swap');
-        
-        :root {
-            --bg-base: #030407;
-            --bg-surface: rgba(12, 14, 22, 0.85);
-            --border-neon: rgba(0, 243, 255, 0.2);
-            --primary-neon: #00f3ff;
-            --secondary-neon: #bc13fe;
-            --accent-green: #00ff66;
-            --accent-gold: #ffb700;
-            --accent-red: #ff0055;
-            --text-main: #ffffff;
-            --text-muted: #8b93a5;
-            --glow-cyan: 0 0 25px rgba(0, 243, 255, 0.35);
-            --glow-purple: 0 0 25px rgba(188, 19, 254, 0.35);
-        }
-
+        :root { --bg-base: #030407; --bg-surface: rgba(12, 14, 22, 0.85); --border-neon: rgba(0, 243, 255, 0.2); --primary-neon: #00f3ff; --secondary-neon: #bc13fe; --accent-green: #00ff66; --accent-gold: #ffb700; --accent-red: #ff0055; --text-main: #ffffff; --text-muted: #8b93a5; --glow-cyan: 0 0 25px rgba(0, 243, 255, 0.35); --glow-purple: 0 0 25px rgba(188, 19, 254, 0.35); }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Tajawal', sans-serif; }
         body { background-color: var(--bg-base); color: var(--text-main); overflow-x: hidden; min-height: 100vh; display: flex; flex-direction: column; background-image: linear-gradient(to right, rgba(0,243,255,0.02) 1px, transparent 1px), linear-gradient(to bottom, rgba(188,19,254,0.02) 1px, transparent 1px); background-size: 40px 40px; }
-
-        /* شريط التنقل */
         nav { display: flex; justify-content: space-between; align-items: center; padding: 15px 40px; background: rgba(3, 4, 7, 0.9); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border-neon); position: sticky; top: 0; z-index: 1000; }
         .logo { font-size: 26px; font-weight: 900; color: #fff; text-shadow: var(--glow-cyan); letter-spacing: 2px; }
         .logo span { color: var(--secondary-neon); text-shadow: var(--glow-purple); }
         .nav-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
-
         .btn-cyber { background: transparent; color: var(--text-main); border: 1px solid var(--primary-neon); padding: 8px 18px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 700; transition: 0.3s; box-shadow: 0 0 10px rgba(0, 243, 255, 0.1) inset; }
         .btn-cyber:hover:not(:disabled) { background: var(--primary-neon); color: #000; box-shadow: var(--glow-cyan); transform: translateY(-2px); }
-        .btn-cyber:disabled { opacity: 0.5; cursor: not-allowed; }
         .btn-alt { border-color: var(--secondary-neon); }
         .btn-alt:hover:not(:disabled) { background: var(--secondary-neon); box-shadow: var(--glow-purple); }
-
         .store-container { padding: 40px; flex: 1; max-width: 1600px; margin: 0 auto; width: 100%; transition: 0.3s; }
         .cyber-hero { text-align: center; margin-bottom: 40px; padding: 50px 20px; background: var(--bg-surface); border: 1px solid var(--border-neon); border-radius: 20px; backdrop-filter: blur(15px); }
         .cyber-hero h1 { font-size: 38px; font-weight: 900; margin-bottom: 15px; color: #fff; text-shadow: var(--glow-cyan); }
         .cyber-hero p { color: var(--text-muted); font-size: 16px; max-width: 700px; margin: 0 auto; }
-
         .tools-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; gap: 20px; flex-wrap: wrap; background: rgba(0,0,0,0.4); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); }
         .search-box { flex: 1; min-width: 250px; }
         .search-box input { width: 100%; padding: 12px 20px; border-radius: 30px; border: 1px solid var(--border-neon); background: rgba(0,0,0,0.6); color: #fff; outline: none; transition: 0.3s; }
-        .search-box input:focus { box-shadow: var(--glow-cyan); }
         .category-filters { display: flex; gap: 10px; flex-wrap: wrap; }
         .filter-btn { background: rgba(255,255,255,0.05); border: 1px solid transparent; padding: 8px 16px; border-radius: 20px; color: #fff; cursor: pointer; transition: 0.3s; }
         .filter-btn.active, .filter-btn:hover { background: var(--secondary-neon); border-color: var(--secondary-neon); box-shadow: var(--glow-purple); }
-
         .products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 25px; }
         .product-card { background: var(--bg-surface); padding: 15px; border-radius: 16px; border: 1px solid var(--border-neon); text-align: center; transition: 0.4s; backdrop-filter: blur(10px); display: flex; flex-direction: column; justify-content: space-between; }
         .product-card:hover { transform: translateY(-8px); box-shadow: var(--glow-purple); border-color: var(--secondary-neon); }
         .product-image-wrap { width: 100%; height: 220px; border-radius: 12px; overflow: hidden; margin-bottom: 15px; }
         .product-card img { width: 100%; height: 100%; object-fit: cover; transition: 0.5s; }
         .product-card:hover img { transform: scale(1.1); }
-        .product-card h3 { font-size: 17px; margin-bottom: 5px; }
-        .rating { color: var(--accent-gold); font-size: 14px; margin-bottom: 10px; cursor: pointer; }
         .product-price { color: var(--primary-neon); font-size: 18px; font-weight: 900; margin-bottom: 15px; }
-
-        /* النوافذ المنبثقة */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0, 0.85); backdrop-filter: blur(10px); display: flex; justify-content: center; align-items: center; z-index: 9999; opacity: 0; pointer-events: none; transition: 0.3s; }
         .modal-overlay.active { opacity: 1; pointer-events: all; }
-        .modal-box { background: rgba(12, 14, 22, 0.95); padding: 30px; border-radius: 20px; border: 1px solid var(--primary-neon); width: 450px; max-width: 95%; max-height: 90vh; overflow-y: auto; text-align: right; position: relative; }
+        .modal-box { background: rgba(12, 14, 22, 0.95); padding: 30px; border-radius: 20px; border: 1px solid var(--primary-neon); width: 480px; max-width: 95%; max-height: 90vh; overflow-y: auto; text-align: right; position: relative; }
         .modal-box h2 { text-align: center; color: var(--primary-neon); margin-bottom: 20px; }
         .input-group { margin-bottom: 15px; }
         .input-group label { display: block; margin-bottom: 6px; color: var(--text-muted); font-size: 13px; font-weight: bold;}
         .input-group input, .input-group textarea, .input-group select { width: 100%; padding: 12px; background: rgba(0,0,0, 0.6); border: 1px solid var(--border-neon); color: #fff; border-radius: 8px; outline: none; font-family: inherit; }
         .input-group input:focus, .input-group textarea:focus { border-color: var(--primary-neon); box-shadow: var(--glow-cyan); }
-        
-        .payment-methods { display: flex; gap: 10px; margin-bottom: 15px; }
-        .pay-method { flex: 1; text-align: center; padding: 10px; border: 1px solid var(--border-neon); border-radius: 8px; cursor: pointer; transition: 0.3s; font-size: 13px; }
+        .payment-methods { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+        .pay-method { flex: 1; min-width: 80px; text-align: center; padding: 10px; border: 1px solid var(--border-neon); border-radius: 8px; cursor: pointer; transition: 0.3s; font-size: 13px; }
         .pay-method.selected { background: var(--primary-neon); color: #000; font-weight: bold; box-shadow: var(--glow-cyan); }
         .processing-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); border-radius: 20px; display:flex; flex-direction:column; justify-content:center; align-items:center; z-index: 10; display: none; }
         .spinner { width: 50px; height: 50px; border: 5px solid rgba(0,243,255,0.2); border-top-color: var(--primary-neon); border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
-
-        /* =========================================
-           لوحة تحكم الشركات العالمية (Enterprise Dashboard)
-           ========================================= */
+        .invoice-summary { background: rgba(255,255,255,0.05); border: 1px dashed var(--border-neon); border-radius: 8px; padding: 15px; margin-bottom: 20px; font-family: monospace; font-size: 14px; }
+        .invoice-row { display: flex; justify-content: space-between; margin-bottom: 8px; }
+        .invoice-row.total { border-top: 1px solid var(--border-neon); padding-top: 8px; font-size: 16px; font-weight: bold; color: var(--primary-neon); }
         .dashboard-container { display: none; height: 100vh; width: 100vw; position: fixed; top: 0; left: 0; z-index: 3000; background: var(--bg-base); }
         .dashboard-container.active-dashboard { display: flex; }
-        
         .sidebar { width: 280px; background: rgba(6, 8, 13, 0.98); border-left: 1px solid var(--border-neon); padding: 30px 20px; display: flex; flex-direction: column; }
         .sidebar h3 { color: var(--secondary-neon); margin-bottom: 40px; font-size: 24px; text-align: center; text-shadow: var(--glow-purple); }
         .sidebar-links a { display: block; color: var(--text-muted); text-decoration: none; padding: 14px 18px; margin-bottom: 12px; border-radius: 8px; cursor: pointer; transition: 0.3s; font-weight: 500; font-size: 16px; }
         .sidebar-links a:hover { background: rgba(255,255,255,0.05); }
         .sidebar-links a.active { background: rgba(188, 19, 254, 0.15); color: #fff; border-right: 4px solid var(--secondary-neon); box-shadow: 0 0 10px rgba(188,19,254,0.1); }
-        
         .dashboard-content { flex: 1; padding: 40px; overflow-y: auto; background: var(--bg-base); }
         .admin-section { display: none; animation: fadeIn 0.4s; }
         .admin-section.active-section { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* بطاقات الإحصائيات */
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 25px; margin-bottom: 40px; }
-        .stat-card { background: var(--bg-surface); padding: 25px; border-radius: 16px; border: 1px solid var(--border-neon); display: flex; flex-direction: column; justify-content: center; align-items: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
-        .stat-card h4 { color: var(--text-muted); font-size: 16px; margin-bottom: 10px; }
+        .stat-card { background: var(--bg-surface); padding: 25px; border-radius: 16px; border: 1px solid var(--border-neon); text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
         .stat-card p { font-size: 36px; font-weight: 900; margin: 0; }
-        .stat-cyan p { color: var(--primary-neon); text-shadow: var(--glow-cyan); }
-        .stat-purple p { color: var(--secondary-neon); text-shadow: var(--glow-purple); }
-        .stat-green p { color: var(--accent-green); text-shadow: 0 0 20px rgba(0,255,102,0.3); }
-        
-        .chart-container { background: var(--bg-surface); padding: 25px; border-radius: 16px; border: 1px solid var(--border-neon); max-width: 900px; margin: 0 auto; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
-
-        /* جدول بيانات الشركات (Data Table) */
         .enterprise-table-container { width: 100%; overflow-x: auto; background: var(--bg-surface); border-radius: 16px; border: 1px solid var(--border-neon); box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
         .enterprise-table { width: 100%; border-collapse: collapse; text-align: right; }
-        .enterprise-table th { background: rgba(0, 243, 255, 0.08); padding: 18px 20px; color: var(--primary-neon); font-size: 15px; font-weight: 700; border-bottom: 1px solid var(--border-neon); white-space: nowrap; }
-        .enterprise-table td { padding: 18px 20px; border-bottom: 1px solid rgba(255,255,255,0.05); color: #fff; font-size: 14px; vertical-align: middle; }
-        .enterprise-table tr:hover { background: rgba(255,255,255,0.03); }
-        
-        /* شارات الحالة (Badges) */
-        .status-badge { padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; display: inline-block; text-align: center; }
+        .enterprise-table th { background: rgba(0, 243, 255, 0.08); padding: 18px 20px; color: var(--primary-neon); font-size: 15px; border-bottom: 1px solid var(--border-neon); white-space: nowrap; }
+        .enterprise-table td { padding: 18px 20px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 14px; vertical-align: middle; }
+        .status-badge { padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; display: inline-block; }
         .status-processing { background: rgba(255, 183, 0, 0.15); color: var(--accent-gold); border: 1px solid var(--accent-gold); }
         .status-shipped { background: rgba(0, 243, 255, 0.15); color: var(--primary-neon); border: 1px solid var(--primary-neon); }
         .status-delivered { background: rgba(0, 255, 102, 0.15); color: var(--accent-green); border: 1px solid var(--accent-green); }
         .status-cancelled { background: rgba(255, 0, 85, 0.15); color: var(--accent-red); border: 1px solid var(--accent-red); }
-
-        .select-status { background: #000; color: #fff; border: 1px solid var(--border-neon); padding: 8px 10px; border-radius: 6px; outline: none; cursor: pointer; font-family: inherit; }
-        .select-status:focus { border-color: var(--secondary-neon); }
-
-        footer { background: rgba(3, 4, 7, 0.95); border-top: 1px solid var(--border-neon); padding: 30px; text-align: center; margin-top: auto; }
+        .select-status { background: #000; color: #fff; border: 1px solid var(--border-neon); padding: 8px; border-radius: 6px; outline: none; cursor: pointer; }
         .hidden-el { display: none !important; }
-
-        @media (max-width: 768px) {
-            nav { flex-direction: column; gap: 15px; padding: 15px; }
-            .nav-actions { justify-content: center; }
-            .dashboard-container { flex-direction: column; }
-            .sidebar { width: 100%; border-left: none; border-bottom: 1px solid var(--border-neon); padding: 15px; flex-direction: row; flex-wrap: wrap; justify-content: space-between; align-items: center;}
-            .sidebar h3 { margin-bottom: 0; width: 100%; margin-bottom: 15px; }
-            .sidebar-links { display: flex; width: 100%; overflow-x: auto; gap: 10px; }
-            .sidebar-links a { margin-bottom: 0; white-space: nowrap; padding: 10px; }
-            .sidebar-links a.active { border-right: none; border-bottom: 3px solid var(--secondary-neon); }
-            .dashboard-content { padding: 20px; }
-            .store-container { padding: 20px; }
-            .tools-bar { flex-direction: column; }
-            .modal-box { padding: 20px; }
-        }
+        @media (max-width: 768px) { nav { flex-direction: column; gap: 15px; padding: 15px; } .sidebar { width: 100%; border-left: none; border-bottom: 1px solid var(--border-neon); padding: 15px; flex-direction: row; flex-wrap: wrap; justify-content: space-between;} .sidebar h3 { margin-bottom: 15px; width: 100%; } .sidebar-links { display: flex; width: 100%; overflow-x: auto; gap: 10px; } .dashboard-content, .store-container { padding: 20px; } .tools-bar { flex-direction: column; } }
     </style>
 </head>
 <body>
 
-    <!-- شريط التنقل -->
     <nav id="main-nav">
         <div class="logo">CYBER<span>STORE</span> ⚡</div>
         <div class="nav-actions">
             <button class="btn-cyber" onclick="openTrackModal()">📍 تتبع طلبي</button>
             <button class="btn-cyber btn-alt" onclick="openCartModal()">🛒 السلة <span class="cart-badge" id="cart-count">0</span></button>
-            <div id="auth-nav-container">
-                <!-- سيتم حقن زر الدخول أو اسم المستخدم هنا بواسطة الجافاسكربت -->
-            </div>
+            <div id="auth-nav-container"></div>
         </div>
     </nav>
 
-    <!-- واجهة المتجر -->
     <div id="store-view" class="store-container">
         <div class="cyber-hero">
             <h1>التجربة العالمية للتسوق الرقمي</h1>
-            <p>أحدث الأجهزة، بطاقات الألعاب، وتجميعات الـ PC تصلك أينما كنت مع خيارات دفع آمنة (زين كاش، كي كارد، والدفع المباشر).</p>
+            <p>أحدث الأجهزة، بطاقات الألعاب، وتجميعات الـ PC تصلك أينما كنت.</p>
         </div>
-
         <div class="tools-bar">
             <div class="category-filters" id="category-filters">
                 <button class="filter-btn active" onclick="filterProducts('الكل')">الكل</button>
@@ -175,552 +111,359 @@
                 <input type="text" id="search-input" placeholder="ابحث عن منتج..." onkeyup="searchProducts()">
             </div>
         </div>
-
-        <div class="products-grid" id="products-list">
-            <p style="text-align: center; width: 100%;">جاري تحميل المنتجات...</p>
-        </div>
+        <div class="products-grid" id="products-list"></div>
     </div>
 
-    <!-- لوحة تحكم الشركات العالمية (Enterprise Dashboard) -->
+    <!-- لوحة تحكم الإدارة -->
     <div id="dashboard-view" class="dashboard-container">
         <div class="sidebar">
             <h3>Enterprise Admin</h3>
             <div class="sidebar-links">
                 <a onclick="switchTab('analytics')" id="tab-analytics" class="active">📊 نظرة عامة</a>
                 <a onclick="switchTab('add-product')" id="tab-add">➕ إضافة منتج</a>
-                <a onclick="switchTab('view-orders')" id="tab-orders">📦 إدارة الطلبات</a>
-                <a style="color: var(--accent-red); font-weight: bold;" onclick="logout()">خروج من النظام</a>
+                <a onclick="switchTab('view-orders')" id="tab-orders">📦 إدارة المعاملات</a>
+                <a style="color: var(--accent-red); font-weight: bold;" onclick="logout()">خروج</a>
             </div>
         </div>
-        
         <div class="dashboard-content">
-            <!-- قسم الإحصائيات -->
             <div id="sec-analytics" class="admin-section active-section">
-                <h2 style="margin-bottom: 25px; text-shadow: var(--glow-cyan);">لوحة القياس الذكية (Dashboard)</h2>
+                <h2 style="margin-bottom: 25px; text-shadow: var(--glow-cyan);">لوحة القياس (Dashboard)</h2>
                 <div class="stats-grid">
-                    <div class="stat-card stat-cyan"><h4>إجمالي الطلبات</h4><p id="stat-orders">0</p></div>
-                    <div class="stat-card stat-purple"><h4>إجمالي المنتجات</h4><p id="stat-products">0</p></div>
-                    <div class="stat-card stat-green"><h4>طلبات قيد التجهيز</h4><p id="stat-pending">0</p></div>
-                </div>
-                <div class="chart-container">
-                    <canvas id="salesChart"></canvas>
+                    <div class="stat-card"><h4>إجمالي الطلبات</h4><p id="stat-orders" style="color:var(--primary-neon);">0</p></div>
+                    <div class="stat-card"><h4>الإيرادات المحصلة (IQD)</h4><p id="stat-revenue" style="color:var(--secondary-neon);">0</p></div>
+                    <div class="stat-card"><h4>طلبات معلقة</h4><p id="stat-pending" style="color:var(--accent-green);">0</p></div>
                 </div>
             </div>
-
-            <!-- قسم إضافة المنتجات -->
             <div id="sec-add-product" class="admin-section">
-                <h2 style="margin-bottom: 25px; text-shadow: var(--glow-purple); color: var(--secondary-neon);">إضافة منتج جديد للمستودع</h2>
-                <div style="background: var(--bg-surface); padding: 35px; border-radius: 16px; border: 1px solid var(--border-neon); max-width: 600px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
-                    <div class="input-group"><label>اسم المنتج</label><input type="text" id="p-name" placeholder="أدخل اسم المنتج بدقة..."></div>
-                    <div class="input-group"><label>السعر (IQD)</label><input type="number" id="p-price" placeholder="مثال: 15000"></div>
-                    <div class="input-group"><label>التصنيف الرئيسي</label>
-                        <select id="p-category">
-                            <option value="أجهزة">أجهزة و PC</option>
-                            <option value="ألعاب">ألعاب وبطاقات</option>
-                            <option value="إكسسوارات">إكسسوارات</option>
-                        </select>
+                <div style="background: var(--bg-surface); padding: 35px; border-radius: 16px; border: 1px solid var(--border-neon); max-width: 600px;">
+                    <h2 style="color: var(--primary-neon); margin-bottom: 20px;">نشر منتج جديد</h2>
+                    <div class="input-group"><label>اسم المنتج</label><input type="text" id="p-name"></div>
+                    <div class="input-group"><label>السعر (IQD)</label><input type="number" id="p-price"></div>
+                    <div class="input-group"><label>التصنيف</label>
+                        <select id="p-category"><option value="أجهزة">أجهزة و PC</option><option value="ألعاب">ألعاب وبطاقات</option><option value="إكسسوارات">إكسسوارات</option></select>
                     </div>
-                    <div class="input-group"><label>رابط الصورة المباشر (URL)</label><input type="text" id="p-image" placeholder="https://..."></div>
-                    <button class="btn-cyber" style="width: 100%; padding: 14px; font-size: 16px;" onclick="addNewProduct()">نشر المنتج في المنصة 🚀</button>
+                    <div class="input-group"><label>رابط الصورة</label><input type="text" id="p-image"></div>
+                    <button class="btn-cyber" style="width: 100%; padding: 14px;" onclick="addNewProduct()">إضافة المنتج</button>
                 </div>
             </div>
-
-            <!-- قسم إدارة الطلبات (الجدول الاحترافي) -->
             <div id="sec-view-orders" class="admin-section">
-                <h2 style="margin-bottom: 25px; text-shadow: var(--glow-cyan);">العمليات والطلبات الواردة</h2>
+                <h2 style="margin-bottom: 25px; text-shadow: var(--glow-cyan);">المعاملات المالية والطلبات</h2>
                 <div class="enterprise-table-container">
                     <table class="enterprise-table">
-                        <thead>
-                            <tr>
-                                <th>رقم الطلب</th>
-                                <th>بيانات العميل</th>
-                                <th>الدفع والمبلغ</th>
-                                <th>المنتجات</th>
-                                <th>الحالة / تحديث</th>
-                            </tr>
-                        </thead>
-                        <tbody id="orders-table-body">
-                            <!-- سيتم حقن الطلبات هنا -->
-                            <tr><td colspan="5" style="text-align: center;">جاري جلب بيانات الطلبات...</td></tr>
-                        </tbody>
+                        <thead><tr><th>TXN</th><th>العميل</th><th>الإجمالي والدفع</th><th>تحديث الشحن</th></tr></thead>
+                        <tbody id="orders-table-body"></tbody>
                     </table>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- === النوافذ المنبثقة (Modals) === -->
-    
-    <!-- نافذة السلة مع الكوبونات -->
-    <div class="modal-overlay" id="cart-modal">
+    <!-- نافذة الفاتورة للمدير -->
+    <div class="modal-overlay" id="admin-invoice-modal">
         <div class="modal-box">
-            <h2>السلة 🛒</h2>
-            <div id="cart-items-container" class="cart-items-list"></div>
-            
-            <div class="input-group" style="display:flex; gap:10px; margin-top:10px;">
-                <input type="text" id="promo-code" placeholder="كود الخصم (جرب CYBER20)" style="flex:1;">
-                <button class="btn-cyber" onclick="applyCoupon()">تفعيل</button>
-            </div>
-
-            <div style="margin: 20px 0; font-size: 18px; font-weight: bold; display: flex; justify-content: space-between; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
-                <span>المجموع:</span><span id="cart-total" style="color: var(--primary-neon);">0 IQD</span>
-            </div>
-            <button class="btn-cyber" style="width: 100%; margin-bottom: 10px;" onclick="openCheckoutModal()">تأكيد الشراء 💳</button>
-            <button style="background: none; border: none; color: var(--text-muted); cursor: pointer; width: 100%; padding: 10px;" onclick="closeCartModal()">إغلاق ومتابعة التسوق</button>
+            <h2 style="color:var(--primary-neon);">تفاصيل الفاتورة 📄</h2>
+            <div id="invoice-details" class="invoice-summary" style="text-align: right; background:rgba(0,0,0,0.8);"></div>
+            <button class="btn-cyber" style="width: 100%; margin-top:15px;" onclick="document.getElementById('admin-invoice-modal').classList.remove('active')">إغلاق</button>
         </div>
     </div>
 
-    <!-- نافذة الدفع -->
+    <!-- السلة -->
+    <div class="modal-overlay" id="cart-modal">
+        <div class="modal-box">
+            <h2>السلة 🛒</h2>
+            <div id="cart-items-container" style="max-height: 150px; overflow-y:auto; margin-bottom:15px;"></div>
+            <div class="input-group" style="display:flex; gap:10px;">
+                <input type="text" id="promo-code" placeholder="كود الخصم (CYBER20)" style="flex:1;">
+                <button class="btn-cyber" onclick="applyCoupon()">تفعيل</button>
+            </div>
+            <div class="invoice-summary" id="checkout-summary">
+                <div class="invoice-row"><span>المجموع الفرعي:</span><span id="summ-subtotal">0</span></div>
+                <div class="invoice-row"><span>الخصم:</span><span id="summ-discount" style="color:var(--accent-red);">0</span></div>
+                <div class="invoice-row"><span>التوصيل:</span><span id="summ-shipping">5000</span></div>
+                <div class="invoice-row total"><span>الإجمالي:</span><span id="summ-total">0</span></div>
+            </div>
+            <button class="btn-cyber" style="width: 100%; margin-bottom: 10px;" onclick="openCheckoutModal()">متابعة الدفع 💳</button>
+            <button style="background:none; border:none; color:var(--text-muted); width:100%; cursor:pointer;" onclick="closeCartModal()">إغلاق</button>
+        </div>
+    </div>
+
+    <!-- الدفع وبوابة PayPal -->
     <div class="modal-overlay" id="checkout-modal">
         <div class="modal-box">
             <div id="payment-processor" class="processing-overlay">
                 <div class="spinner"></div>
-                <h3 style="color: var(--primary-neon); margin-top:20px; text-shadow: var(--glow-cyan);" id="process-text">جاري الاتصال بالبوابة...</h3>
+                <h3 style="color: var(--primary-neon); margin-top:20px;" id="process-text">جاري المعالجة...</h3>
             </div>
-            
-            <h2>بوابة الدفع الآمن 🔒</h2>
+            <h2>الدفع الآمن 🔒</h2>
             <div class="input-group"><label>الاسم الكامل</label><input type="text" id="cust-name"></div>
             <div class="input-group"><label>رقم الهاتف</label><input type="tel" id="cust-phone"></div>
             <div class="input-group"><label>العنوان بالتفصيل</label><textarea id="cust-address" rows="2"></textarea></div>
-            
-            <label style="color: var(--text-muted); font-size: 13px; margin-bottom: 8px; display: block; text-align: right;">اختر بوابة الدفع:</label>
+            <label style="color:var(--text-muted); font-size:13px; margin-bottom:8px; display:block;">اختر بوابة الدفع:</label>
             <div class="payment-methods">
                 <div class="pay-method selected" onclick="selectPayment(this, 'الدفع عند الاستلام')">نقداً 💵</div>
                 <div class="pay-method" onclick="selectPayment(this, 'زين كاش')">زين كاش 📱</div>
-                <div class="pay-method" onclick="selectPayment(this, 'كي كارد')">Qi Card 💳</div>
+                <div class="pay-method" onclick="selectPayment(this, 'PayPal')">PayPal 🌐</div>
             </div>
             <input type="hidden" id="selected-payment" value="الدفع عند الاستلام">
             
-            <button class="btn-cyber btn-alt" style="width: 100%; padding: 12px; margin-bottom: 10px;" onclick="submitFinalOrder()">إتمام الطلب ✅</button>
-            <button style="background: none; border: none; color: var(--text-muted); cursor: pointer; width: 100%;" onclick="closeCheckoutModal()">الرجوع للسلة</button>
+            <button id="normal-checkout-btn" class="btn-cyber btn-alt" style="width: 100%; padding: 12px; margin-bottom: 10px;" onclick="submitFinalOrder(false)">تأكيد الطلب ✅</button>
+            
+            <!-- حاوية أزرار بايبال -->
+            <div id="paypal-button-container" style="display: none; margin-bottom: 10px;"></div>
+            
+            <button style="background:none; border:none; color:var(--text-muted); cursor:pointer; width:100%;" onclick="closeCheckoutModal()">الرجوع</button>
         </div>
     </div>
 
-    <!-- نافذة التتبع -->
+    <!-- تتبع الطلبات والمصادقة والمراجعات -->
     <div class="modal-overlay" id="track-modal">
         <div class="modal-box">
-            <h2>تتبع حالة الطلب 📍</h2>
-            <div class="input-group"><label>رقم الهاتف المسجل بالطلب</label><input type="tel" id="track-phone"></div>
+            <h2>تتبع الطلب 📍</h2>
+            <div class="input-group"><label>رقم الهاتف</label><input type="tel" id="track-phone"></div>
             <button class="btn-cyber" style="width: 100%; padding: 12px; margin-bottom: 15px;" onclick="trackMyOrder()">استعلام 🔎</button>
             <div id="track-results" style="text-align: right; max-height: 250px; overflow-y: auto;"></div>
             <button style="background: none; border: none; color: var(--text-muted); cursor: pointer; width: 100%; margin-top:10px;" onclick="closeTrackModal()">إغلاق</button>
         </div>
     </div>
 
-    <!-- نافذة المراجعات -->
     <div class="modal-overlay" id="review-modal">
         <div class="modal-box">
             <h2>تقييم المنتج ⭐</h2>
             <input type="hidden" id="review-product-id">
-            <div class="input-group"><label>الاسم</label><input type="text" id="review-name" placeholder="اسمك الكريم"></div>
-            <div class="input-group"><label>التقييم (من 1 إلى 5)</label><input type="number" id="review-rating" min="1" max="5" value="5"></div>
-            <div class="input-group"><label>رأيك بالمنتج</label><textarea id="review-comment" rows="3"></textarea></div>
+            <div class="input-group"><label>الاسم</label><input type="text" id="review-name"></div>
+            <div class="input-group"><label>التقييم (1 إلى 5)</label><input type="number" id="review-rating" min="1" max="5" value="5"></div>
+            <div class="input-group"><label>رأيك</label><textarea id="review-comment" rows="3"></textarea></div>
             <button class="btn-cyber" style="width: 100%; padding: 12px; margin-bottom: 10px;" onclick="submitReview()">إرسال التقييم</button>
             <button style="background: none; border: none; color: var(--text-muted); cursor: pointer; width:100%;" onclick="document.getElementById('review-modal').classList.remove('active');">إلغاء</button>
         </div>
     </div>
 
-    <!-- نافذة المصادقة (تسجيل الدخول) -->
     <div class="modal-overlay" id="auth-modal">
         <div class="modal-box">
-            <h2 id="auth-title">تسجيل الدخول للنظام</h2>
+            <h2 id="auth-title">تسجيل الدخول</h2>
             <div id="step-phone">
-                <div class="input-group"><label>رقم الواتساب</label><input type="tel" id="phone-number" placeholder="+964 7XX XXX XXXX"></div>
-                <button class="btn-cyber" style="width: 100%; padding: 12px;" onclick="sendWhatsAppCode()">طلب كود التحقق 📱</button>
+                <div class="input-group"><label>رقم الهاتف</label><input type="tel" id="phone-number" placeholder="+964 7XX XXX XXXX"></div>
+                <button class="btn-cyber" style="width: 100%; padding: 12px;" onclick="sendWhatsAppCode()">طلب الكود 📱</button>
             </div>
             <div id="step-otp" class="hidden-el">
                 <div class="input-group"><label>الرمز السري</label><input type="text" id="otp-code" style="text-align: center; letter-spacing: 5px; font-size: 20px;"></div>
                 <button class="btn-cyber" style="width: 100%; padding: 12px;" onclick="verifyOTP()">دخول 🚀</button>
-                <button style="background:none; border:none; color:var(--text-muted); margin-top:10px; cursor:pointer; width:100%;" onclick="resetAuth()">تعديل الرقم</button>
             </div>
             <button style="background:none; border:none; color:var(--text-muted); margin-top:20px; cursor:pointer; width:100%;" onclick="closeAuthModal()">إغلاق</button>
         </div>
     </div>
 
-    <footer>
-        <p class="footer-text">CYBERSTORE GLOBAL ENTERPRISE © 2026 - ALL RIGHTS RESERVED</p>
-    </footer>
-
     <script>
-        let allProducts = [];
-        let userCart = [];
-        let currentUser = null;
-        let discountMultiplier = 1;
-        let adminChart = null;
+        let allProducts = [], userCart = [], currentUser = null, discountMultiplier = 1;
+        let calcSubtotal = 0, calcDiscount = 0, calcShipping = 5000, calcTotal = 0;
 
-        window.onload = function() { 
-            loadProducts(); 
-            checkSavedSession(); 
-        };
+        window.onload = function() { loadProducts(); checkSavedSession(); };
 
-        /* ========================
-           نظام المصادقة والجلسة
-           ======================== */
         function checkSavedSession() {
             const saved = localStorage.getItem('cyberstore_user');
-            if (saved) { 
-                currentUser = JSON.parse(saved); 
-            }
+            if (saved) { currentUser = JSON.parse(saved); }
             updateAuthUI();
         }
 
         function updateAuthUI() {
             const nav = document.getElementById('auth-nav-container');
             if (currentUser) {
-                if (currentUser.role === 'admin') {
-                    nav.innerHTML = `<button class="btn-cyber" style="border-color: var(--secondary-neon);" onclick="showDashboard()">لوحة التحكم ⚙️</button>`;
-                } else {
-                    nav.innerHTML = `<span style="color:var(--primary-neon); margin-left:15px; font-weight:bold;">${currentUser.phone}</span> <button class="btn-cyber btn-alt" style="border-color:var(--accent-red); color:var(--accent-red);" onclick="logout()">خروج</button>`;
-                }
-            } else { 
-                nav.innerHTML = `<button class="btn-cyber" onclick="openAuthModal()">تسجيل الدخول</button>`; 
-            }
+                if (currentUser.role === 'admin') nav.innerHTML = `<button class="btn-cyber" style="border-color:var(--secondary-neon);" onclick="showDashboard()">المدير ⚙️</button>`;
+                else nav.innerHTML = `<span style="color:var(--primary-neon); margin-left:15px; font-weight:bold;">${currentUser.phone}</span> <button class="btn-cyber btn-alt" style="border-color:var(--accent-red); color:var(--accent-red);" onclick="logout()">خروج</button>`;
+            } else { nav.innerHTML = `<button class="btn-cyber" onclick="openAuthModal()">دخول</button>`; }
         }
 
         function openAuthModal() { document.getElementById('auth-modal').classList.add('active'); }
-        function closeAuthModal() { document.getElementById('auth-modal').classList.remove('active'); resetAuth(); }
+        function closeAuthModal() { document.getElementById('auth-modal').classList.remove('active'); document.getElementById('step-phone').classList.remove('hidden-el'); document.getElementById('step-otp').classList.add('hidden-el');}
         
         async function sendWhatsAppCode() { 
             const phone = document.getElementById('phone-number').value;
-            if(!phone) return alert("الرجاء إدخال رقم الهاتف");
-            try {
-                const res = await fetch('/api/send-otp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone }) });
-                const data = await res.json();
-                if(data.success) { 
-                    document.getElementById('step-phone').classList.add('hidden-el'); 
-                    document.getElementById('step-otp').classList.remove('hidden-el'); 
-                    document.getElementById('auth-title').innerText = "تأكيد الدخول";
-                } else { alert("حدث خطأ في الإرسال"); }
-            } catch(e) { alert("خطأ في الاتصال بالخادم"); }
+            const res = await fetch('/api/send-otp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone }) });
+            if((await res.json()).success) { document.getElementById('step-phone').classList.add('hidden-el'); document.getElementById('step-otp').classList.remove('hidden-el'); }
         }
 
         async function verifyOTP() {
-            const otp = document.getElementById('otp-code').value; 
-            const phone = document.getElementById('phone-number').value;
-            try {
-                const res = await fetch('/api/verify-otp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone, otp }) });
-                const data = await res.json();
-                if(data.success) {
-                    currentUser = { phone: data.phone, role: data.role };
-                    localStorage.setItem('cyberstore_user', JSON.stringify(currentUser));
-                    closeAuthModal(); 
-                    updateAuthUI();
-                    if(data.role === 'admin') showDashboard();
-                } else { alert("الكود غير صحيح"); }
-            } catch(e) { alert("خطأ في الاتصال"); }
+            const otp = document.getElementById('otp-code').value; const phone = document.getElementById('phone-number').value;
+            const res = await fetch('/api/verify-otp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone, otp }) });
+            const data = await res.json();
+            if(data.success) {
+                currentUser = { phone: data.phone, role: data.role };
+                localStorage.setItem('cyberstore_user', JSON.stringify(currentUser));
+                closeAuthModal(); updateAuthUI();
+                if(data.role === 'admin') showDashboard();
+            }
         }
+        function logout() { currentUser = null; localStorage.removeItem('cyberstore_user'); location.reload(); }
 
-        function resetAuth() { 
-            document.getElementById('step-phone').classList.remove('hidden-el'); 
-            document.getElementById('step-otp').classList.add('hidden-el'); 
-            document.getElementById('auth-title').innerText = "تسجيل الدخول للنظام";
-        }
-
-        function logout() { 
-            currentUser = null; 
-            localStorage.removeItem('cyberstore_user'); 
-            location.reload(); 
-        }
-
-        /* ========================
-           إدارة المنتجات والمتجر
-           ======================== */
-        async function loadProducts() {
-            try {
-                const res = await fetch('/api/products');
-                allProducts = await res.json();
-                renderProducts(allProducts);
-            } catch (err) { console.error("فشل تحميل المنتجات"); }
-        }
-
+        /* Products & Cart */
+        async function loadProducts() { try { const res = await fetch('/api/products'); allProducts = await res.json(); renderProducts(allProducts); } catch (err) {} }
         function renderProducts(products) {
-            const grid = document.getElementById('products-list');
-            if (products.length === 0) { grid.innerHTML = '<p style="text-align:center; width:100%;">لا توجد منتجات.</p>'; return; }
-            grid.innerHTML = '';
+            const grid = document.getElementById('products-list'); grid.innerHTML = '';
             products.forEach(p => {
-                let avgRating = 5;
-                if(p.reviews && p.reviews.length > 0) {
-                    let sum = p.reviews.reduce((a,b) => a + b.rating, 0);
-                    avgRating = (sum / p.reviews.length).toFixed(1);
-                }
-                // استخدمنا p.id بدلاً من p._id لتوافق MySQL Sequelize
-                const productId = p.id || p._id; 
-                grid.innerHTML += `
-                    <div class="product-card">
-                        <div>
-                            <div class="product-image-wrap"><img src="${p.image || 'https://via.placeholder.com/300'}" alt="${p.name}"></div>
-                            <span style="font-size: 11px; color: var(--text-muted); background:rgba(255,255,255,0.1); padding:4px 10px; border-radius:12px;">${p.category}</span>
-                            <h3 style="margin-top:12px;">${p.name}</h3>
-                            <div class="rating" onclick="openReviewModal('${productId}')">⭐ ${avgRating}/5 (${p.reviews ? p.reviews.length : 0}) - قيّم المنتج</div>
-                            <div class="product-price">${p.price} IQD</div>
-                        </div>
-                        <button class="btn-cyber" onclick='addToCart(${JSON.stringify(p)})'>إضافة للسلة 🛒</button>
-                    </div>`;
+                grid.innerHTML += `<div class="product-card">
+                    <div><div class="product-image-wrap"><img src="${p.image}"></div><span style="font-size: 11px; color: var(--text-muted); background:rgba(255,255,255,0.1); padding:4px 10px; border-radius:12px;">${p.category}</span><h3 style="margin-top:12px;">${p.name}</h3><div class="product-price">${Number(p.price).toLocaleString()} IQD</div><div class="rating" onclick="openReviewModal('${p.id || p._id}')" style="cursor:pointer; font-size:12px; color:var(--accent-gold);">⭐ تقييم المنتج</div></div>
+                    <button class="btn-cyber" onclick='addToCart(${JSON.stringify(p)})'>إضافة للسلة 🛒</button></div>`;
             });
         }
-
-        function filterProducts(category) {
-            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
-            if(category === 'الكل') renderProducts(allProducts);
-            else renderProducts(allProducts.filter(p => p.category === category));
-        }
-
-        function searchProducts() {
-            const term = document.getElementById('search-input').value.toLowerCase();
-            renderProducts(allProducts.filter(p => p.name.toLowerCase().includes(term)));
-        }
-
-        function openReviewModal(id) {
-            document.getElementById('review-product-id').value = id;
-            document.getElementById('review-modal').classList.add('active');
-        }
-
-        async function submitReview() {
-            const id = document.getElementById('review-product-id').value;
-            const userName = document.getElementById('review-name').value || 'عميل المتجر';
-            const rating = document.getElementById('review-rating').value;
-            const comment = document.getElementById('review-comment').value;
-            try {
-                await fetch(`/api/products/${id}/review`, { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({userName, rating, comment}) });
-                alert("تم استلام تقييمك بنجاح!");
-                document.getElementById('review-modal').classList.remove('active');
-                loadProducts();
-            } catch(e) { alert("حدث خطأ أثناء التقييم"); }
-        }
-
-        /* ========================
-           السلة والدفع
-           ======================== */
+        function filterProducts(category) { document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active')); event.target.classList.add('active'); if(category === 'الكل') renderProducts(allProducts); else renderProducts(allProducts.filter(p => p.category === category)); }
+        function searchProducts() { const term = document.getElementById('search-input').value.toLowerCase(); renderProducts(allProducts.filter(p => p.name.toLowerCase().includes(term))); }
         function addToCart(product) { userCart.push(product); document.getElementById('cart-count').innerText = userCart.length; updateCartModal(); }
         function openCartModal() { document.getElementById('cart-modal').classList.add('active'); updateCartModal(); }
         function closeCartModal() { document.getElementById('cart-modal').classList.remove('active'); }
-        
         function updateCartModal() {
             const cont = document.getElementById('cart-items-container');
-            if (userCart.length === 0) { cont.innerHTML = '<p style="text-align:center;">السلة فارغة حالياً</p>'; document.getElementById('cart-total').innerText='0 IQD'; return; }
-            cont.innerHTML = ''; let sum = 0;
-            userCart.forEach((item, i) => {
-                sum += Number(item.price.replace(/[^0-9]/g, '')) || 0;
-                cont.innerHTML += `<div class="cart-item"><span>${item.name}</span><span style="color:var(--primary-neon); font-weight:bold;">${item.price}</span><button style="background:none;border:none;color:var(--accent-red);cursor:pointer;font-size:16px;" onclick="removeFromCart(${i})">✕</button></div>`;
-            });
-            let finalTotal = sum * discountMultiplier;
-            document.getElementById('cart-total').innerText = finalTotal.toLocaleString() + ' IQD' + (discountMultiplier < 1 ? ' (تم الخصم)' : '');
+            if (userCart.length === 0) { cont.innerHTML = '<p style="text-align:center;">السلة فارغة</p>'; calcTotal=0; updateInvoiceUI(); return; }
+            cont.innerHTML = ''; calcSubtotal = 0;
+            userCart.forEach((item, i) => { calcSubtotal += Number(item.price) || 0; cont.innerHTML += `<div style="display:flex; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:5px;"><span>${item.name}</span><span style="color:var(--primary-neon);">${Number(item.price).toLocaleString()}</span><button style="background:none;border:none;color:var(--accent-red);cursor:pointer;" onclick="removeFromCart(${i})">✕</button></div>`; });
+            updateInvoiceUI();
         }
-
+        function updateInvoiceUI() {
+            calcDiscount = calcSubtotal * (1 - discountMultiplier); calcTotal = calcSubtotal - calcDiscount + (userCart.length > 0 ? calcShipping : 0);
+            document.getElementById('summ-subtotal').innerText = calcSubtotal.toLocaleString() + ' IQD';
+            document.getElementById('summ-discount').innerText = '-' + calcDiscount.toLocaleString() + ' IQD';
+            document.getElementById('summ-shipping').innerText = (userCart.length > 0 ? calcShipping.toLocaleString() : '0') + ' IQD';
+            document.getElementById('summ-total').innerText = calcTotal.toLocaleString() + ' IQD';
+        }
         function removeFromCart(i) { userCart.splice(i, 1); document.getElementById('cart-count').innerText = userCart.length; updateCartModal(); }
-
         async function applyCoupon() {
-            const code = document.getElementById('promo-code').value.toUpperCase();
-            if(!code) return;
-            try {
-                const res = await fetch('/api/validate-coupon', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({code}) });
-                const data = await res.json();
-                if(data.success) {
-                    alert(`تم تفعيل الخصم بنسبة ${data.discount}% !`);
-                    discountMultiplier = 1 - (data.discount / 100);
-                    updateCartModal();
-                } else { alert(data.message || "الكود غير صالح"); }
-            } catch(e) {}
+            const code = document.getElementById('promo-code').value.toUpperCase(); if(!code) return;
+            const res = await fetch('/api/validate-coupon', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({code}) });
+            const data = await res.json();
+            if(data.success) { alert(`تم تفعيل الخصم ${data.discount}%`); discountMultiplier = 1 - (data.discount / 100); updateCartModal(); } else alert("كود غير صالح");
         }
 
+        /* PayPal & Checkout */
         function openCheckoutModal() { if(userCart.length===0) return; closeCartModal(); document.getElementById('checkout-modal').classList.add('active'); }
         function closeCheckoutModal() { document.getElementById('checkout-modal').classList.remove('active'); document.getElementById('payment-processor').style.display = 'none'; }
         
         function selectPayment(element, method) {
             document.querySelectorAll('.pay-method').forEach(el => el.classList.remove('selected'));
-            element.classList.add('selected');
-            document.getElementById('selected-payment').value = method;
+            element.classList.add('selected'); document.getElementById('selected-payment').value = method;
+            
+            const paypalContainer = document.getElementById('paypal-button-container');
+            const normalButton = document.getElementById('normal-checkout-btn');
+            
+            if (method === 'PayPal') { 
+                paypalContainer.style.display = 'block'; 
+                normalButton.style.display = 'none'; 
+                renderPayPalButton(); 
+            } else { 
+                paypalContainer.style.display = 'none'; 
+                normalButton.style.display = 'block'; 
+                paypalContainer.innerHTML = ''; 
+            }
         }
 
-        async function submitFinalOrder() {
-            const name = document.getElementById('cust-name').value;
-            const phone = document.getElementById('cust-phone').value;
-            const address = document.getElementById('cust-address').value;
-            const method = document.getElementById('selected-payment').value;
-            if(!name || !phone || !address) return alert("الرجاء تعبئة بيانات التوصيل بدقة.");
+        function renderPayPalButton() {
+            document.getElementById('paypal-button-container').innerHTML = '';
+            // تحويل الدينار العراقي إلى دولار (باحتساب سعر صرف تقريبي 1500 دينار للدولار)
+            let totalUSD = (calcTotal / 1500).toFixed(2);
+            if(totalUSD <= 0) return;
 
-            if(method !== 'الدفع عند الاستلام') {
-                const processor = document.getElementById('payment-processor');
-                processor.style.display = 'flex';
+            paypal.Buttons({
+                createOrder: function(data, actions) {
+                    return fetch('/api/paypal/create-order', { 
+                        method: 'POST', headers: { 'Content-Type': 'application/json' }, 
+                        body: JSON.stringify({ totalInUSD: totalUSD }) 
+                    }).then(res => res.json()).then(orderData => orderData.id);
+                },
+                onApprove: function(data, actions) {
+                    document.getElementById('process-text').innerText = "جاري تأكيد الدفع من بايبال..."; 
+                    document.getElementById('payment-processor').style.display = 'flex';
+                    
+                    return fetch('/api/paypal/capture-order', { 
+                        method: 'POST', headers: { 'Content-Type': 'application/json' }, 
+                        body: JSON.stringify({ orderID: data.orderID }) 
+                    }).then(res => res.json()).then(captureData => {
+                        if (captureData.success) {
+                            submitFinalOrder(true);
+                        } else { 
+                            alert("فشلت عملية الدفع."); 
+                            document.getElementById('payment-processor').style.display = 'none'; 
+                        }
+                    });
+                }
+            }).render('#paypal-button-container');
+        }
+
+        async function submitFinalOrder(isPaidViaPayPal = false) {
+            const name = document.getElementById('cust-name').value; 
+            const phone = document.getElementById('cust-phone').value;
+            const address = document.getElementById('cust-address').value; 
+            let method = document.getElementById('selected-payment').value;
+            if(!name || !phone || !address) return alert("أكمل البيانات");
+
+            let paymentStatus = method === 'الدفع عند الاستلام' ? 'معلق' : 'مكتمل';
+            
+            if (isPaidViaPayPal) { 
+                method = 'PayPal'; 
+                paymentStatus = 'مكتمل'; 
+            } else if (method !== 'الدفع عند الاستلام') {
+                const processor = document.getElementById('payment-processor'); processor.style.display = 'flex';
                 document.getElementById('process-text').innerText = `جاري الاتصال بـ ${method}...`;
-                await new Promise(r => setTimeout(r, 1500));
-                document.getElementById('process-text').innerText = "جاري المصادقة الأمنية...";
-                await new Promise(r => setTimeout(r, 1500));
-                document.getElementById('process-text').innerText = "تم الدفع بنجاح!";
-                await new Promise(r => setTimeout(r, 1000));
+                await new Promise(r => setTimeout(r, 1500)); document.getElementById('process-text').innerText = "تم الدفع بنجاح!"; await new Promise(r => setTimeout(r, 1000));
             }
 
-            let sum = 0; userCart.forEach(i => sum += Number(i.price.replace(/[^0-9]/g, '')) || 0);
-            let finalTotal = (sum * discountMultiplier).toLocaleString() + ' IQD';
-
             try {
-                const res = await fetch('/api/orders', {
-                    method: 'POST', headers:{'Content-Type':'application/json'},
-                    body: JSON.stringify({ customerName: name, customerPhone: phone, customerAddress: address, paymentMethod: method, notes: '', items: userCart, total: finalTotal, discountApplied: discountMultiplier < 1 })
+                const res = await fetch('/api/orders', { 
+                    method: 'POST', headers:{'Content-Type':'application/json'}, 
+                    body: JSON.stringify({ customerName: name, customerPhone: phone, customerAddress: address, paymentMethod: method, notes: '', items: userCart, subtotal: calcSubtotal, discountAmount: calcDiscount, shippingFee: calcShipping, finalTotal: calcTotal, status: 'قيد المعالجة ⏳', paymentStatus }) 
                 });
-                const data = await res.json();
-                if(data.success) {
-                    alert("🌟 تم تسجيل طلبك بنجاح!");
-                    userCart=[]; document.getElementById('cart-count').innerText='0'; discountMultiplier = 1; closeCheckoutModal();
-                    document.getElementById('cust-name').value = ''; document.getElementById('cust-phone').value = ''; document.getElementById('cust-address').value = '';
+                if((await res.json()).success) { 
+                    alert("🌟 تم تسجيل طلبك بنجاح!"); 
+                    userCart=[]; document.getElementById('cart-count').innerText='0'; discountMultiplier=1; 
+                    closeCheckoutModal(); 
                 }
-            } catch(e) { alert("حدث خطأ بالاتصال"); }
-        }
-
-        /* ========================
-           تتبع الطلبات
-           ======================== */
-        function openTrackModal() { document.getElementById('track-modal').classList.add('active'); }
-        function closeTrackModal() { document.getElementById('track-modal').classList.remove('active'); }
-        
-        function getStatusColorClass(status) {
-            if(status.includes('معالجة')) return 'status-processing';
-            if(status.includes('شحن')) return 'status-shipped';
-            if(status.includes('توصيل')) return 'status-delivered';
-            if(status.includes('ملغي')) return 'status-cancelled';
-            return 'status-processing';
-        }
-
-        async function trackMyOrder() {
-            const phone = document.getElementById('track-phone').value;
-            if(!phone) return alert("أدخل رقم الهاتف للبحث");
-            try {
-                const res = await fetch('/api/track-order', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({phone}) });
-                const data = await res.json();
-                const cont = document.getElementById('track-results');
-                if(data.orders && data.orders.length > 0) {
-                    cont.innerHTML = data.orders.map(o => `
-                        <div style="background:rgba(255,255,255,0.05); padding:15px; border-radius:10px; margin-bottom:12px; border-right: 4px solid var(--primary-neon);">
-                            <p style="margin-bottom:8px; font-size:13px; color:var(--text-muted);">رقم الطلب: #${(o.id || o._id).toString().substring(0,8)}</p>
-                            <p style="margin-bottom:10px;">بتاريخ: ${new Date(o.createdAt).toLocaleDateString()}</p>
-                            <div><span class="status-badge ${getStatusColorClass(o.status)}">${o.status}</span></div>
-                        </div>`).join('');
-                } else { cont.innerHTML = '<p style="text-align:center; color:var(--accent-red);">لا توجد طلبات مسجلة بهذا الرقم.</p>'; }
-            } catch(e) { alert("خطأ في جلب البيانات"); }
-        }
-
-        /* ========================
-           لوحة تحكم الشركات (Admin Dashboard)
-           ======================== */
-        function showDashboard() {
-            document.getElementById('store-view').classList.add('hidden-el'); 
-            document.getElementById('main-nav').classList.add('hidden-el');
-            const dash = document.getElementById('dashboard-view');
-            dash.classList.remove('hidden-el');
-            dash.classList.add('active-dashboard');
-            switchTab('analytics');
-        }
-
-        function switchTab(tab) {
-            document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active-section'));
-            document.querySelectorAll('.sidebar-links a').forEach(a => a.classList.remove('active'));
-            document.getElementById('sec-' + tab).classList.add('active-section');
-            document.getElementById('tab-' + tab).classList.add('active');
-            
-            if(tab === 'view-orders') loadAdminOrders();
-            if(tab === 'analytics') loadAdminStats();
-        }
-
-        async function loadAdminStats() {
-            try {
-                const res = await fetch('/api/stats'); 
-                const stats = await res.json();
-                document.getElementById('stat-orders').innerText = stats.ordersCount;
-                document.getElementById('stat-products').innerText = stats.productsCount;
-                document.getElementById('stat-pending').innerText = stats.pendingOrders;
-                
-                if(adminChart) adminChart.destroy();
-                const ctx = document.getElementById('salesChart').getContext('2d');
-                adminChart = new Chart(ctx, {
-                    type: 'bar',
-                    data: { 
-                        labels: ['إجمالي المنتجات', 'الطلبات الكلية', 'طلبات معلقة'], 
-                        datasets: [{ 
-                            label: 'إحصائيات النظام', 
-                            data: [stats.productsCount, stats.ordersCount, stats.pendingOrders], 
-                            backgroundColor: ['#00f3ff', '#bc13fe', '#00ff66'],
-                            borderRadius: 6
-                        }] 
-                    },
-                    options: { 
-                        responsive: true, 
-                        plugins: { legend: { labels: { color: 'white', font: {family: 'Tajawal'} } } }, 
-                        scales: { y: { ticks: { color: 'rgba(255,255,255,0.7)' }, grid: {color: 'rgba(255,255,255,0.1)'} }, x: { ticks: { color: 'white', font: {family: 'Tajawal'} }, grid: {display: false} } } 
-                    }
-                });
             } catch(e) {}
         }
 
+        /* Tracking & Reviews */
+        function openTrackModal() { document.getElementById('track-modal').classList.add('active'); }
+        function closeTrackModal() { document.getElementById('track-modal').classList.remove('active'); }
+        async function trackMyOrder() {
+            const phone = document.getElementById('track-phone').value; if(!phone) return;
+            const res = await fetch('/api/track-order', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({phone}) });
+            const data = await res.json(); const cont = document.getElementById('track-results');
+            if(data.orders && data.orders.length > 0) {
+                cont.innerHTML = data.orders.map(o => `<div style="background:rgba(255,255,255,0.05); padding:15px; border-radius:10px; margin-bottom:12px; border-right: 4px solid var(--primary-neon);"><p style="font-size:13px; color:var(--text-muted);">المعاملة: ${o.transactionId}</p><p>بتاريخ: ${new Date(o.createdAt).toLocaleDateString()} | <b>${o.finalTotal.toLocaleString()} IQD</b></p><div><span class="status-badge status-processing">${o.status}</span></div></div>`).join('');
+            } else cont.innerHTML = '<p>لا توجد طلبات.</p>';
+        }
+
+        function openReviewModal(id) { document.getElementById('review-product-id').value = id; document.getElementById('review-modal').classList.add('active'); }
+        async function submitReview() {
+            const id = document.getElementById('review-product-id').value; const userName = document.getElementById('review-name').value || 'عميل'; const rating = document.getElementById('review-rating').value; const comment = document.getElementById('review-comment').value;
+            await fetch(`/api/products/${id}/review`, { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({userName, rating, comment}) });
+            alert("تم التقييم!"); document.getElementById('review-modal').classList.remove('active'); loadProducts();
+        }
+
+        /* Admin */
+        function showDashboard() { document.getElementById('store-view').classList.add('hidden-el'); document.getElementById('main-nav').classList.add('hidden-el'); document.getElementById('dashboard-view').classList.add('active-dashboard'); switchTab('analytics'); }
+        function switchTab(tab) { document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active-section')); document.querySelectorAll('.sidebar-links a').forEach(a => a.classList.remove('active')); document.getElementById('sec-' + tab).classList.add('active-section'); document.getElementById('tab-' + tab).classList.add('active'); if(tab === 'view-orders') loadAdminOrders(); if(tab === 'analytics') loadAdminStats(); }
+        async function loadAdminStats() {
+            const res = await fetch('/api/stats'); const stats = await res.json();
+            document.getElementById('stat-orders').innerText = stats.ordersCount; document.getElementById('stat-revenue').innerText = (stats.totalRevenue || 0).toLocaleString(); document.getElementById('stat-pending').innerText = stats.pendingOrders;
+        }
         async function addNewProduct() {
-            const name = document.getElementById('p-name').value; 
-            const price = document.getElementById('p-price').value;
-            const category = document.getElementById('p-category').value; 
-            const image = document.getElementById('p-image').value;
-            if(!name || !price) return alert("اسم المنتج والسعر إجباريان");
-            try {
-                await fetch('/api/products', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, price, image, category }) });
-                alert("تم إضافة المنتج للمستودع بنجاح!"); 
-                document.getElementById('p-name').value = ''; document.getElementById('p-price').value = ''; document.getElementById('p-image').value = '';
-                loadProducts();
-            } catch(e) { alert("خطأ أثناء النشر"); }
+            const name = document.getElementById('p-name').value; const price = document.getElementById('p-price').value; const category = document.getElementById('p-category').value; const image = document.getElementById('p-image').value;
+            await fetch('/api/products', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, price, image, category }) }); alert("تم النشر!"); loadProducts();
         }
 
+        let adminOrdersData = [];
         async function loadAdminOrders() {
-            try {
-                const res = await fetch('/api/orders'); 
-                const orders = await res.json();
-                const tbody = document.getElementById('orders-table-body');
-                
-                if(orders.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">لا توجد طلبات في النظام</td></tr>';
-                    return;
-                }
-
-                tbody.innerHTML = orders.map(o => {
-                    const orderId = o.id || o._id;
-                    const shortId = orderId.toString().substring(0,6).toUpperCase();
-                    const itemsStr = o.items ? o.items.map(i => i.name).join('، ') : 'بدون منتجات';
-                    
-                    return `
-                    <tr>
-                        <td style="font-weight:bold; color:var(--text-muted);">#${shortId}</td>
-                        <td>
-                            <div style="font-weight:bold; color:#fff;">${o.customerName}</div>
-                            <div style="font-size:12px; color:var(--primary-neon);">${o.customerPhone}</div>
-                            <div style="font-size:11px; color:var(--text-muted); max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${o.customerAddress}">${o.customerAddress}</div>
-                        </td>
-                        <td>
-                            <div style="font-weight:bold; color:var(--secondary-neon);">${o.total}</div>
-                            <div style="font-size:12px; color:var(--text-muted);">${o.paymentMethod}</div>
-                        </td>
-                        <td style="max-width:200px; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${itemsStr}">
-                            ${itemsStr}
-                        </td>
-                        <td>
-                            <select class="select-status" onchange="updateOrderStatus('${orderId}', this.value)">
-                                <option value="قيد المعالجة ⏳" ${o.status === 'قيد المعالجة ⏳' ? 'selected' : ''}>قيد المعالجة</option>
-                                <option value="جاري الشحن 🚚" ${o.status === 'جاري الشحن 🚚' ? 'selected' : ''}>جاري الشحن</option>
-                                <option value="تم التوصيل ✅" ${o.status === 'تم التوصيل ✅' ? 'selected' : ''}>تم التوصيل</option>
-                                <option value="ملغي ❌" ${o.status === 'ملغي ❌' ? 'selected' : ''}>ملغـي</option>
-                            </select>
-                        </td>
-                    </tr>
-                    `;
-                }).join('');
-            } catch(e) {
-                document.getElementById('orders-table-body').innerHTML = '<tr><td colspan="5" style="color:var(--accent-red); text-align:center;">فشل في جلب البيانات من الخادم</td></tr>';
-            }
+            const res = await fetch('/api/orders'); adminOrdersData = await res.json();
+            const tbody = document.getElementById('orders-table-body');
+            if(adminOrdersData.length === 0) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">لا توجد طلبات</td></tr>'; return; }
+            tbody.innerHTML = adminOrdersData.map((o, index) => {
+                const paymentBadge = o.paymentStatus === 'مكتمل' ? '<span style="color:var(--accent-green); font-size:11px;">مكتمل ✅</span>' : '<span style="color:var(--accent-gold); font-size:11px;">معلق ⏳</span>';
+                return `<tr><td style="font-size:12px; font-family:monospace;">${o.transactionId}</td><td><div style="font-weight:bold;">${o.customerName}</div><div style="font-size:12px; color:var(--primary-neon);">${o.customerPhone}</div></td><td><div style="color:var(--secondary-neon); font-weight:bold;">${(o.finalTotal || 0).toLocaleString()} IQD</div><div style="font-size:12px; color:var(--text-muted);">${o.paymentMethod} (${paymentBadge})</div></td><td><select class="select-status" onchange="updateOrderStatus('${o.id}', this.value, '${o.paymentStatus}')" style="margin-bottom:5px;"><option value="قيد المعالجة ⏳" ${o.status === 'قيد المعالجة ⏳' ? 'selected' : ''}>قيد المعالجة</option><option value="جاري الشحن 🚚" ${o.status === 'جاري الشحن 🚚' ? 'selected' : ''}>جاري الشحن</option><option value="تم التوصيل ✅" ${o.status === 'تم التوصيل ✅' ? 'selected' : ''}>تم التوصيل</option><option value="ملغي ❌" ${o.status === 'ملغي ❌' ? 'selected' : ''}>ملغـي</option></select><br><button class="btn-cyber" style="padding:4px 8px; font-size:11px;" onclick="viewAdminInvoice(${index})">الفاتورة 📄</button></td></tr>`;
+            }).join('');
         }
-
-        async function updateOrderStatus(id, newStatus) {
-            try {
-                await fetch(`/api/orders/${id}/status`, { method: 'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({status: newStatus}) });
-                // عرض إشعار نجاح صغير بدل التنبيه المزعج
-                const row = event.target.closest('tr');
-                row.style.backgroundColor = 'rgba(0, 255, 102, 0.1)';
-                setTimeout(() => row.style.backgroundColor = '', 1000);
-            } catch(e) { alert("فشل التحديث"); }
+        async function updateOrderStatus(id, newStatus, currentPaymentStatus) { let paymentStatus = currentPaymentStatus; if(newStatus === 'تم التوصيل ✅') paymentStatus = 'مكتمل'; await fetch(`/api/orders/${id}/status`, { method: 'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({status: newStatus, paymentStatus}) }); }
+        function viewAdminInvoice(index) {
+            const o = adminOrdersData[index];
+            const itemsHtml = o.items ? o.items.map(i => `<div style="display:flex; justify-content:space-between; margin-bottom:5px; border-bottom:1px solid #333;"><span>${i.name}</span><span>${Number(i.price).toLocaleString()} IQD</span></div>`).join('') : '';
+            const html = `<div style="text-align:center; margin-bottom:15px; border-bottom:1px dashed var(--secondary-neon); padding-bottom:10px;"><h3 style="color:#fff;">${o.transactionId}</h3><p style="color:var(--text-muted); font-size:12px;">تاريخ: ${new Date(o.createdAt).toLocaleString()}</p></div><div style="margin-bottom:15px;"><p><b>الاسم:</b> ${o.customerName}</p><p><b>الهاتف:</b> ${o.customerPhone}</p><p><b>العنوان:</b> ${o.customerAddress}</p></div><div style="background:rgba(0,0,0,0.5); padding:10px; border-radius:8px; margin-bottom:15px;"><h4 style="color:var(--primary-neon); margin-bottom:10px;">المنتجات:</h4>${itemsHtml}</div><div class="invoice-row"><span>المجموع الفرعي:</span><span>${(o.subtotal||0).toLocaleString()} IQD</span></div><div class="invoice-row"><span>الخصم:</span><span style="color:var(--accent-red);">${(o.discountAmount||0).toLocaleString()} IQD</span></div><div class="invoice-row"><span>التوصيل:</span><span>${(o.shippingFee||0).toLocaleString()} IQD</span></div><div class="invoice-row total" style="margin-top:10px;"><span>الإجمالي المدفوع:</span><span>${(o.finalTotal||0).toLocaleString()} IQD</span></div><div style="margin-top:10px; text-align:center; color:var(--accent-green);">طريقة الدفع: ${o.paymentMethod} (${o.paymentStatus})</div>`;
+            document.getElementById('invoice-details').innerHTML = html; document.getElementById('admin-invoice-modal').classList.add('active');
         }
     </script>
 </body>
