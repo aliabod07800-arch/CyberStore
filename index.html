@@ -91,7 +91,7 @@
     <div id="store-view" class="store-container">
         <div class="cyber-hero">
             <h1>مركز التسوق التقني الأول</h1>
-            <p>منصة عالمية متكاملة، إشعارات فورية، وتحديد دقيق للمواقع الجغرافية.</p>
+            <p>منصة أمنية متكاملة، يرجى تسجيل الدخول برقم الهاتف للتمكن من الشراء.</p>
         </div>
         <div class="tools-bar">
             <div class="category-filters" id="category-filters">
@@ -168,7 +168,7 @@
         </div>
     </div>
 
-    <!-- السلة والدفع -->
+    <!-- السلة والدفع (محمية بتسجيل الدخول) -->
     <div class="modal-overlay" id="cart-modal">
         <div class="modal-box">
             <h2>السلة 🛒</h2>
@@ -183,12 +183,11 @@
                 <div style="display:flex; justify-content:space-between; margin-bottom:5px; border-bottom:1px solid #333; padding-bottom:5px;"><span>التوصيل:</span><span id="summ-shipping">5000</span></div>
                 <div style="display:flex; justify-content:space-between; margin-top:5px; font-weight:bold; color:var(--primary-neon);"><span>الإجمالي النهائي:</span><span id="summ-total">0</span></div>
             </div>
-            <button class="btn-cyber" style="width: 100%; margin-bottom: 10px;" onclick="openCheckoutModal()">متابعة الدفع 💳</button>
+            <button class="btn-cyber" style="width: 100%; margin-bottom: 10px;" onclick="openCheckoutModal()">متابعة الشحن والدفع 💳</button>
             <button style="background:none; border:none; color:var(--text-muted); width:100%; cursor:pointer;" onclick="closeCartModal()">إغلاق</button>
         </div>
     </div>
 
-    <!-- نافذة الشحن مع زر الخريطة -->
     <div class="modal-overlay" id="checkout-modal">
         <div class="modal-box">
             <div id="payment-processor" class="processing-overlay">
@@ -196,14 +195,13 @@
             </div>
             <h2>بيانات الشحن والموقع الدقيق 🔒</h2>
             <div class="input-group"><label>الاسم الثنائي (مطلوب)</label><input type="text" id="cust-name" placeholder="الاسم الحقيقي لضمان التوصيل"></div>
-            <div class="input-group"><label>رقم الهاتف العراقي (مطلوب)</label><input type="tel" id="cust-phone" placeholder="07XXXXXXXXX"></div>
+            <div class="input-group"><label>رقم الهاتف المسجل</label><input type="tel" id="cust-phone" readonly style="color: var(--primary-neon); background: rgba(0,243,255,0.05);"></div>
             
             <div class="input-group">
                 <label>العنوان بالتفصيل أو نقطة الدالة</label>
                 <textarea id="cust-address" rows="2" placeholder="المحافظة، المنطقة، أقرب نقطة دالة"></textarea>
             </div>
 
-            <!-- زر خريطة جوجل لتحديد الموقع الجغرافي الفوري -->
             <div class="input-group">
                 <button type="button" class="btn-cyber btn-alt" style="width: 100%; font-size: 13px; padding: 10px;" onclick="getGeoLocation()">📍 تحديد موقعي الحالي GPS (موصى به)</button>
                 <input type="text" id="cust-gps" placeholder="إحداثيات الموقع (ستظهر هنا تلقائياً)" readonly style="margin-top: 8px; font-size: 12px; color: var(--primary-neon);">
@@ -222,17 +220,18 @@
         </div>
     </div>
 
-    <!-- المصادقة والتتبع -->
+    <!-- المصادقة الإجبارية -->
     <div class="modal-overlay" id="auth-modal">
         <div class="modal-box">
-            <h2 id="auth-title">تسجيل الدخول الآمن</h2>
+            <h2 id="auth-title">تسجيل الدخول الإجباري 🔒</h2>
+            <p style="text-align: center; color: var(--text-muted); font-size: 13px; margin-bottom: 15px;">يجب تسجيل الدخول برقم هاتفك العراقي للتمكن من فتح السلة والشراء.</p>
             <div id="step-phone">
                 <div class="input-group"><label>رقم الهاتف العراقي</label><input type="tel" id="phone-number" placeholder="07XXXXXXXXX"></div>
-                <button class="btn-cyber" style="width: 100%; padding: 12px;" onclick="sendWhatsAppCode()">طلب الكود عبر الواتساب 📱</button>
+                <button class="btn-cyber" style="width: 100%; padding: 12px;" onclick="sendWhatsAppCode()">طلب كود التحقق عبر الواتساب 📱</button>
             </div>
             <div id="step-otp" class="hidden-el">
                 <div class="input-group"><label>الرمز السري</label><input type="text" id="otp-code" style="text-align: center; letter-spacing: 5px; font-size: 20px;"></div>
-                <button class="btn-cyber" style="width: 100%; padding: 12px;" onclick="verifyOTP()">دخول 🚀</button>
+                <button class="btn-cyber" style="width: 100%; padding: 12px;" onclick="verifyOTP()">تأكيد ودخول 🚀</button>
             </div>
             <button style="background:none; border:none; color:var(--text-muted); margin-top:20px; cursor:pointer; width:100%;" onclick="closeAuthModal()">إغلاق</button>
         </div>
@@ -304,12 +303,9 @@
             return regex.test(cleanPhone);
         }
 
-        // سحب إحداثيات الخريطة الفورية (GPS)
         function getGeoLocation() {
-            if (!navigator.geolocation) {
-                return alert("متصفحك لا يدعم تحديد الموقع الجغرافي.");
-            }
-            alert("جاري تحديد موقعك الجغرافي بدقة، يرجى الموافقة على إذن الموقع (Allow Location)...");
+            if (!navigator.geolocation) return alert("متصفحك لا يدعم تحديد الموقع الجغرافي.");
+            alert("جاري تحديد موقعك الجغرافي...");
             navigator.geolocation.getCurrentPosition(
                 (position) => {
                     const lat = position.coords.latitude;
@@ -317,9 +313,7 @@
                     customerGPSCoords = `https://maps.google.com/?q=${lat},${lon}`;
                     document.getElementById('cust-gps').value = `تم تحديد الموقع بنجاح ✅ (${lat.toFixed(4)}, ${lon.toFixed(4)})`;
                 },
-                (error) => {
-                    alert("تعذر تحديد الموقع. يرجى تفعيل خدمات الموقع (GPS) في هاتفك أو متصفحك.");
-                }
+                (error) => { alert("تعذر تحديد الموقع. يرجى تفعيل خدمات الموقع (GPS)."); }
             );
         }
 
@@ -342,12 +336,13 @@
                 currentUser = { phone: data.phone, role: data.role };
                 localStorage.setItem('cyberstore_user', JSON.stringify(currentUser));
                 closeAuthModal(); updateAuthUI();
+                alert("تم تسجيل الدخول بنجاح! يمكنك الآن تصفح السلة وإتمام الشراء.");
                 if(data.role === 'admin') showDashboard();
             } else alert("الرمز غير صحيح");
         }
         function logout() { currentUser = null; localStorage.removeItem('cyberstore_user'); location.reload(); }
 
-        /* المنتجات والسلة */
+        /* المنتجات والسلة المحمية بتسجيل الدخول */
         async function loadProducts() { try { const res = await fetch('/api/products'); allProducts = await res.json(); renderProducts(allProducts); } catch (err) {} }
         function renderProducts(products) {
             const grid = document.getElementById('products-list'); grid.innerHTML = '';
@@ -359,8 +354,29 @@
         }
         function filterProducts(category) { document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active')); event.target.classList.add('active'); if(category === 'الكل') renderProducts(allProducts); else renderProducts(allProducts.filter(p => p.category === category)); }
         function searchProducts() { const term = document.getElementById('search-input').value.toLowerCase(); renderProducts(allProducts.filter(p => p.name.toLowerCase().includes(term))); }
-        function addToCart(product) { userCart.push(product); document.getElementById('cart-count').innerText = userCart.length; updateCartModal(); }
-        function openCartModal() { document.getElementById('cart-modal').classList.add('active'); updateCartModal(); }
+        
+        function addToCart(product) { 
+            // التحقق الإجباري من تسجيل الدخول عند الإضافة للسلة أو محاولة الشراء
+            if (!currentUser) {
+                alert("⚠️ تنبيه أمني: يرجى تسجيل الدخول برقم هاتفك أولاً للتمكن من إضافة المنتجات للسلة وإتمام الشراء.");
+                openAuthModal();
+                return;
+            }
+            userCart.push(product); 
+            document.getElementById('cart-count').innerText = userCart.length; 
+            alert("تمت إضافة المنتج إلى السلة بنجاح! 🛒");
+        }
+
+        function openCartModal() { 
+            if (!currentUser) {
+                alert("⚠️ تنبيه أمني: يرجى تسجيل الدخول أولاً لعرض محتويات السلة.");
+                openAuthModal();
+                return;
+            }
+            document.getElementById('cart-modal').classList.add('active'); 
+            updateCartModal(); 
+        }
+
         function closeCartModal() { document.getElementById('cart-modal').classList.remove('active'); }
         function updateCartModal() {
             const cont = document.getElementById('cart-items-container');
@@ -384,7 +400,15 @@
             if(data.success) { alert(`تم تفعيل الخصم ${data.discount}%`); discountMultiplier = 1 - (data.discount / 100); updateCartModal(); } else alert("كود غير صالح");
         }
 
-        function openCheckoutModal() { if(userCart.length===0) return; closeCartModal(); document.getElementById('checkout-modal').classList.add('active'); }
+        function openCheckoutModal() { 
+            if(!currentUser) return openAuthModal();
+            if(userCart.length===0) return; 
+            closeCartModal(); 
+            document.getElementById('checkout-modal').classList.add('active'); 
+            // تعبئة رقم الهاتف المسجل تلقائياً لراحة العميل
+            document.getElementById('cust-phone').value = currentUser.phone;
+        }
+
         function closeCheckoutModal() { document.getElementById('checkout-modal').classList.remove('active'); document.getElementById('payment-processor').style.display = 'none'; }
         
         function selectPayment(element, method) {
@@ -399,7 +423,7 @@
             const method = document.getElementById('selected-payment').value;
             
             if(name.length < 5 || !name.includes(' ')) return alert("عذراً، يجب إدخال اسمك الثنائي الحقيقي لضمان التوصيل السليم.");
-            if(!isValidIraqiPhone(phone)) return alert("يرجى إدخال رقم هاتف عراقي صحيح.");
+            if(!isValidIraqiPhone(phone)) return alert("رقم الهاتف غير مسجل بشكل صحيح.");
             if(address.length < 5) return alert("يرجى كتابة تفاصيل العنوان.");
 
             let finalAddressWithGPS = address;
@@ -451,7 +475,7 @@
             } else cont.innerHTML = '<p>لا توجد طلبات مسجلة بهذا الرقم.</p>';
         }
 
-        /* لوحة الإدارة مع رابط خرائط جوجل في جدول الطلبات */
+        /* لوحة الإدارة */
         function showDashboard() { document.getElementById('store-view').classList.add('hidden-el'); document.getElementById('main-nav').classList.add('hidden-el'); document.getElementById('dashboard-view').classList.add('active-dashboard'); switchTab('analytics'); }
         function switchTab(tab) { document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active-section')); document.querySelectorAll('.sidebar-links a').forEach(a => a.classList.remove('active')); document.getElementById('sec-' + tab).classList.add('active-section'); document.getElementById('tab-' + tab).classList.add('active'); if(tab === 'view-orders') loadAdminOrders(); if(tab === 'view-users') loadAdminUsers(); if(tab === 'analytics') loadAdminStats(); }
         
@@ -495,8 +519,6 @@
             if(orders.length === 0) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">لا توجد طلبات</td></tr>'; return; }
             tbody.innerHTML = orders.map((o) => {
                 const paymentBadge = o.paymentStatus === 'مكتمل' ? '<span style="color:var(--accent-green); font-size:11px;">مكتمل ✅</span>' : '<span style="color:var(--accent-gold); font-size:11px;">معلق ⏳</span>';
-                
-                // استخراج رابط الخريطة إن وجد في العنوان
                 let addressText = o.customerAddress;
                 let mapLink = '';
                 if (addressText.includes('https://maps.google.com/')) {
