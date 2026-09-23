@@ -91,7 +91,7 @@
     <div id="store-view" class="store-container">
         <div class="cyber-hero">
             <h1>مركز التسوق التقني الأول</h1>
-            <p>منصة عالمية متكاملة، إشعارات فورية عبر الواتساب، وتتبع دقيق للمدير والعملاء.</p>
+            <p>منصة عالمية متكاملة، إشعارات فورية، وتحديد دقيق للمواقع الجغرافية.</p>
         </div>
         <div class="tools-bar">
             <div class="category-filters" id="category-filters">
@@ -147,10 +147,10 @@
             </div>
 
             <div id="sec-view-orders" class="admin-section">
-                <h2 style="margin-bottom: 25px; text-shadow: var(--glow-cyan);">تتبع الشحنات والمدفوعات</h2>
+                <h2 style="margin-bottom: 25px; text-shadow: var(--glow-cyan);">تتبع الشحنات والمدفوعات والمواقع الجغرافية</h2>
                 <div class="enterprise-table-container">
                     <table class="enterprise-table">
-                        <thead><tr><th>TXN</th><th>بيانات العميل</th><th>الدفع</th><th>تحديث الحالة</th></tr></thead>
+                        <thead><tr><th>TXN</th><th>بيانات العميل والموقع</th><th>الدفع</th><th>تحديث الحالة</th></tr></thead>
                         <tbody id="orders-table-body"></tbody>
                     </table>
                 </div>
@@ -188,15 +188,26 @@
         </div>
     </div>
 
+    <!-- نافذة الشحن مع زر الخريطة -->
     <div class="modal-overlay" id="checkout-modal">
         <div class="modal-box">
             <div id="payment-processor" class="processing-overlay">
                 <div class="spinner"></div><h3 style="color: var(--primary-neon); margin-top:20px;" id="process-text">جاري المعالجة...</h3>
             </div>
-            <h2>البيانات الدقيقة للشحن 🔒</h2>
+            <h2>بيانات الشحن والموقع الدقيق 🔒</h2>
             <div class="input-group"><label>الاسم الثنائي (مطلوب)</label><input type="text" id="cust-name" placeholder="الاسم الحقيقي لضمان التوصيل"></div>
             <div class="input-group"><label>رقم الهاتف العراقي (مطلوب)</label><input type="tel" id="cust-phone" placeholder="07XXXXXXXXX"></div>
-            <div class="input-group"><label>العنوان بالتفصيل</label><textarea id="cust-address" rows="2" placeholder="المحافظة، المنطقة، أقرب نقطة دالة"></textarea></div>
+            
+            <div class="input-group">
+                <label>العنوان بالتفصيل أو نقطة الدالة</label>
+                <textarea id="cust-address" rows="2" placeholder="المحافظة، المنطقة، أقرب نقطة دالة"></textarea>
+            </div>
+
+            <!-- زر خريطة جوجل لتحديد الموقع الجغرافي الفوري -->
+            <div class="input-group">
+                <button type="button" class="btn-cyber btn-alt" style="width: 100%; font-size: 13px; padding: 10px;" onclick="getGeoLocation()">📍 تحديد موقعي الحالي GPS (موصى به)</button>
+                <input type="text" id="cust-gps" placeholder="إحداثيات الموقع (ستظهر هنا تلقائياً)" readonly style="margin-top: 8px; font-size: 12px; color: var(--primary-neon);">
+            </div>
             
             <label style="color:var(--text-muted); font-size:13px; margin-bottom:8px; display:block;">اختر بوابة الدفع:</label>
             <div class="payment-methods">
@@ -206,13 +217,7 @@
             </div>
             <input type="hidden" id="selected-payment" value="الدفع عند الاستلام">
             
-            <!-- حقل إضافي يظهر فقط عند اختيار بايبال -->
-            <div id="paypal-email-group" class="input-group hidden-el">
-                <label>البريد الإلكتروني لحساب بايبال (PayPal Email)</label>
-                <input type="email" id="paypal-user-email" placeholder="name@example.com">
-            </div>
-
-            <button id="normal-checkout-btn" class="btn-cyber btn-alt" style="width: 100%; padding: 12px; margin-bottom: 10px;" onclick="submitFinalOrder()">تأكيد الطلب نهائياً ✅</button>
+            <button id="normal-checkout-btn" class="btn-cyber" style="width: 100%; padding: 12px; margin-bottom: 10px;" onclick="submitFinalOrder()">تأكيد الطلب نهائياً ✅</button>
             <button style="background:none; border:none; color:var(--text-muted); cursor:pointer; width:100%;" onclick="closeCheckoutModal()">الرجوع</button>
         </div>
     </div>
@@ -246,6 +251,7 @@
     <script>
         let allProducts = [], userCart = [], currentUser = null, discountMultiplier = 1;
         let calcSubtotal = 0, calcDiscount = 0, calcShipping = 5000, calcTotal = 0;
+        let customerGPSCoords = '';
         
         const socket = io();
         socket.on('live_update', (count) => {
@@ -296,6 +302,25 @@
             const cleanPhone = phone.replace(/[\s\-]/g, '');
             const regex = /^(07[0-9]{9}|\+9647[0-9]{8}|9647[0-9]{8})$/;
             return regex.test(cleanPhone);
+        }
+
+        // سحب إحداثيات الخريطة الفورية (GPS)
+        function getGeoLocation() {
+            if (!navigator.geolocation) {
+                return alert("متصفحك لا يدعم تحديد الموقع الجغرافي.");
+            }
+            alert("جاري تحديد موقعك الجغرافي بدقة، يرجى الموافقة على إذن الموقع (Allow Location)...");
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+                    customerGPSCoords = `https://maps.google.com/?q=${lat},${lon}`;
+                    document.getElementById('cust-gps').value = `تم تحديد الموقع بنجاح ✅ (${lat.toFixed(4)}, ${lon.toFixed(4)})`;
+                },
+                (error) => {
+                    alert("تعذر تحديد الموقع. يرجى تفعيل خدمات الموقع (GPS) في هاتفك أو متصفحك.");
+                }
+            );
         }
 
         async function sendWhatsAppCode() { 
@@ -359,20 +384,12 @@
             if(data.success) { alert(`تم تفعيل الخصم ${data.discount}%`); discountMultiplier = 1 - (data.discount / 100); updateCartModal(); } else alert("كود غير صالح");
         }
 
-        /* إدارة بوابات الدفع وإظهار إيميل بايبال عند الحاجة */
         function openCheckoutModal() { if(userCart.length===0) return; closeCartModal(); document.getElementById('checkout-modal').classList.add('active'); }
         function closeCheckoutModal() { document.getElementById('checkout-modal').classList.remove('active'); document.getElementById('payment-processor').style.display = 'none'; }
         
         function selectPayment(element, method) {
             document.querySelectorAll('.pay-method').forEach(el => el.classList.remove('selected'));
             element.classList.add('selected'); document.getElementById('selected-payment').value = method;
-            
-            const paypalGroup = document.getElementById('paypal-email-group');
-            if (method === 'PayPal') {
-                paypalGroup.classList.remove('hidden-el');
-            } else {
-                paypalGroup.classList.add('hidden-el');
-            }
         }
 
         async function submitFinalOrder() {
@@ -380,21 +397,22 @@
             const phone = document.getElementById('cust-phone').value.trim();
             const address = document.getElementById('cust-address').value.trim(); 
             const method = document.getElementById('selected-payment').value;
-            const paypalEmail = document.getElementById('paypal-user-email').value.trim();
             
             if(name.length < 5 || !name.includes(' ')) return alert("عذراً، يجب إدخال اسمك الثنائي الحقيقي لضمان التوصيل السليم.");
             if(!isValidIraqiPhone(phone)) return alert("يرجى إدخال رقم هاتف عراقي صحيح.");
-            if(address.length < 8) return alert("يرجى كتابة العنوان بشكل واضح ومفصل.");
-            if(method === 'PayPal' && (!paypalEmail || !paypalEmail.includes('@'))) return alert("يرجى إدخال البريد الإلكتروني الصحيح لحساب بايبال.");
+            if(address.length < 5) return alert("يرجى كتابة تفاصيل العنوان.");
+
+            let finalAddressWithGPS = address;
+            if (customerGPSCoords) {
+                finalAddressWithGPS += ` | 🌍 إحداثيات الخريطة: ${customerGPSCoords}`;
+            }
 
             let paymentStatus = method === 'الدفع عند الاستلام' ? 'معلق' : 'مكتمل';
 
             const processor = document.getElementById('payment-processor'); 
             processor.style.display = 'flex';
-            document.getElementById('process-text').innerText = `جاري تأكيد الدفع عبر ${method}...`;
+            document.getElementById('process-text').innerText = `جاري إرسال الطلب وحفظ الموقع الجغرافي...`;
             await new Promise(r => setTimeout(r, 1500)); 
-            document.getElementById('process-text').innerText = "تمت العملية بنجاح!"; 
-            await new Promise(r => setTimeout(r, 800));
 
             try {
                 const res = await fetch('/api/orders', { 
@@ -402,7 +420,7 @@
                     body: JSON.stringify({ 
                         customerName: name, 
                         customerPhone: phone, 
-                        customerAddress: address + (method === 'PayPal' ? ` [PayPal: ${paypalEmail}]` : ''), 
+                        customerAddress: finalAddressWithGPS, 
                         paymentMethod: method, 
                         items: userCart, 
                         finalTotal: calcTotal, 
@@ -411,8 +429,8 @@
                     }) 
                 });
                 if((await res.json()).success) { 
-                    alert("🌟 تم تسجيل طلبك بنجاح! تفقد الواتساب الخاص بك لتأكيد الطلب الفوري."); 
-                    userCart=[]; document.getElementById('cart-count').innerText='0'; discountMultiplier=1; closeCheckoutModal(); 
+                    alert("🌟 تم تسجيل طلبك وإرسال تفاصيل الإشعارات الفورية عبر الواتساب بنجاح!"); 
+                    userCart=[]; document.getElementById('cart-count').innerText='0'; discountMultiplier=1; customerGPSCoords=''; closeCheckoutModal(); 
                 }
             } catch(e) {
                 alert("حدث خطأ أثناء الاتصال بالخادم.");
@@ -433,7 +451,7 @@
             } else cont.innerHTML = '<p>لا توجد طلبات مسجلة بهذا الرقم.</p>';
         }
 
-        /* لوحة الإدارة */
+        /* لوحة الإدارة مع رابط خرائط جوجل في جدول الطلبات */
         function showDashboard() { document.getElementById('store-view').classList.add('hidden-el'); document.getElementById('main-nav').classList.add('hidden-el'); document.getElementById('dashboard-view').classList.add('active-dashboard'); switchTab('analytics'); }
         function switchTab(tab) { document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active-section')); document.querySelectorAll('.sidebar-links a').forEach(a => a.classList.remove('active')); document.getElementById('sec-' + tab).classList.add('active-section'); document.getElementById('tab-' + tab).classList.add('active'); if(tab === 'view-orders') loadAdminOrders(); if(tab === 'view-users') loadAdminUsers(); if(tab === 'analytics') loadAdminStats(); }
         
@@ -477,7 +495,36 @@
             if(orders.length === 0) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">لا توجد طلبات</td></tr>'; return; }
             tbody.innerHTML = orders.map((o) => {
                 const paymentBadge = o.paymentStatus === 'مكتمل' ? '<span style="color:var(--accent-green); font-size:11px;">مكتمل ✅</span>' : '<span style="color:var(--accent-gold); font-size:11px;">معلق ⏳</span>';
-                return `<tr><td style="font-size:12px; font-family:monospace;">${o.transactionId}</td><td><div style="font-weight:bold;">${o.customerName}</div><div style="font-size:12px; color:var(--primary-neon);">${o.customerPhone}</div></td><td><div style="color:var(--secondary-neon); font-weight:bold;">${(o.finalTotal || 0).toLocaleString()} IQD</div><div style="font-size:12px; color:var(--text-muted);">${o.paymentMethod} (${paymentBadge})</div></td><td><select class="select-status" onchange="updateOrderStatus('${o.id}', this.value, '${o.paymentStatus}')" style="margin-bottom:5px;"><option value="قيد المعالجة ⏳" ${o.status === 'قيد المعالجة ⏳' ? 'selected' : ''}>قيد المعالجة</option><option value="جاري الشحن 🚚" ${o.status === 'جاري الشحن 🚚' ? 'selected' : ''}>جاري الشحن</option><option value="تم التوصيل ✅" ${o.status === 'تم التوصيل ✅' ? 'selected' : ''}>تم التوصيل</option><option value="ملغي ❌" ${o.status === 'ملغي ❌' ? 'selected' : ''}>ملغـي</option></select></td></tr>`;
+                
+                // استخراج رابط الخريطة إن وجد في العنوان
+                let addressText = o.customerAddress;
+                let mapLink = '';
+                if (addressText.includes('https://maps.google.com/')) {
+                    const parts = addressText.split('| 🌍 إحداثيات الخريطة: ');
+                    addressText = parts[0];
+                    mapLink = `<br><a href="${parts[1]}" target="_blank" style="color: var(--primary-neon); font-size: 12px; font-weight: bold;">🗺️ عرض موقع العميل على الخريطة</a>`;
+                }
+
+                return `<tr>
+                    <td style="font-size:12px; font-family:monospace;">${o.transactionId}</td>
+                    <td>
+                        <div style="font-weight:bold;">${o.customerName}</div>
+                        <div style="font-size:12px; color:var(--primary-neon);">${o.customerPhone}</div>
+                        <div style="font-size:12px; color:var(--text-muted);">${addressText} ${mapLink}</div>
+                    </td>
+                    <td>
+                        <div style="color:var(--secondary-neon); font-weight:bold;">${(o.finalTotal || 0).toLocaleString()} IQD</div>
+                        <div style="font-size:12px; color:var(--text-muted);">${o.paymentMethod} (${paymentBadge})</div>
+                    </td>
+                    <td>
+                        <select class="select-status" onchange="updateOrderStatus('${o.id}', this.value, '${o.paymentStatus}')" style="margin-bottom:5px;">
+                            <option value="قيد المعالجة ⏳" ${o.status === 'قيد المعالجة ⏳' ? 'selected' : ''}>قيد المعالجة</option>
+                            <option value="جاري الشحن 🚚" ${o.status === 'جاري الشحن 🚚' ? 'selected' : ''}>جاري الشحن</option>
+                            <option value="تم التوصيل ✅" ${o.status === 'تم التوصيل ✅' ? 'selected' : ''}>تم التوصيل</option>
+                            <option value="ملغي ❌" ${o.status === 'ملغي ❌' ? 'selected' : ''}>ملغـي</option>
+                        </select>
+                    </td>
+                </tr>`;
             }).join('');
         }
 
