@@ -19,12 +19,12 @@ app.use(express.static(__dirname));
 // 1. إعداد بيئة PayPal
 // ==========================================
 const clientId = 'BAAarCxsAmQmJjBovcJ_mgUqM2FkajysgS8f5y7HDhlW-V53-DYO8LiVgxWLZZlkRByf0gmNuNzFBDVRX4';
-const clientSecret = 'ضع_الرقم_السري_الخاص_بك_هنا'; // ⚠️ تنبيه: لا تنسَ وضع الـ Secret Key الخاص بحسابك هنا
+const clientSecret = 'ضع_الرقم_السري_الخاص_بك_هنا'; 
 const environment = new paypal.core.SandboxEnvironment(clientId, clientSecret);
 const paypalClient = new paypal.core.PayPalHttpClient(environment);
 
 // ==========================================
-// 2. إعداد قاعدة بيانات MySQL (الكود الذكي السحابي)
+// 2. إعداد قاعدة بيانات MySQL السحابية
 // ==========================================
 const dbURL = process.env.DATABASE_URL || 'mysql://root:@localhost:3306/cyberstore_db';
 
@@ -32,10 +32,7 @@ const sequelize = new Sequelize(dbURL, {
     dialect: 'mysql',
     logging: false,
     dialectOptions: process.env.DATABASE_URL ? {
-        ssl: {
-            require: true,
-            rejectUnauthorized: false
-        }
+        ssl: { require: true, rejectUnauthorized: false }
     } : {}
 });
 
@@ -52,7 +49,7 @@ const User = sequelize.define('User', {
 const Product = sequelize.define('Product', {
     name: { type: DataTypes.STRING, allowNull: false },
     price: { type: DataTypes.STRING, allowNull: false },
-    image: { type: DataTypes.STRING },
+    image: { type: DataTypes.TEXT, allowNull: false }, // دعم روابط الصور الطويلة
     category: { type: DataTypes.STRING, defaultValue: 'أخرى' }
 });
 
@@ -83,22 +80,48 @@ const Coupon = sequelize.define('Coupon', {
 });
 
 sequelize.sync({ alter: true }).then(async () => {
-    console.log('✅ تم الاتصال بـ MySQL ومزامنة الجداول بنجاح!');
+    console.log('✅ تم الاتصال بقاعدة البيانات ومزامنة النظومة بنجاح!');
     await Coupon.findOrCreate({ where: { code: 'CYBER20' }, defaults: { discountPercent: 20 } });
-}).catch(err => {
-    console.error('❌ فشل الاتصال بقاعدة البيانات:', err);
 });
 
 const otpDatabase = {};
 
 // ==========================================
-// 4. رادار الزوار المباشر (Sockets)
+// 4. دالة مساعدة لتوحيد أرقام الهواتف وإرسال الواتساب
+// ==========================================
+async function sendWhatsAppMessage(phone, messageBody) {
+    try {
+        let formattedPhone = phone.replace(/[\s\-]/g, '');
+        if (formattedPhone.startsWith('07')) {
+            formattedPhone = '+964' + formattedPhone.substring(1);
+        } else if (formattedPhone.startsWith('964')) {
+            formattedPhone = '+' + formattedPhone;
+        } else if (!formattedPhone.startsWith('+')) {
+            formattedPhone = '+' + formattedPhone;
+        }
+
+        const instanceId = process.env.ULTRAMSG_INSTANCE; 
+        const token = process.env.ULTRAMSG_TOKEN;
+
+        if (!instanceId || !token) return;
+
+        await axios.post(`https://api.ultramsg.com/${instanceId}/messages/chat`, { 
+            token: token,
+            to: formattedPhone,
+            body: messageBody
+        });
+    } catch (err) {
+        console.error("فشل إرسال واتساب:", err.message);
+    }
+}
+
+// ==========================================
+// 5. رادار الزوار المباشر (Sockets)
 // ==========================================
 let liveVisitors = 0;
 io.on('connection', (socket) => {
     liveVisitors++;
     io.emit('live_update', liveVisitors);
-    
     socket.on('disconnect', () => {
         liveVisitors--;
         io.emit('live_update', liveVisitors);
@@ -106,29 +129,24 @@ io.on('connection', (socket) => {
 });
 
 // ==========================================
-// 5. مسارات واجهة برمجة التطبيقات (API)
+// 6. مسارات الـ API الأساسية
 // ==========================================
 app.get('/api/products', async (req, res) => {
-    try {
-        const products = await Product.findAll({ include: [{ model: Review, as: 'reviews' }], order: [['createdAt', 'DESC']] });
-        res.json(products);
-    } catch (err) { res.status(500).json([]); }
+    const products = await Product.findAll({ include: [{ model: Review, as: 'reviews' }], order: [['createdAt', 'DESC']] });
+    res.json(products);
 });
 
 app.post('/api/products', async (req, res) => {
-    try {
-        const newProduct = await Product.create(req.body);
-        res.json({ success: true, product: newProduct });
-    } catch (err) { res.status(500).json({ success: false }); }
+    const newProduct = await Product.create(req.body);
+    res.json({ success: true, product: newProduct });
 });
 
 app.post('/api/products/:id/review', async (req, res) => {
-    try {
-        await Review.create({ ...req.body, ProductId: req.params.id });
-        res.json({ success: true });
-    } catch (err) { res.status(500).json({ success: false }); }
+    await Review.create({ ...req.body, ProductId: req.params.id });
+    res.json({ success: true });
 });
 
+// إنشاء طلب جديد + إرسال إشعار واتساب تلقائي للعميل
 app.post('/api/orders', async (req, res) => {
     try {
         const transactionId = 'TXN-' + Math.floor(1000000 + Math.random() * 9000000);
@@ -138,109 +156,80 @@ app.post('/api/orders', async (req, res) => {
             await User.increment('totalSpent', { by: newOrder.finalTotal, where: { phone: newOrder.customerPhone } });
         }
         
+        // إشعار لوحة التحكم فوراً صوتياً ومرئياً
         io.emit('new_order_received', newOrder);
+
+        // إرسال واتساب تلقائي للعميل بتفاصيل الطلب
+        const msg = `⚡ *CyberStore Global*\n\nمرحباً *${newOrder.customerName}*,\nتم استلام طلبك بنجاح! 🛒\n\n📌 رقم المعاملة: *${transactionId}*\n💰 المبلغ الإجمالي: *${newOrder.finalTotal.toLocaleString()} IQD*\n📦 الحالة: قيد المعالجة ⏳\n\nشكراً لتسوقك معنا!`;
+        sendWhatsAppMessage(newOrder.customerPhone, msg);
+
         res.json({ success: true, order: newOrder });
     } catch (err) { res.status(500).json({ success: false, error: err.message }); }
 });
 
 app.get('/api/orders', async (req, res) => {
-    try {
-        const orders = await Order.findAll({ order: [['createdAt', 'DESC']] });
-        res.json(orders);
-    } catch (err) { res.status(500).json([]); }
+    const orders = await Order.findAll({ order: [['createdAt', 'DESC']] });
+    res.json(orders);
 });
 
+// تحديث حالة الشحنة + إرسال واتساب تلقائي بحالة التوصيل للعميل
 app.put('/api/orders/:id/status', async (req, res) => {
-    try {
-        const { status, paymentStatus } = req.body;
-        const order = await Order.findByPk(req.params.id);
-        
-        if(paymentStatus === 'مكتمل' && order.paymentStatus !== 'مكتمل') {
-            await User.increment('totalSpent', { by: order.finalTotal, where: { phone: order.customerPhone } });
-        }
-        
-        await Order.update({ status, paymentStatus }, { where: { id: req.params.id } });
-        res.json({ success: true });
-    } catch (err) { res.status(500).json({ success: false }); }
+    const { status, paymentStatus } = req.body;
+    const order = await Order.findByPk(req.params.id);
+    
+    if(paymentStatus === 'مكتمل' && order.paymentStatus !== 'مكتمل') {
+        await User.increment('totalSpent', { by: order.finalTotal, where: { phone: order.customerPhone } });
+    }
+    
+    await Order.update({ status, paymentStatus }, { where: { id: req.params.id } });
+
+    // إرسال رسالة واتساب للعميل بالتحديث الجديد لحالة طلبه
+    const statusMsg = `⚡ *CyberStore Global*\n\nعزيزي *${order.customerName}*,\nتم تحديث حالة طلبك (*${order.transactionId}*) إلى:\n\n👉 *${status}*\n\nيمكنك تتبع طلبك في أي وقت عبر الموقع.`;
+    sendWhatsAppMessage(order.customerPhone, statusMsg);
+
+    res.json({ success: true });
 });
 
 app.get('/api/users', async (req, res) => {
-    try {
-        const users = await User.findAll({ order: [['totalSpent', 'DESC']] });
-        res.json(users);
-    } catch (err) { res.status(500).json([]); }
+    const users = await User.findAll({ order: [['totalSpent', 'DESC']] });
+    res.json(users);
 });
 
 app.get('/api/stats', async (req, res) => {
-    try {
-        const ordersCount = await Order.count();
-        const productsCount = await Product.count();
-        const usersCount = await User.count();
-        const totalRevenue = await Order.sum('finalTotal', { where: { paymentStatus: 'مكتمل' } }) || 0;
-        res.json({ ordersCount, productsCount, usersCount, totalRevenue });
-    } catch (err) { res.json({ ordersCount: 0, productsCount: 0, usersCount: 0, totalRevenue: 0 }); }
+    const ordersCount = await Order.count();
+    const productsCount = await Product.count();
+    const usersCount = await User.count();
+    const totalRevenue = await Order.sum('finalTotal', { where: { paymentStatus: 'مكتمل' } }) || 0;
+    res.json({ ordersCount, productsCount, usersCount, totalRevenue });
 });
 
 app.post('/api/track-order', async (req, res) => {
-    try {
-        const userOrders = await Order.findAll({ where: { customerPhone: req.body.phone }, order: [['createdAt', 'DESC']] });
-        res.json({ success: true, orders: userOrders });
-    } catch (err) { res.status(500).json({ success: false }); }
+    const userOrders = await Order.findAll({ where: { customerPhone: req.body.phone }, order: [['createdAt', 'DESC']] });
+    res.json({ success: true, orders: userOrders });
 });
 
 app.post('/api/validate-coupon', async (req, res) => {
-    try {
-        const coupon = await Coupon.findOne({ where: { code: req.body.code, isActive: true } });
-        if (coupon) res.json({ success: true, discount: coupon.discountPercent });
-        else res.json({ success: false, message: 'الكوبون غير صالح' });
-    } catch (err) { res.status(500).json({ success: false }); }
+    const coupon = await Coupon.findOne({ where: { code: req.body.code, isActive: true } });
+    if (coupon) res.json({ success: true, discount: coupon.discountPercent });
+    else res.json({ success: false, message: 'الكوبون غير صالح' });
 });
 
 // ==========================================
-// 6. المصادقة وتسجيل الحسابات (الواتساب)
+// 7. مصادقة الـ OTP عبر الواتساب
 // ==========================================
 app.post('/api/send-otp', async (req, res) => {
     const { phone } = req.body;
     if (!phone) return res.status(400).json({ success: false });
 
-    // 1. تحويل الرقم إلى الصيغة الدولية للواتساب (+964)
-    let formattedPhone = phone.replace(/[\s\-]/g, '');
-    if (formattedPhone.startsWith('07')) {
-        formattedPhone = '+964' + formattedPhone.substring(1);
-    } else if (formattedPhone.startsWith('964')) {
-        formattedPhone = '+' + formattedPhone;
-    } else if (!formattedPhone.startsWith('+')) {
-        formattedPhone = '+' + formattedPhone;
-    }
-
-    // 2. إنشاء الرمز السري
     const otp = Math.floor(100000 + Math.random() * 900000);
     otpDatabase[phone] = otp; 
     
-    // طباعة احتياطية في السجلات (Logs)
-    console.log(`\n🔑 طلب دخول جديد! الرقم: ${formattedPhone} | رمز الـ OTP هو: [ ${otp} ]\n`);
+    console.log(`\n🔑 طلب دخول جديد! الرقم: ${phone} | رمز الـ OTP هو: [ ${otp} ]\n`);
 
-    // 3. قراءة المفاتيح السرية من منصة Render
-    const instanceId = process.env.ULTRAMSG_INSTANCE; 
-    const token = process.env.ULTRAMSG_TOKEN;
-
-    if (!instanceId || !token) {
-        console.error("❌ خطأ: مفاتيح UltraMsg غير موجودة في متغيرات البيئة.");
-        return res.json({ success: true, warning: "WhatsApp API keys missing, check logs for OTP" });
-    }
-
-    try {
-        // 4. إرسال رسالة الواتساب الحقيقية للعميل
-        await axios.post(`https://api.ultramsg.com/${instanceId}/messages/chat`, { 
-            token: token,
-            to: formattedPhone,
-            body: `CyberStore ⚡\nرمز الدخول الآمن: *${otp}*`
-        });
-        res.json({ success: true });
-    } catch (error) { 
-        console.error("❌ فشل إرسال الواتساب:", error.response ? error.response.data : error.message);
-        res.json({ success: true, warning: "WhatsApp delivery failed, check logs for OTP" }); 
-    }
+    const otpMsg = `CyberStore ⚡\nرمز الدخول الآمن: *${otp}*`;
+    sendWhatsAppMessage(phone, otpMsg);
+    
+    res.json({ success: true });
 });
 
 app.post('/api/verify-otp', async (req, res) => {
@@ -251,7 +240,6 @@ app.post('/api/verify-otp', async (req, res) => {
         const [user, created] = await User.findOrCreate({ where: { phone } });
         user.lastLogin = new Date();
         
-        // التحقق من أنك المدير (بأي صيغة أدخلت بها الرقم)
         if (phone === "+9647831333337" || phone === "07831333337" || phone === "9647831333337") {
             user.role = 'admin';
         }
@@ -262,26 +250,22 @@ app.post('/api/verify-otp', async (req, res) => {
 });
 
 // ==========================================
-// 7. عمليات الدفع لبايبال (PayPal)
+// 8. مسارات بايبال
 // ==========================================
 app.post('/api/paypal/create-order', async (req, res) => {
-    try {
-        const request = new paypal.orders.OrdersCreateRequest();
-        request.prefer("return=representation");
-        request.requestBody({ intent: 'CAPTURE', purchase_units: [{ amount: { currency_code: 'USD', value: req.body.totalInUSD.toString() } }] });
-        const order = await paypalClient.execute(request);
-        res.json({ id: order.result.id });
-    } catch (err) { res.status(500).json({ error: err.message }); }
+    const request = new paypal.orders.OrdersCreateRequest();
+    request.prefer("return=representation");
+    request.requestBody({ intent: 'CAPTURE', purchase_units: [{ amount: { currency_code: 'USD', value: req.body.totalInUSD.toString() } }] });
+    const order = await paypalClient.execute(request);
+    res.json({ id: order.result.id });
 });
 
 app.post('/api/paypal/capture-order', async (req, res) => {
-    try {
-        const request = new paypal.orders.OrdersCaptureRequest(req.body.orderID);
-        request.requestBody({});
-        const capture = await paypalClient.execute(request);
-        res.json({ success: true, capture });
-    } catch (err) { res.status(500).json({ error: err.message }); }
+    const request = new paypal.orders.OrdersCaptureRequest(req.body.orderID);
+    request.requestBody({});
+    const capture = await paypalClient.execute(request);
+    res.json({ success: true, capture });
 });
 
 app.get('/', (req, res) => { res.sendFile(path.join(__dirname, 'index.html')); });
-server.listen(process.env.PORT || 3000, () => console.log(`🚀 الخادم يعمل على منفذ: ${process.env.PORT || 3000}`));
+server.listen(process.env.PORT || 3000, () => console.log(`🚀 مركز القيادة يعمل على المنفذ: ${process.env.PORT || 3000}`));

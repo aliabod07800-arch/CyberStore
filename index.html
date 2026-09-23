@@ -57,10 +57,8 @@
         .dashboard-container.active-dashboard { display: flex; }
         .sidebar { width: 280px; background: rgba(6, 8, 13, 0.98); border-left: 1px solid var(--border-neon); padding: 30px 20px; display: flex; flex-direction: column; position: relative; }
         .sidebar h3 { color: var(--secondary-neon); margin-bottom: 20px; font-size: 24px; text-align: center; text-shadow: var(--glow-purple); }
-        
         .live-badge { background: rgba(255, 0, 85, 0.1); border: 1px solid var(--accent-red); color: var(--accent-red); text-align: center; padding: 10px; border-radius: 8px; margin-bottom: 30px; font-weight: bold; animation: pulse 2s infinite; }
         @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(255,0,85,0.4); } 70% { box-shadow: 0 0 0 10px rgba(255,0,85,0); } 100% { box-shadow: 0 0 0 0 rgba(255,0,85,0); } }
-        
         .sidebar-links a { display: block; color: var(--text-muted); text-decoration: none; padding: 14px 18px; margin-bottom: 12px; border-radius: 8px; cursor: pointer; transition: 0.3s; font-weight: 500; font-size: 16px; }
         .sidebar-links a:hover { background: rgba(255,255,255,0.05); }
         .sidebar-links a.active { background: rgba(188, 19, 254, 0.15); color: #fff; border-right: 4px solid var(--secondary-neon); box-shadow: 0 0 10px rgba(188,19,254,0.1); }
@@ -94,7 +92,7 @@
     <div id="store-view" class="store-container">
         <div class="cyber-hero">
             <h1>مركز التسوق التقني الأول</h1>
-            <p>منصة أصلية 100%، نضمن لك جودة المنتجات وأمان المعاملات بدقة عسكرية.</p>
+            <p>منصة عالمية متكاملة، إشعارات فورية عبر الواتساب، وتتبع دقيق للمدير والعملاء.</p>
         </div>
         <div class="tools-bar">
             <div class="category-filters" id="category-filters">
@@ -117,14 +115,13 @@
             <div class="live-badge">رادار الزوار: <span id="live-count-display">1</span> متصل 🔴</div>
             <div class="sidebar-links">
                 <a onclick="switchTab('analytics')" id="tab-analytics" class="active">📊 نظرة عامة</a>
-                <a onclick="switchTab('add-product')" id="tab-add">➕ إدارة المنتجات</a>
+                <a onclick="switchTab('add-product')" id="tab-add">➕ رفع منتج جديد</a>
                 <a onclick="switchTab('view-orders')" id="tab-orders">📦 إدارة المعاملات</a>
                 <a onclick="switchTab('view-users')" id="tab-users">👥 قاعدة العملاء (VIP)</a>
                 <a style="color: var(--accent-red); font-weight: bold; margin-top:20px;" onclick="logout()">خروج</a>
             </div>
         </div>
         <div class="dashboard-content">
-            <!-- الإحصائيات -->
             <div id="sec-analytics" class="admin-section active-section">
                 <h2 style="margin-bottom: 25px; text-shadow: var(--glow-cyan);">التقارير المالية والتشغيلية</h2>
                 <div class="stats-grid">
@@ -134,21 +131,23 @@
                 </div>
             </div>
             
-            <!-- إضافة منتج -->
+            <!-- إضافة منتج مع رفع صورة حقيقي -->
             <div id="sec-add-product" class="admin-section">
                 <div style="background: var(--bg-surface); padding: 35px; border-radius: 16px; border: 1px solid var(--border-neon); max-width: 600px;">
-                    <h2 style="color: var(--primary-neon); margin-bottom: 20px;">نشر منتج جديد</h2>
+                    <h2 style="color: var(--primary-neon); margin-bottom: 20px;">رفع منتج جديد 🖼️</h2>
                     <div class="input-group"><label>اسم المنتج</label><input type="text" id="p-name"></div>
                     <div class="input-group"><label>السعر (IQD)</label><input type="number" id="p-price"></div>
                     <div class="input-group"><label>التصنيف</label>
                         <select id="p-category"><option value="أجهزة">أجهزة و PC</option><option value="ألعاب">ألعاب وبطاقات</option><option value="إكسسوارات">إكسسوارات</option></select>
                     </div>
-                    <div class="input-group"><label>رابط الصورة</label><input type="text" id="p-image"></div>
-                    <button class="btn-cyber" style="width: 100%; padding: 14px;" onclick="addNewProduct()">إضافة المنتج</button>
+                    <div class="input-group">
+                        <label>صورة المنتج (اختر صورة من جهازك)</label>
+                        <input type="file" id="p-image-file" accept="image/*" style="padding:10px;">
+                    </div>
+                    <button class="btn-cyber" style="width: 100%; padding: 14px;" onclick="addNewProductWithImage()">نشر المنتج في المتجر 🚀</button>
                 </div>
             </div>
 
-            <!-- إدارة المعاملات -->
             <div id="sec-view-orders" class="admin-section">
                 <h2 style="margin-bottom: 25px; text-shadow: var(--glow-cyan);">تتبع الشحنات والمدفوعات</h2>
                 <div class="enterprise-table-container">
@@ -159,12 +158,11 @@
                 </div>
             </div>
 
-            <!-- قاعدة العملاء (الجديدة) -->
             <div id="sec-view-users" class="admin-section">
                 <h2 style="margin-bottom: 25px; text-shadow: var(--glow-purple);">قاعدة بيانات العملاء المسجلين (CRM)</h2>
                 <div class="enterprise-table-container">
                     <table class="enterprise-table">
-                        <thead><tr><th>ID</th><th>رقم الهاتف المسجل</th><th>إجمالي المدفوعات</th><th>تاريخ التسجيل / الدخول</th></tr></thead>
+                        <thead><tr><th>ID</th><th>رقم الهاتف المسجل</th><th>إجمالي المدفوعات</th><th>تاريخ التسجيل</th></tr></thead>
                         <tbody id="users-table-body"></tbody>
                     </table>
                 </div>
@@ -172,7 +170,7 @@
         </div>
     </div>
 
-    <!-- النوافذ المنبثقة (السلة والدفع) -->
+    <!-- السلة والدفع -->
     <div class="modal-overlay" id="cart-modal">
         <div class="modal-box">
             <h2>السلة 🛒</h2>
@@ -192,14 +190,12 @@
         </div>
     </div>
 
-    <!-- نافذة الدفع -->
     <div class="modal-overlay" id="checkout-modal">
         <div class="modal-box">
             <div id="payment-processor" class="processing-overlay">
                 <div class="spinner"></div><h3 style="color: var(--primary-neon); margin-top:20px;" id="process-text">جاري المعالجة...</h3>
             </div>
             <h2>البيانات الدقيقة للشحن 🔒</h2>
-            
             <div class="input-group"><label>الاسم الثنائي (مطلوب)</label><input type="text" id="cust-name" placeholder="الاسم الحقيقي لضمان التوصيل"></div>
             <div class="input-group"><label>رقم الهاتف العراقي (مطلوب)</label><input type="tel" id="cust-phone" placeholder="07XXXXXXXXX"></div>
             <div class="input-group"><label>العنوان بالتفصيل</label><textarea id="cust-address" rows="2" placeholder="المحافظة، المنطقة، أقرب نقطة دالة"></textarea></div>
@@ -218,13 +214,13 @@
         </div>
     </div>
 
-    <!-- المصادقة -->
+    <!-- المصادقة والتتبع -->
     <div class="modal-overlay" id="auth-modal">
         <div class="modal-box">
             <h2 id="auth-title">تسجيل الدخول الآمن</h2>
             <div id="step-phone">
                 <div class="input-group"><label>رقم الهاتف العراقي</label><input type="tel" id="phone-number" placeholder="07XXXXXXXXX"></div>
-                <button class="btn-cyber" style="width: 100%; padding: 12px;" onclick="sendWhatsAppCode()">طلب الكود 📱</button>
+                <button class="btn-cyber" style="width: 100%; padding: 12px;" onclick="sendWhatsAppCode()">طلب الكود عبر الواتساب 📱</button>
             </div>
             <div id="step-otp" class="hidden-el">
                 <div class="input-group"><label>الرمز السري</label><input type="text" id="otp-code" style="text-align: center; letter-spacing: 5px; font-size: 20px;"></div>
@@ -234,7 +230,6 @@
         </div>
     </div>
 
-    <!-- التتبع -->
     <div class="modal-overlay" id="track-modal">
         <div class="modal-box">
             <h2>تتبع الطلب 📍</h2>
@@ -249,11 +244,33 @@
         let allProducts = [], userCart = [], currentUser = null, discountMultiplier = 1;
         let calcSubtotal = 0, calcDiscount = 0, calcShipping = 5000, calcTotal = 0;
         
-        // الاتصال الحي (Sockets) لاستقبال عدد الزوار
+        // الاتصال الحي (Sockets) + جرس التنبيه الصوتي للطلبات الجديدة في لوحة التحكم
         const socket = io();
         socket.on('live_update', (count) => {
             document.getElementById('live-count-display').innerText = count;
         });
+
+        socket.on('new_order_received', (order) => {
+            // تشغيل جرس تنبيه صوتي فوري للمدير
+            playNotificationSound();
+            if(currentUser && currentUser.role === 'admin') {
+                alert(`🚨 تنبيه: وصل طلب شراء جديد برقم ${order.transactionId} بقيمة ${order.finalTotal.toLocaleString()} IQD!`);
+                loadAdminOrders();
+                loadAdminStats();
+            }
+        });
+
+        function playNotificationSound() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine'; osc.frequency.value = 587.33; // نغمة رنين احترافية
+                gain.gain.setValueAtTime(0.1, ctx.currentTime);
+                osc.connect(gain); gain.connect(ctx.destination);
+                osc.start(); osc.stop(ctx.currentTime + 0.3);
+            } catch(e) {}
+        }
 
         window.onload = function() { loadProducts(); checkSavedSession(); };
 
@@ -274,20 +291,21 @@
         function openAuthModal() { document.getElementById('auth-modal').classList.add('active'); }
         function closeAuthModal() { document.getElementById('auth-modal').classList.remove('active'); document.getElementById('step-phone').classList.remove('hidden-el'); document.getElementById('step-otp').classList.add('hidden-el');}
         
-        // التحقق الصارم والمصحح من رقم الهاتف العراقي (11 رقم)
         function isValidIraqiPhone(phone) {
-            // إزالة الفراغات والفواصل
             const cleanPhone = phone.replace(/[\s\-]/g, '');
-            // يقبل: 07 يليه 9 أرقام (المجموع 11)، أو +9647 يليه 8 أرقام، أو 9647 يليه 8 أرقام
             const regex = /^(07[0-9]{9}|\+9647[0-9]{8}|9647[0-9]{8})$/;
             return regex.test(cleanPhone);
         }
 
         async function sendWhatsAppCode() { 
             const phone = document.getElementById('phone-number').value;
-            if(!isValidIraqiPhone(phone)) return alert("يرجى إدخال رقم هاتف عراقي حقيقي مكون من 11 رقم (مثال: 078XXXXXXX)");
+            if(!isValidIraqiPhone(phone)) return alert("يرجى إدخال رقم هاتف عراقي حقيقي مكون من 11 رقم");
             const res = await fetch('/api/send-otp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone }) });
-            if((await res.json()).success) { document.getElementById('step-phone').classList.add('hidden-el'); document.getElementById('step-otp').classList.remove('hidden-el'); }
+            if((await res.json()).success) { 
+                alert("تم إرسال كود التحقق إلى واتساب الخاص بك بنجاح! 📱");
+                document.getElementById('step-phone').classList.add('hidden-el'); 
+                document.getElementById('step-otp').classList.remove('hidden-el'); 
+            }
         }
 
         async function verifyOTP() {
@@ -340,7 +358,7 @@
             if(data.success) { alert(`تم تفعيل الخصم ${data.discount}%`); discountMultiplier = 1 - (data.discount / 100); updateCartModal(); } else alert("كود غير صالح");
         }
 
-        /* عملية الدفع والتحقق الصارم من المدخلات */
+        /* الدفع والتحقق الصارم */
         function openCheckoutModal() { if(userCart.length===0) return; closeCartModal(); document.getElementById('checkout-modal').classList.add('active'); }
         function closeCheckoutModal() { document.getElementById('checkout-modal').classList.remove('active'); document.getElementById('payment-processor').style.display = 'none'; }
         
@@ -365,7 +383,7 @@
                     const name = document.getElementById('cust-name').value.trim();
                     const phone = document.getElementById('cust-phone').value.trim();
                     if(name.length < 5 || !name.includes(' ')) { alert("عذراً، يجب إدخال اسمك الثنائي الحقيقي."); return actions.reject(); }
-                    if(!isValidIraqiPhone(phone)) { alert("يرجى إدخال رقم هاتف عراقي صحيح (11 رقم)."); return actions.reject(); }
+                    if(!isValidIraqiPhone(phone)) { alert("يرجى إدخال رقم هاتف عراقي صحيح."); return actions.reject(); }
                     return actions.resolve();
                 },
                 createOrder: function(data, actions) {
@@ -387,7 +405,7 @@
             let method = document.getElementById('selected-payment').value;
             
             if(name.length < 5 || !name.includes(' ')) return alert("عذراً، يجب إدخال اسمك الثنائي الحقيقي لضمان التوصيل السليم.");
-            if(!isValidIraqiPhone(phone)) return alert("يرجى إدخال رقم هاتف عراقي صحيح (مثال: 078XXXXXXX).");
+            if(!isValidIraqiPhone(phone)) return alert("يرجى إدخال رقم هاتف عراقي صحيح.");
             if(address.length < 8) return alert("يرجى كتابة العنوان بشكل واضح ومفصل.");
 
             let paymentStatus = method === 'الدفع عند الاستلام' ? 'معلق' : 'مكتمل';
@@ -403,7 +421,7 @@
                     method: 'POST', headers:{'Content-Type':'application/json'}, 
                     body: JSON.stringify({ customerName: name, customerPhone: phone, customerAddress: address, paymentMethod: method, items: userCart, finalTotal: calcTotal, status: 'قيد المعالجة ⏳', paymentStatus }) 
                 });
-                if((await res.json()).success) { alert("🌟 تم تسجيل طلبك بنجاح! شكراً لثقتك."); userCart=[]; document.getElementById('cart-count').innerText='0'; discountMultiplier=1; closeCheckoutModal(); }
+                if((await res.json()).success) { alert("🌟 تم تسجيل طلبك بنجاح! تفقد الواتساب الخاص بك لتأكيد الطلب."); userCart=[]; document.getElementById('cart-count').innerText='0'; discountMultiplier=1; closeCheckoutModal(); }
             } catch(e) {}
         }
 
@@ -420,7 +438,7 @@
             } else cont.innerHTML = '<p>لا توجد طلبات مسجلة بهذا الرقم.</p>';
         }
 
-        /* الإدارة (المركز الرئيسي) */
+        /* إدارة المركز (رفع الصور والمنتجات) */
         function showDashboard() { document.getElementById('store-view').classList.add('hidden-el'); document.getElementById('main-nav').classList.add('hidden-el'); document.getElementById('dashboard-view').classList.add('active-dashboard'); switchTab('analytics'); }
         function switchTab(tab) { document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active-section')); document.querySelectorAll('.sidebar-links a').forEach(a => a.classList.remove('active')); document.getElementById('sec-' + tab).classList.add('active-section'); document.getElementById('tab-' + tab).classList.add('active'); if(tab === 'view-orders') loadAdminOrders(); if(tab === 'view-users') loadAdminUsers(); if(tab === 'analytics') loadAdminStats(); }
         
@@ -431,9 +449,32 @@
             document.getElementById('stat-users').innerText = stats.usersCount;
         }
 
-        async function addNewProduct() {
-            const name = document.getElementById('p-name').value; const price = document.getElementById('p-price').value; const category = document.getElementById('p-category').value; const image = document.getElementById('p-image').value;
-            await fetch('/api/products', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, price, image, category }) }); alert("تم النشر بنجاح!"); loadProducts();
+        // تحويل الصورة المرفوعة من الجهاز إلى Base64 لرفعها بدون روابط خارجية
+        function addNewProductWithImage() {
+            const name = document.getElementById('p-name').value; 
+            const price = document.getElementById('p-price').value; 
+            const category = document.getElementById('p-category').value; 
+            const fileInput = document.getElementById('p-image-file');
+
+            if(!name || !price || fileInput.files.length === 0) {
+                return alert("يرجى إدخال اسم المنتج، السعر، واختيار صورة من جهازك.");
+            }
+
+            const reader = new FileReader();
+            reader.readAsDataURL(fileInput.files[0]);
+            reader.onload = async function() {
+                const base64Image = reader.result;
+                await fetch('/api/products', { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify({ name, price, image: base64Image, category }) 
+                }); 
+                alert("تم رفع الصورة والمنتج بنجاح إلى المنصة السحابية! 🚀"); 
+                loadProducts();
+                document.getElementById('p-name').value = '';
+                document.getElementById('p-price').value = '';
+                fileInput.value = '';
+            };
         }
 
         async function loadAdminOrders() {
@@ -448,14 +489,18 @@
 
         async function updateOrderStatus(id, newStatus, currentPaymentStatus) { 
             let paymentStatus = currentPaymentStatus; if(newStatus === 'تم التوصيل ✅') paymentStatus = 'مكتمل'; 
-            await fetch(`/api/orders/${id}/status`, { method: 'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({status: newStatus, paymentStatus}) }); 
+            await fetch(`/api/orders/${id}/status`, { method: 'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({status: newStatus, paymentStatus}) });
+            alert("تم تحديث حالة الطلب وإرسال إشعار فوري عبر الواتساب للعميل! 📱");
         }
 
         async function loadAdminUsers() {
             const res = await fetch('/api/users'); const users = await res.json();
             const tbody = document.getElementById('users-table-body');
             if(users.length === 0) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">لا يوجد عملاء مسجلين</td></tr>'; return; }
-            tbody.innerHTML = users.map((u) => {
+            tbody.innerHTML = users.users ? users.users.map((u) => {
+                const roleBadge = u.role === 'admin' ? '🛡️ مدير' : '👤 عميل';
+                return `<tr><td>${u.id}</td><td style="color:var(--primary-neon); font-weight:bold;">${u.phone} (${roleBadge})</td><td style="color:var(--accent-green); font-weight:bold;">${(u.totalSpent || 0).toLocaleString()} IQD</td><td style="font-size:12px; color:var(--text-muted);">${new Date(u.createdAt).toLocaleDateString()}</td></tr>`;
+            }).join('') : users.map((u) => {
                 const roleBadge = u.role === 'admin' ? '🛡️ مدير' : '👤 عميل';
                 return `<tr><td>${u.id}</td><td style="color:var(--primary-neon); font-weight:bold;">${u.phone} (${roleBadge})</td><td style="color:var(--accent-green); font-weight:bold;">${(u.totalSpent || 0).toLocaleString()} IQD</td><td style="font-size:12px; color:var(--text-muted);">${new Date(u.createdAt).toLocaleDateString()}</td></tr>`;
             }).join('');
