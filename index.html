@@ -3,11 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CyberStore | Global Enterprise</title>
+    <title>CyberStore | Enterprise Command</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
-    <!-- مكتبة PayPal مع الـ Client ID الخاص بك -->
     <script src="https://www.paypal.com/sdk/js?client-id=BAAarCxsAmQmJjBovcJ_mgUqM2FkajysgS8f5y7HDhlW-V53-DYO8LiVgxWLZZlkRByf0gmNuNzFBDVRX4&currency=USD"></script>
+    <script src="/socket.io/socket.io.js"></script> <!-- مكتبة الاتصال الحي -->
     
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;900&display=swap');
@@ -37,7 +36,6 @@
         .product-card:hover { transform: translateY(-8px); box-shadow: var(--glow-purple); border-color: var(--secondary-neon); }
         .product-image-wrap { width: 100%; height: 220px; border-radius: 12px; overflow: hidden; margin-bottom: 15px; }
         .product-card img { width: 100%; height: 100%; object-fit: cover; transition: 0.5s; }
-        .product-card:hover img { transform: scale(1.1); }
         .product-price { color: var(--primary-neon); font-size: 18px; font-weight: 900; margin-bottom: 15px; }
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0, 0.85); backdrop-filter: blur(10px); display: flex; justify-content: center; align-items: center; z-index: 9999; opacity: 0; pointer-events: none; transition: 0.3s; }
         .modal-overlay.active { opacity: 1; pointer-events: all; }
@@ -53,13 +51,16 @@
         .processing-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); border-radius: 20px; display:flex; flex-direction:column; justify-content:center; align-items:center; z-index: 10; display: none; }
         .spinner { width: 50px; height: 50px; border: 5px solid rgba(0,243,255,0.2); border-top-color: var(--primary-neon); border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
-        .invoice-summary { background: rgba(255,255,255,0.05); border: 1px dashed var(--border-neon); border-radius: 8px; padding: 15px; margin-bottom: 20px; font-family: monospace; font-size: 14px; }
-        .invoice-row { display: flex; justify-content: space-between; margin-bottom: 8px; }
-        .invoice-row.total { border-top: 1px solid var(--border-neon); padding-top: 8px; font-size: 16px; font-weight: bold; color: var(--primary-neon); }
+        
+        /* Dashboard Enterprise Styles */
         .dashboard-container { display: none; height: 100vh; width: 100vw; position: fixed; top: 0; left: 0; z-index: 3000; background: var(--bg-base); }
         .dashboard-container.active-dashboard { display: flex; }
-        .sidebar { width: 280px; background: rgba(6, 8, 13, 0.98); border-left: 1px solid var(--border-neon); padding: 30px 20px; display: flex; flex-direction: column; }
-        .sidebar h3 { color: var(--secondary-neon); margin-bottom: 40px; font-size: 24px; text-align: center; text-shadow: var(--glow-purple); }
+        .sidebar { width: 280px; background: rgba(6, 8, 13, 0.98); border-left: 1px solid var(--border-neon); padding: 30px 20px; display: flex; flex-direction: column; position: relative; }
+        .sidebar h3 { color: var(--secondary-neon); margin-bottom: 20px; font-size: 24px; text-align: center; text-shadow: var(--glow-purple); }
+        
+        .live-badge { background: rgba(255, 0, 85, 0.1); border: 1px solid var(--accent-red); color: var(--accent-red); text-align: center; padding: 10px; border-radius: 8px; margin-bottom: 30px; font-weight: bold; animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(255,0,85,0.4); } 70% { box-shadow: 0 0 0 10px rgba(255,0,85,0); } 100% { box-shadow: 0 0 0 0 rgba(255,0,85,0); } }
+        
         .sidebar-links a { display: block; color: var(--text-muted); text-decoration: none; padding: 14px 18px; margin-bottom: 12px; border-radius: 8px; cursor: pointer; transition: 0.3s; font-weight: 500; font-size: 16px; }
         .sidebar-links a:hover { background: rgba(255,255,255,0.05); }
         .sidebar-links a.active { background: rgba(188, 19, 254, 0.15); color: #fff; border-right: 4px solid var(--secondary-neon); box-shadow: 0 0 10px rgba(188,19,254,0.1); }
@@ -75,13 +76,9 @@
         .enterprise-table th { background: rgba(0, 243, 255, 0.08); padding: 18px 20px; color: var(--primary-neon); font-size: 15px; border-bottom: 1px solid var(--border-neon); white-space: nowrap; }
         .enterprise-table td { padding: 18px 20px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 14px; vertical-align: middle; }
         .status-badge { padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; display: inline-block; }
-        .status-processing { background: rgba(255, 183, 0, 0.15); color: var(--accent-gold); border: 1px solid var(--accent-gold); }
-        .status-shipped { background: rgba(0, 243, 255, 0.15); color: var(--primary-neon); border: 1px solid var(--primary-neon); }
-        .status-delivered { background: rgba(0, 255, 102, 0.15); color: var(--accent-green); border: 1px solid var(--accent-green); }
-        .status-cancelled { background: rgba(255, 0, 85, 0.15); color: var(--accent-red); border: 1px solid var(--accent-red); }
         .select-status { background: #000; color: #fff; border: 1px solid var(--border-neon); padding: 8px; border-radius: 6px; outline: none; cursor: pointer; }
         .hidden-el { display: none !important; }
-        @media (max-width: 768px) { nav { flex-direction: column; gap: 15px; padding: 15px; } .sidebar { width: 100%; border-left: none; border-bottom: 1px solid var(--border-neon); padding: 15px; flex-direction: row; flex-wrap: wrap; justify-content: space-between;} .sidebar h3 { margin-bottom: 15px; width: 100%; } .sidebar-links { display: flex; width: 100%; overflow-x: auto; gap: 10px; } .dashboard-content, .store-container { padding: 20px; } .tools-bar { flex-direction: column; } }
+        @media (max-width: 768px) { nav { flex-direction: column; gap: 15px; padding: 15px; } .sidebar { width: 100%; border-left: none; border-bottom: 1px solid var(--border-neon); padding: 15px; flex-direction: row; flex-wrap: wrap; justify-content: space-between;} .sidebar h3 { margin-bottom: 5px; width: 100%; } .live-badge { width: 100%; margin-bottom: 15px; } .sidebar-links { display: flex; width: 100%; overflow-x: auto; gap: 10px; } .dashboard-content, .store-container { padding: 20px; } .tools-bar { flex-direction: column; } }
     </style>
 </head>
 <body>
@@ -90,15 +87,15 @@
         <div class="logo">CYBER<span>STORE</span> ⚡</div>
         <div class="nav-actions">
             <button class="btn-cyber" onclick="openTrackModal()">📍 تتبع طلبي</button>
-            <button class="btn-cyber btn-alt" onclick="openCartModal()">🛒 السلة <span class="cart-badge" id="cart-count">0</span></button>
+            <button class="btn-cyber btn-alt" onclick="openCartModal()">🛒 السلة <span id="cart-count">0</span></button>
             <div id="auth-nav-container"></div>
         </div>
     </nav>
 
     <div id="store-view" class="store-container">
         <div class="cyber-hero">
-            <h1>التجربة العالمية للتسوق الرقمي</h1>
-            <p>أحدث الأجهزة، بطاقات الألعاب، وتجميعات الـ PC تصلك أينما كنت.</p>
+            <h1>مركز التسوق التقني الأول</h1>
+            <p>منصة أصلية 100%، نضمن لك جودة المنتجات وأمان المعاملات بدقة عسكرية.</p>
         </div>
         <div class="tools-bar">
             <div class="category-filters" id="category-filters">
@@ -114,26 +111,31 @@
         <div class="products-grid" id="products-list"></div>
     </div>
 
-    <!-- لوحة تحكم الإدارة -->
+    <!-- مركز القيادة (Enterprise Dashboard) -->
     <div id="dashboard-view" class="dashboard-container">
         <div class="sidebar">
             <h3>Enterprise Admin</h3>
+            <div class="live-badge">رادار الزوار: <span id="live-count-display">1</span> متصل 🔴</div>
             <div class="sidebar-links">
                 <a onclick="switchTab('analytics')" id="tab-analytics" class="active">📊 نظرة عامة</a>
-                <a onclick="switchTab('add-product')" id="tab-add">➕ إضافة منتج</a>
+                <a onclick="switchTab('add-product')" id="tab-add">➕ إدارة المنتجات</a>
                 <a onclick="switchTab('view-orders')" id="tab-orders">📦 إدارة المعاملات</a>
-                <a style="color: var(--accent-red); font-weight: bold;" onclick="logout()">خروج</a>
+                <a onclick="switchTab('view-users')" id="tab-users">👥 قاعدة العملاء (VIP)</a>
+                <a style="color: var(--accent-red); font-weight: bold; margin-top:20px;" onclick="logout()">خروج</a>
             </div>
         </div>
         <div class="dashboard-content">
+            <!-- الإحصائيات -->
             <div id="sec-analytics" class="admin-section active-section">
-                <h2 style="margin-bottom: 25px; text-shadow: var(--glow-cyan);">لوحة القياس (Dashboard)</h2>
+                <h2 style="margin-bottom: 25px; text-shadow: var(--glow-cyan);">التقارير المالية والتشغيلية</h2>
                 <div class="stats-grid">
                     <div class="stat-card"><h4>إجمالي الطلبات</h4><p id="stat-orders" style="color:var(--primary-neon);">0</p></div>
-                    <div class="stat-card"><h4>الإيرادات المحصلة (IQD)</h4><p id="stat-revenue" style="color:var(--secondary-neon);">0</p></div>
-                    <div class="stat-card"><h4>طلبات معلقة</h4><p id="stat-pending" style="color:var(--accent-green);">0</p></div>
+                    <div class="stat-card"><h4>الإيرادات (IQD)</h4><p id="stat-revenue" style="color:var(--secondary-neon);">0</p></div>
+                    <div class="stat-card"><h4>قاعدة الحسابات</h4><p id="stat-users" style="color:var(--accent-gold);">0</p></div>
                 </div>
             </div>
+            
+            <!-- إضافة منتج -->
             <div id="sec-add-product" class="admin-section">
                 <div style="background: var(--bg-surface); padding: 35px; border-radius: 16px; border: 1px solid var(--border-neon); max-width: 600px;">
                     <h2 style="color: var(--primary-neon); margin-bottom: 20px;">نشر منتج جديد</h2>
@@ -146,28 +148,32 @@
                     <button class="btn-cyber" style="width: 100%; padding: 14px;" onclick="addNewProduct()">إضافة المنتج</button>
                 </div>
             </div>
+
+            <!-- إدارة المعاملات -->
             <div id="sec-view-orders" class="admin-section">
-                <h2 style="margin-bottom: 25px; text-shadow: var(--glow-cyan);">المعاملات المالية والطلبات</h2>
+                <h2 style="margin-bottom: 25px; text-shadow: var(--glow-cyan);">تتبع الشحنات والمدفوعات</h2>
                 <div class="enterprise-table-container">
                     <table class="enterprise-table">
-                        <thead><tr><th>TXN</th><th>العميل</th><th>الإجمالي والدفع</th><th>تحديث الشحن</th></tr></thead>
+                        <thead><tr><th>TXN</th><th>بيانات العميل</th><th>الدفع</th><th>تحديث الحالة</th></tr></thead>
                         <tbody id="orders-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- قاعدة العملاء (الجديدة) -->
+            <div id="sec-view-users" class="admin-section">
+                <h2 style="margin-bottom: 25px; text-shadow: var(--glow-purple);">قاعدة بيانات العملاء المسجلين (CRM)</h2>
+                <div class="enterprise-table-container">
+                    <table class="enterprise-table">
+                        <thead><tr><th>ID</th><th>رقم الهاتف المسجل</th><th>إجمالي المدفوعات</th><th>تاريخ التسجيل / الدخول</th></tr></thead>
+                        <tbody id="users-table-body"></tbody>
                     </table>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- نافذة الفاتورة للمدير -->
-    <div class="modal-overlay" id="admin-invoice-modal">
-        <div class="modal-box">
-            <h2 style="color:var(--primary-neon);">تفاصيل الفاتورة 📄</h2>
-            <div id="invoice-details" class="invoice-summary" style="text-align: right; background:rgba(0,0,0,0.8);"></div>
-            <button class="btn-cyber" style="width: 100%; margin-top:15px;" onclick="document.getElementById('admin-invoice-modal').classList.remove('active')">إغلاق</button>
-        </div>
-    </div>
-
-    <!-- السلة -->
+    <!-- النوافذ المنبثقة (السلة والدفع) -->
     <div class="modal-overlay" id="cart-modal">
         <div class="modal-box">
             <h2>السلة 🛒</h2>
@@ -176,28 +182,29 @@
                 <input type="text" id="promo-code" placeholder="كود الخصم (CYBER20)" style="flex:1;">
                 <button class="btn-cyber" onclick="applyCoupon()">تفعيل</button>
             </div>
-            <div class="invoice-summary" id="checkout-summary">
-                <div class="invoice-row"><span>المجموع الفرعي:</span><span id="summ-subtotal">0</span></div>
-                <div class="invoice-row"><span>الخصم:</span><span id="summ-discount" style="color:var(--accent-red);">0</span></div>
-                <div class="invoice-row"><span>التوصيل:</span><span id="summ-shipping">5000</span></div>
-                <div class="invoice-row total"><span>الإجمالي:</span><span id="summ-total">0</span></div>
+            <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; margin-bottom: 10px;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>المجموع الفرعي:</span><span id="summ-subtotal">0</span></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>الخصم:</span><span id="summ-discount" style="color:var(--accent-red);">0</span></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:5px; border-bottom:1px solid #333; padding-bottom:5px;"><span>التوصيل:</span><span id="summ-shipping">5000</span></div>
+                <div style="display:flex; justify-content:space-between; margin-top:5px; font-weight:bold; color:var(--primary-neon);"><span>الإجمالي النهائي:</span><span id="summ-total">0</span></div>
             </div>
             <button class="btn-cyber" style="width: 100%; margin-bottom: 10px;" onclick="openCheckoutModal()">متابعة الدفع 💳</button>
             <button style="background:none; border:none; color:var(--text-muted); width:100%; cursor:pointer;" onclick="closeCartModal()">إغلاق</button>
         </div>
     </div>
 
-    <!-- الدفع وبوابة PayPal -->
+    <!-- نافذة الدفع (المحسنة مع التحقق الصارم) -->
     <div class="modal-overlay" id="checkout-modal">
         <div class="modal-box">
             <div id="payment-processor" class="processing-overlay">
-                <div class="spinner"></div>
-                <h3 style="color: var(--primary-neon); margin-top:20px;" id="process-text">جاري المعالجة...</h3>
+                <div class="spinner"></div><h3 style="color: var(--primary-neon); margin-top:20px;" id="process-text">جاري المعالجة...</h3>
             </div>
-            <h2>الدفع الآمن 🔒</h2>
-            <div class="input-group"><label>الاسم الكامل</label><input type="text" id="cust-name"></div>
-            <div class="input-group"><label>رقم الهاتف</label><input type="tel" id="cust-phone"></div>
-            <div class="input-group"><label>العنوان بالتفصيل</label><textarea id="cust-address" rows="2"></textarea></div>
+            <h2>البيانات الدقيقة للشحن 🔒</h2>
+            
+            <div class="input-group"><label>الاسم الثنائي (مطلوب)</label><input type="text" id="cust-name" placeholder="الاسم الحقيقي لضمان التوصيل"></div>
+            <div class="input-group"><label>رقم الهاتف العراقي (مطلوب)</label><input type="tel" id="cust-phone" placeholder="07XXXXXXXXX"></div>
+            <div class="input-group"><label>العنوان بالتفصيل</label><textarea id="cust-address" rows="2" placeholder="المحافظة، المنطقة، أقرب نقطة دالة"></textarea></div>
+            
             <label style="color:var(--text-muted); font-size:13px; margin-bottom:8px; display:block;">اختر بوابة الدفع:</label>
             <div class="payment-methods">
                 <div class="pay-method selected" onclick="selectPayment(this, 'الدفع عند الاستلام')">نقداً 💵</div>
@@ -206,43 +213,18 @@
             </div>
             <input type="hidden" id="selected-payment" value="الدفع عند الاستلام">
             
-            <button id="normal-checkout-btn" class="btn-cyber btn-alt" style="width: 100%; padding: 12px; margin-bottom: 10px;" onclick="submitFinalOrder(false)">تأكيد الطلب ✅</button>
-            
-            <!-- حاوية أزرار بايبال -->
+            <button id="normal-checkout-btn" class="btn-cyber btn-alt" style="width: 100%; padding: 12px; margin-bottom: 10px;" onclick="submitFinalOrder(false)">تأكيد الطلب نهائياً ✅</button>
             <div id="paypal-button-container" style="display: none; margin-bottom: 10px;"></div>
-            
             <button style="background:none; border:none; color:var(--text-muted); cursor:pointer; width:100%;" onclick="closeCheckoutModal()">الرجوع</button>
         </div>
     </div>
 
-    <!-- تتبع الطلبات والمصادقة والمراجعات -->
-    <div class="modal-overlay" id="track-modal">
-        <div class="modal-box">
-            <h2>تتبع الطلب 📍</h2>
-            <div class="input-group"><label>رقم الهاتف</label><input type="tel" id="track-phone"></div>
-            <button class="btn-cyber" style="width: 100%; padding: 12px; margin-bottom: 15px;" onclick="trackMyOrder()">استعلام 🔎</button>
-            <div id="track-results" style="text-align: right; max-height: 250px; overflow-y: auto;"></div>
-            <button style="background: none; border: none; color: var(--text-muted); cursor: pointer; width: 100%; margin-top:10px;" onclick="closeTrackModal()">إغلاق</button>
-        </div>
-    </div>
-
-    <div class="modal-overlay" id="review-modal">
-        <div class="modal-box">
-            <h2>تقييم المنتج ⭐</h2>
-            <input type="hidden" id="review-product-id">
-            <div class="input-group"><label>الاسم</label><input type="text" id="review-name"></div>
-            <div class="input-group"><label>التقييم (1 إلى 5)</label><input type="number" id="review-rating" min="1" max="5" value="5"></div>
-            <div class="input-group"><label>رأيك</label><textarea id="review-comment" rows="3"></textarea></div>
-            <button class="btn-cyber" style="width: 100%; padding: 12px; margin-bottom: 10px;" onclick="submitReview()">إرسال التقييم</button>
-            <button style="background: none; border: none; color: var(--text-muted); cursor: pointer; width:100%;" onclick="document.getElementById('review-modal').classList.remove('active');">إلغاء</button>
-        </div>
-    </div>
-
+    <!-- المصادقة -->
     <div class="modal-overlay" id="auth-modal">
         <div class="modal-box">
-            <h2 id="auth-title">تسجيل الدخول</h2>
+            <h2 id="auth-title">تسجيل الدخول الآمن</h2>
             <div id="step-phone">
-                <div class="input-group"><label>رقم الهاتف</label><input type="tel" id="phone-number" placeholder="+964 7XX XXX XXXX"></div>
+                <div class="input-group"><label>رقم الهاتف العراقي</label><input type="tel" id="phone-number" placeholder="07XXXXXXXXX"></div>
                 <button class="btn-cyber" style="width: 100%; padding: 12px;" onclick="sendWhatsAppCode()">طلب الكود 📱</button>
             </div>
             <div id="step-otp" class="hidden-el">
@@ -253,9 +235,26 @@
         </div>
     </div>
 
+    <!-- التتبع -->
+    <div class="modal-overlay" id="track-modal">
+        <div class="modal-box">
+            <h2>تتبع الطلب 📍</h2>
+            <div class="input-group"><label>رقم الهاتف المسجل بالطلب</label><input type="tel" id="track-phone" placeholder="07XXXXXXXXX"></div>
+            <button class="btn-cyber" style="width: 100%; padding: 12px; margin-bottom: 15px;" onclick="trackMyOrder()">استعلام 🔎</button>
+            <div id="track-results" style="text-align: right; max-height: 250px; overflow-y: auto;"></div>
+            <button style="background: none; border: none; color: var(--text-muted); cursor: pointer; width: 100%; margin-top:10px;" onclick="closeTrackModal()">إغلاق</button>
+        </div>
+    </div>
+
     <script>
         let allProducts = [], userCart = [], currentUser = null, discountMultiplier = 1;
         let calcSubtotal = 0, calcDiscount = 0, calcShipping = 5000, calcTotal = 0;
+        
+        // الاتصال الحي (Sockets) لاستقبال عدد الزوار
+        const socket = io();
+        socket.on('live_update', (count) => {
+            document.getElementById('live-count-display').innerText = count;
+        });
 
         window.onload = function() { loadProducts(); checkSavedSession(); };
 
@@ -268,16 +267,23 @@
         function updateAuthUI() {
             const nav = document.getElementById('auth-nav-container');
             if (currentUser) {
-                if (currentUser.role === 'admin') nav.innerHTML = `<button class="btn-cyber" style="border-color:var(--secondary-neon);" onclick="showDashboard()">المدير ⚙️</button>`;
+                if (currentUser.role === 'admin') nav.innerHTML = `<button class="btn-cyber" style="border-color:var(--secondary-neon);" onclick="showDashboard()">مركز القيادة ⚙️</button>`;
                 else nav.innerHTML = `<span style="color:var(--primary-neon); margin-left:15px; font-weight:bold;">${currentUser.phone}</span> <button class="btn-cyber btn-alt" style="border-color:var(--accent-red); color:var(--accent-red);" onclick="logout()">خروج</button>`;
-            } else { nav.innerHTML = `<button class="btn-cyber" onclick="openAuthModal()">دخول</button>`; }
+            } else { nav.innerHTML = `<button class="btn-cyber" onclick="openAuthModal()">دخول / تسجيل</button>`; }
         }
 
         function openAuthModal() { document.getElementById('auth-modal').classList.add('active'); }
         function closeAuthModal() { document.getElementById('auth-modal').classList.remove('active'); document.getElementById('step-phone').classList.remove('hidden-el'); document.getElementById('step-otp').classList.add('hidden-el');}
         
+        // التحقق الصارم من رقم الهاتف العراقي
+        function isValidIraqiPhone(phone) {
+            const regex = /^(07|\+9647)[0-9]{8}$/;
+            return regex.test(phone.replace(/\s/g, ''));
+        }
+
         async function sendWhatsAppCode() { 
             const phone = document.getElementById('phone-number').value;
+            if(!isValidIraqiPhone(phone)) return alert("يرجى إدخال رقم هاتف عراقي حقيقي مكون من 11 رقم");
             const res = await fetch('/api/send-otp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone }) });
             if((await res.json()).success) { document.getElementById('step-phone').classList.add('hidden-el'); document.getElementById('step-otp').classList.remove('hidden-el'); }
         }
@@ -291,17 +297,17 @@
                 localStorage.setItem('cyberstore_user', JSON.stringify(currentUser));
                 closeAuthModal(); updateAuthUI();
                 if(data.role === 'admin') showDashboard();
-            }
+            } else alert("الرمز غير صحيح");
         }
         function logout() { currentUser = null; localStorage.removeItem('cyberstore_user'); location.reload(); }
 
-        /* Products & Cart */
+        /* المنتجات والسلة */
         async function loadProducts() { try { const res = await fetch('/api/products'); allProducts = await res.json(); renderProducts(allProducts); } catch (err) {} }
         function renderProducts(products) {
             const grid = document.getElementById('products-list'); grid.innerHTML = '';
             products.forEach(p => {
                 grid.innerHTML += `<div class="product-card">
-                    <div><div class="product-image-wrap"><img src="${p.image}"></div><span style="font-size: 11px; color: var(--text-muted); background:rgba(255,255,255,0.1); padding:4px 10px; border-radius:12px;">${p.category}</span><h3 style="margin-top:12px;">${p.name}</h3><div class="product-price">${Number(p.price).toLocaleString()} IQD</div><div class="rating" onclick="openReviewModal('${p.id || p._id}')" style="cursor:pointer; font-size:12px; color:var(--accent-gold);">⭐ تقييم المنتج</div></div>
+                    <div><div class="product-image-wrap"><img src="${p.image}"></div><span style="font-size: 11px; color: var(--text-muted); background:rgba(255,255,255,0.1); padding:4px 10px; border-radius:12px;">${p.category}</span><h3 style="margin-top:12px;">${p.name}</h3><div class="product-price">${Number(p.price).toLocaleString()} IQD</div></div>
                     <button class="btn-cyber" onclick='addToCart(${JSON.stringify(p)})'>إضافة للسلة 🛒</button></div>`;
             });
         }
@@ -332,7 +338,7 @@
             if(data.success) { alert(`تم تفعيل الخصم ${data.discount}%`); discountMultiplier = 1 - (data.discount / 100); updateCartModal(); } else alert("كود غير صالح");
         }
 
-        /* PayPal & Checkout */
+        /* عملية الدفع والتحقق الصارم من المدخلات */
         function openCheckoutModal() { if(userCart.length===0) return; closeCartModal(); document.getElementById('checkout-modal').classList.add('active'); }
         function closeCheckoutModal() { document.getElementById('checkout-modal').classList.remove('active'); document.getElementById('payment-processor').style.display = 'none'; }
         
@@ -343,62 +349,50 @@
             const paypalContainer = document.getElementById('paypal-button-container');
             const normalButton = document.getElementById('normal-checkout-btn');
             
-            if (method === 'PayPal') { 
-                paypalContainer.style.display = 'block'; 
-                normalButton.style.display = 'none'; 
-                renderPayPalButton(); 
-            } else { 
-                paypalContainer.style.display = 'none'; 
-                normalButton.style.display = 'block'; 
-                paypalContainer.innerHTML = ''; 
-            }
+            if (method === 'PayPal') { paypalContainer.style.display = 'block'; normalButton.style.display = 'none'; renderPayPalButton(); } 
+            else { paypalContainer.style.display = 'none'; normalButton.style.display = 'block'; paypalContainer.innerHTML = ''; }
         }
 
         function renderPayPalButton() {
             document.getElementById('paypal-button-container').innerHTML = '';
-            // تحويل الدينار العراقي إلى دولار (باحتساب سعر صرف تقريبي 1500 دينار للدولار)
             let totalUSD = (calcTotal / 1500).toFixed(2);
             if(totalUSD <= 0) return;
 
             paypal.Buttons({
+                onClick: function(data, actions) {
+                    // التحقق من صحة البيانات قبل فتح نافذة بايبال
+                    const name = document.getElementById('cust-name').value.trim();
+                    const phone = document.getElementById('cust-phone').value.trim();
+                    if(name.length < 5 || !name.includes(' ')) { alert("عذراً، يجب إدخال اسمك الثنائي الحقيقي."); return actions.reject(); }
+                    if(!isValidIraqiPhone(phone)) { alert("يرجى إدخال رقم هاتف عراقي صحيح."); return actions.reject(); }
+                    return actions.resolve();
+                },
                 createOrder: function(data, actions) {
-                    return fetch('/api/paypal/create-order', { 
-                        method: 'POST', headers: { 'Content-Type': 'application/json' }, 
-                        body: JSON.stringify({ totalInUSD: totalUSD }) 
-                    }).then(res => res.json()).then(orderData => orderData.id);
+                    return fetch('/api/paypal/create-order', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ totalInUSD: totalUSD }) }).then(res => res.json()).then(orderData => orderData.id);
                 },
                 onApprove: function(data, actions) {
-                    document.getElementById('process-text').innerText = "جاري تأكيد الدفع من بايبال..."; 
-                    document.getElementById('payment-processor').style.display = 'flex';
-                    
-                    return fetch('/api/paypal/capture-order', { 
-                        method: 'POST', headers: { 'Content-Type': 'application/json' }, 
-                        body: JSON.stringify({ orderID: data.orderID }) 
-                    }).then(res => res.json()).then(captureData => {
-                        if (captureData.success) {
-                            submitFinalOrder(true);
-                        } else { 
-                            alert("فشلت عملية الدفع."); 
-                            document.getElementById('payment-processor').style.display = 'none'; 
-                        }
+                    document.getElementById('process-text').innerText = "جاري تأكيد الدفع من بايبال..."; document.getElementById('payment-processor').style.display = 'flex';
+                    return fetch('/api/paypal/capture-order', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderID: data.orderID }) }).then(res => res.json()).then(captureData => {
+                        if (captureData.success) submitFinalOrder(true); else { alert("فشلت عملية الدفع."); document.getElementById('payment-processor').style.display = 'none'; }
                     });
                 }
             }).render('#paypal-button-container');
         }
 
         async function submitFinalOrder(isPaidViaPayPal = false) {
-            const name = document.getElementById('cust-name').value; 
-            const phone = document.getElementById('cust-phone').value;
-            const address = document.getElementById('cust-address').value; 
+            const name = document.getElementById('cust-name').value.trim(); 
+            const phone = document.getElementById('cust-phone').value.trim();
+            const address = document.getElementById('cust-address').value.trim(); 
             let method = document.getElementById('selected-payment').value;
-            if(!name || !phone || !address) return alert("أكمل البيانات");
+            
+            // فلاتر التحقق الصارمة للبيانات الحقيقية
+            if(name.length < 5 || !name.includes(' ')) return alert("عذراً، يجب إدخال اسمك الثنائي الحقيقي لضمان التوصيل السليم.");
+            if(!isValidIraqiPhone(phone)) return alert("يرجى إدخال رقم هاتف عراقي صحيح.");
+            if(address.length < 8) return alert("يرجى كتابة العنوان بشكل واضح ومفصل.");
 
             let paymentStatus = method === 'الدفع عند الاستلام' ? 'معلق' : 'مكتمل';
-            
-            if (isPaidViaPayPal) { 
-                method = 'PayPal'; 
-                paymentStatus = 'مكتمل'; 
-            } else if (method !== 'الدفع عند الاستلام') {
+            if (isPaidViaPayPal) { method = 'PayPal'; paymentStatus = 'مكتمل'; } 
+            else if (method !== 'الدفع عند الاستلام') {
                 const processor = document.getElementById('payment-processor'); processor.style.display = 'flex';
                 document.getElementById('process-text').innerText = `جاري الاتصال بـ ${method}...`;
                 await new Promise(r => setTimeout(r, 1500)); document.getElementById('process-text').innerText = "تم الدفع بنجاح!"; await new Promise(r => setTimeout(r, 1000));
@@ -407,63 +401,64 @@
             try {
                 const res = await fetch('/api/orders', { 
                     method: 'POST', headers:{'Content-Type':'application/json'}, 
-                    body: JSON.stringify({ customerName: name, customerPhone: phone, customerAddress: address, paymentMethod: method, notes: '', items: userCart, subtotal: calcSubtotal, discountAmount: calcDiscount, shippingFee: calcShipping, finalTotal: calcTotal, status: 'قيد المعالجة ⏳', paymentStatus }) 
+                    body: JSON.stringify({ customerName: name, customerPhone: phone, customerAddress: address, paymentMethod: method, items: userCart, finalTotal: calcTotal, status: 'قيد المعالجة ⏳', paymentStatus }) 
                 });
-                if((await res.json()).success) { 
-                    alert("🌟 تم تسجيل طلبك بنجاح!"); 
-                    userCart=[]; document.getElementById('cart-count').innerText='0'; discountMultiplier=1; 
-                    closeCheckoutModal(); 
-                }
+                if((await res.json()).success) { alert("🌟 تم تسجيل طلبك بنجاح! شكراً لثقتك."); userCart=[]; document.getElementById('cart-count').innerText='0'; discountMultiplier=1; closeCheckoutModal(); }
             } catch(e) {}
         }
 
-        /* Tracking & Reviews */
+        /* التتبع */
         function openTrackModal() { document.getElementById('track-modal').classList.add('active'); }
         function closeTrackModal() { document.getElementById('track-modal').classList.remove('active'); }
         async function trackMyOrder() {
-            const phone = document.getElementById('track-phone').value; if(!phone) return;
+            const phone = document.getElementById('track-phone').value; 
+            if(!isValidIraqiPhone(phone)) return alert("يرجى إدخال رقم هاتف عراقي صحيح");
             const res = await fetch('/api/track-order', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({phone}) });
             const data = await res.json(); const cont = document.getElementById('track-results');
             if(data.orders && data.orders.length > 0) {
-                cont.innerHTML = data.orders.map(o => `<div style="background:rgba(255,255,255,0.05); padding:15px; border-radius:10px; margin-bottom:12px; border-right: 4px solid var(--primary-neon);"><p style="font-size:13px; color:var(--text-muted);">المعاملة: ${o.transactionId}</p><p>بتاريخ: ${new Date(o.createdAt).toLocaleDateString()} | <b>${o.finalTotal.toLocaleString()} IQD</b></p><div><span class="status-badge status-processing">${o.status}</span></div></div>`).join('');
-            } else cont.innerHTML = '<p>لا توجد طلبات.</p>';
+                cont.innerHTML = data.orders.map(o => `<div style="background:rgba(255,255,255,0.05); padding:15px; border-radius:10px; margin-bottom:12px; border-right: 4px solid var(--primary-neon);"><p style="font-size:13px;">المعاملة: ${o.transactionId}</p><p>بتاريخ: ${new Date(o.createdAt).toLocaleDateString()} | <b>${o.finalTotal.toLocaleString()} IQD</b></p><div><span style="background:rgba(0,255,102,0.1); color:var(--accent-green); padding:4px 8px; border-radius:8px; font-size:12px;">${o.status}</span></div></div>`).join('');
+            } else cont.innerHTML = '<p>لا توجد طلبات مسجلة بهذا الرقم.</p>';
         }
 
-        function openReviewModal(id) { document.getElementById('review-product-id').value = id; document.getElementById('review-modal').classList.add('active'); }
-        async function submitReview() {
-            const id = document.getElementById('review-product-id').value; const userName = document.getElementById('review-name').value || 'عميل'; const rating = document.getElementById('review-rating').value; const comment = document.getElementById('review-comment').value;
-            await fetch(`/api/products/${id}/review`, { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({userName, rating, comment}) });
-            alert("تم التقييم!"); document.getElementById('review-modal').classList.remove('active'); loadProducts();
-        }
-
-        /* Admin */
+        /* الإدارة (المركز الرئيسي) */
         function showDashboard() { document.getElementById('store-view').classList.add('hidden-el'); document.getElementById('main-nav').classList.add('hidden-el'); document.getElementById('dashboard-view').classList.add('active-dashboard'); switchTab('analytics'); }
-        function switchTab(tab) { document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active-section')); document.querySelectorAll('.sidebar-links a').forEach(a => a.classList.remove('active')); document.getElementById('sec-' + tab).classList.add('active-section'); document.getElementById('tab-' + tab).classList.add('active'); if(tab === 'view-orders') loadAdminOrders(); if(tab === 'analytics') loadAdminStats(); }
+        function switchTab(tab) { document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active-section')); document.querySelectorAll('.sidebar-links a').forEach(a => a.classList.remove('active')); document.getElementById('sec-' + tab).classList.add('active-section'); document.getElementById('tab-' + tab).classList.add('active'); if(tab === 'view-orders') loadAdminOrders(); if(tab === 'view-users') loadAdminUsers(); if(tab === 'analytics') loadAdminStats(); }
+        
         async function loadAdminStats() {
             const res = await fetch('/api/stats'); const stats = await res.json();
-            document.getElementById('stat-orders').innerText = stats.ordersCount; document.getElementById('stat-revenue').innerText = (stats.totalRevenue || 0).toLocaleString(); document.getElementById('stat-pending').innerText = stats.pendingOrders;
-        }
-        async function addNewProduct() {
-            const name = document.getElementById('p-name').value; const price = document.getElementById('p-price').value; const category = document.getElementById('p-category').value; const image = document.getElementById('p-image').value;
-            await fetch('/api/products', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, price, image, category }) }); alert("تم النشر!"); loadProducts();
+            document.getElementById('stat-orders').innerText = stats.ordersCount; 
+            document.getElementById('stat-revenue').innerText = (stats.totalRevenue || 0).toLocaleString(); 
+            document.getElementById('stat-users').innerText = stats.usersCount;
         }
 
-        let adminOrdersData = [];
+        async function addNewProduct() {
+            const name = document.getElementById('p-name').value; const price = document.getElementById('p-price').value; const category = document.getElementById('p-category').value; const image = document.getElementById('p-image').value;
+            await fetch('/api/products', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, price, image, category }) }); alert("تم النشر بنجاح!"); loadProducts();
+        }
+
         async function loadAdminOrders() {
-            const res = await fetch('/api/orders'); adminOrdersData = await res.json();
+            const res = await fetch('/api/orders'); const orders = await res.json();
             const tbody = document.getElementById('orders-table-body');
-            if(adminOrdersData.length === 0) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">لا توجد طلبات</td></tr>'; return; }
-            tbody.innerHTML = adminOrdersData.map((o, index) => {
+            if(orders.length === 0) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">لا توجد طلبات</td></tr>'; return; }
+            tbody.innerHTML = orders.map((o) => {
                 const paymentBadge = o.paymentStatus === 'مكتمل' ? '<span style="color:var(--accent-green); font-size:11px;">مكتمل ✅</span>' : '<span style="color:var(--accent-gold); font-size:11px;">معلق ⏳</span>';
-                return `<tr><td style="font-size:12px; font-family:monospace;">${o.transactionId}</td><td><div style="font-weight:bold;">${o.customerName}</div><div style="font-size:12px; color:var(--primary-neon);">${o.customerPhone}</div></td><td><div style="color:var(--secondary-neon); font-weight:bold;">${(o.finalTotal || 0).toLocaleString()} IQD</div><div style="font-size:12px; color:var(--text-muted);">${o.paymentMethod} (${paymentBadge})</div></td><td><select class="select-status" onchange="updateOrderStatus('${o.id}', this.value, '${o.paymentStatus}')" style="margin-bottom:5px;"><option value="قيد المعالجة ⏳" ${o.status === 'قيد المعالجة ⏳' ? 'selected' : ''}>قيد المعالجة</option><option value="جاري الشحن 🚚" ${o.status === 'جاري الشحن 🚚' ? 'selected' : ''}>جاري الشحن</option><option value="تم التوصيل ✅" ${o.status === 'تم التوصيل ✅' ? 'selected' : ''}>تم التوصيل</option><option value="ملغي ❌" ${o.status === 'ملغي ❌' ? 'selected' : ''}>ملغـي</option></select><br><button class="btn-cyber" style="padding:4px 8px; font-size:11px;" onclick="viewAdminInvoice(${index})">الفاتورة 📄</button></td></tr>`;
+                return `<tr><td style="font-size:12px; font-family:monospace;">${o.transactionId}</td><td><div style="font-weight:bold;">${o.customerName}</div><div style="font-size:12px; color:var(--primary-neon);">${o.customerPhone}</div></td><td><div style="color:var(--secondary-neon); font-weight:bold;">${(o.finalTotal || 0).toLocaleString()} IQD</div><div style="font-size:12px; color:var(--text-muted);">${o.paymentMethod} (${paymentBadge})</div></td><td><select class="select-status" onchange="updateOrderStatus('${o.id}', this.value, '${o.paymentStatus}')" style="margin-bottom:5px;"><option value="قيد المعالجة ⏳" ${o.status === 'قيد المعالجة ⏳' ? 'selected' : ''}>قيد المعالجة</option><option value="جاري الشحن 🚚" ${o.status === 'جاري الشحن 🚚' ? 'selected' : ''}>جاري الشحن</option><option value="تم التوصيل ✅" ${o.status === 'تم التوصيل ✅' ? 'selected' : ''}>تم التوصيل</option><option value="ملغي ❌" ${o.status === 'ملغي ❌' ? 'selected' : ''}>ملغـي</option></select></td></tr>`;
             }).join('');
         }
-        async function updateOrderStatus(id, newStatus, currentPaymentStatus) { let paymentStatus = currentPaymentStatus; if(newStatus === 'تم التوصيل ✅') paymentStatus = 'مكتمل'; await fetch(`/api/orders/${id}/status`, { method: 'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({status: newStatus, paymentStatus}) }); }
-        function viewAdminInvoice(index) {
-            const o = adminOrdersData[index];
-            const itemsHtml = o.items ? o.items.map(i => `<div style="display:flex; justify-content:space-between; margin-bottom:5px; border-bottom:1px solid #333;"><span>${i.name}</span><span>${Number(i.price).toLocaleString()} IQD</span></div>`).join('') : '';
-            const html = `<div style="text-align:center; margin-bottom:15px; border-bottom:1px dashed var(--secondary-neon); padding-bottom:10px;"><h3 style="color:#fff;">${o.transactionId}</h3><p style="color:var(--text-muted); font-size:12px;">تاريخ: ${new Date(o.createdAt).toLocaleString()}</p></div><div style="margin-bottom:15px;"><p><b>الاسم:</b> ${o.customerName}</p><p><b>الهاتف:</b> ${o.customerPhone}</p><p><b>العنوان:</b> ${o.customerAddress}</p></div><div style="background:rgba(0,0,0,0.5); padding:10px; border-radius:8px; margin-bottom:15px;"><h4 style="color:var(--primary-neon); margin-bottom:10px;">المنتجات:</h4>${itemsHtml}</div><div class="invoice-row"><span>المجموع الفرعي:</span><span>${(o.subtotal||0).toLocaleString()} IQD</span></div><div class="invoice-row"><span>الخصم:</span><span style="color:var(--accent-red);">${(o.discountAmount||0).toLocaleString()} IQD</span></div><div class="invoice-row"><span>التوصيل:</span><span>${(o.shippingFee||0).toLocaleString()} IQD</span></div><div class="invoice-row total" style="margin-top:10px;"><span>الإجمالي المدفوع:</span><span>${(o.finalTotal||0).toLocaleString()} IQD</span></div><div style="margin-top:10px; text-align:center; color:var(--accent-green);">طريقة الدفع: ${o.paymentMethod} (${o.paymentStatus})</div>`;
-            document.getElementById('invoice-details').innerHTML = html; document.getElementById('admin-invoice-modal').classList.add('active');
+
+        async function updateOrderStatus(id, newStatus, currentPaymentStatus) { 
+            let paymentStatus = currentPaymentStatus; if(newStatus === 'تم التوصيل ✅') paymentStatus = 'مكتمل'; 
+            await fetch(`/api/orders/${id}/status`, { method: 'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({status: newStatus, paymentStatus}) }); 
+        }
+
+        async function loadAdminUsers() {
+            const res = await fetch('/api/users'); const users = await res.json();
+            const tbody = document.getElementById('users-table-body');
+            if(users.length === 0) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">لا يوجد عملاء مسجلين</td></tr>'; return; }
+            tbody.innerHTML = users.map((u) => {
+                const roleBadge = u.role === 'admin' ? '🛡️ مدير' : '👤 عميل';
+                return `<tr><td>${u.id}</td><td style="color:var(--primary-neon); font-weight:bold;">${u.phone} (${roleBadge})</td><td style="color:var(--accent-green); font-weight:bold;">${(u.totalSpent || 0).toLocaleString()} IQD</td><td style="font-size:12px; color:var(--text-muted);">${new Date(u.createdAt).toLocaleDateString()}</td></tr>`;
+            }).join('');
         }
     </script>
 </body>
