@@ -6,7 +6,7 @@
     <title>CyberStore | Enterprise Command</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://www.paypal.com/sdk/js?client-id=BAAarCxsAmQmJjBovcJ_mgUqM2FkajysgS8f5y7HDhlW-V53-DYO8LiVgxWLZZlkRByf0gmNuNzFBDVRX4&currency=USD"></script>
-    <script src="/socket.io/socket.io.js"></script> <!-- مكتبة الاتصال الحي -->
+    <script src="/socket.io/socket.io.js"></script>
     
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;900&display=swap');
@@ -75,7 +75,6 @@
         .enterprise-table { width: 100%; border-collapse: collapse; text-align: right; }
         .enterprise-table th { background: rgba(0, 243, 255, 0.08); padding: 18px 20px; color: var(--primary-neon); font-size: 15px; border-bottom: 1px solid var(--border-neon); white-space: nowrap; }
         .enterprise-table td { padding: 18px 20px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 14px; vertical-align: middle; }
-        .status-badge { padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; display: inline-block; }
         .select-status { background: #000; color: #fff; border: 1px solid var(--border-neon); padding: 8px; border-radius: 6px; outline: none; cursor: pointer; }
         .hidden-el { display: none !important; }
         @media (max-width: 768px) { nav { flex-direction: column; gap: 15px; padding: 15px; } .sidebar { width: 100%; border-left: none; border-bottom: 1px solid var(--border-neon); padding: 15px; flex-direction: row; flex-wrap: wrap; justify-content: space-between;} .sidebar h3 { margin-bottom: 5px; width: 100%; } .live-badge { width: 100%; margin-bottom: 15px; } .sidebar-links { display: flex; width: 100%; overflow-x: auto; gap: 10px; } .dashboard-content, .store-container { padding: 20px; } .tools-bar { flex-direction: column; } }
@@ -193,7 +192,7 @@
         </div>
     </div>
 
-    <!-- نافذة الدفع (المحسنة مع التحقق الصارم) -->
+    <!-- نافذة الدفع -->
     <div class="modal-overlay" id="checkout-modal">
         <div class="modal-box">
             <div id="payment-processor" class="processing-overlay">
@@ -275,15 +274,18 @@
         function openAuthModal() { document.getElementById('auth-modal').classList.add('active'); }
         function closeAuthModal() { document.getElementById('auth-modal').classList.remove('active'); document.getElementById('step-phone').classList.remove('hidden-el'); document.getElementById('step-otp').classList.add('hidden-el');}
         
-        // التحقق الصارم من رقم الهاتف العراقي
+        // التحقق الصارم والمصحح من رقم الهاتف العراقي (11 رقم)
         function isValidIraqiPhone(phone) {
-            const regex = /^(07|\+9647)[0-9]{8}$/;
-            return regex.test(phone.replace(/\s/g, ''));
+            // إزالة الفراغات والفواصل
+            const cleanPhone = phone.replace(/[\s\-]/g, '');
+            // يقبل: 07 يليه 9 أرقام (المجموع 11)، أو +9647 يليه 8 أرقام، أو 9647 يليه 8 أرقام
+            const regex = /^(07[0-9]{9}|\+9647[0-9]{8}|9647[0-9]{8})$/;
+            return regex.test(cleanPhone);
         }
 
         async function sendWhatsAppCode() { 
             const phone = document.getElementById('phone-number').value;
-            if(!isValidIraqiPhone(phone)) return alert("يرجى إدخال رقم هاتف عراقي حقيقي مكون من 11 رقم");
+            if(!isValidIraqiPhone(phone)) return alert("يرجى إدخال رقم هاتف عراقي حقيقي مكون من 11 رقم (مثال: 078XXXXXXX)");
             const res = await fetch('/api/send-otp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone }) });
             if((await res.json()).success) { document.getElementById('step-phone').classList.add('hidden-el'); document.getElementById('step-otp').classList.remove('hidden-el'); }
         }
@@ -360,11 +362,10 @@
 
             paypal.Buttons({
                 onClick: function(data, actions) {
-                    // التحقق من صحة البيانات قبل فتح نافذة بايبال
                     const name = document.getElementById('cust-name').value.trim();
                     const phone = document.getElementById('cust-phone').value.trim();
                     if(name.length < 5 || !name.includes(' ')) { alert("عذراً، يجب إدخال اسمك الثنائي الحقيقي."); return actions.reject(); }
-                    if(!isValidIraqiPhone(phone)) { alert("يرجى إدخال رقم هاتف عراقي صحيح."); return actions.reject(); }
+                    if(!isValidIraqiPhone(phone)) { alert("يرجى إدخال رقم هاتف عراقي صحيح (11 رقم)."); return actions.reject(); }
                     return actions.resolve();
                 },
                 createOrder: function(data, actions) {
@@ -385,9 +386,8 @@
             const address = document.getElementById('cust-address').value.trim(); 
             let method = document.getElementById('selected-payment').value;
             
-            // فلاتر التحقق الصارمة للبيانات الحقيقية
             if(name.length < 5 || !name.includes(' ')) return alert("عذراً، يجب إدخال اسمك الثنائي الحقيقي لضمان التوصيل السليم.");
-            if(!isValidIraqiPhone(phone)) return alert("يرجى إدخال رقم هاتف عراقي صحيح.");
+            if(!isValidIraqiPhone(phone)) return alert("يرجى إدخال رقم هاتف عراقي صحيح (مثال: 078XXXXXXX).");
             if(address.length < 8) return alert("يرجى كتابة العنوان بشكل واضح ومفصل.");
 
             let paymentStatus = method === 'الدفع عند الاستلام' ? 'معلق' : 'مكتمل';
