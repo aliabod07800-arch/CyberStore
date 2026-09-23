@@ -131,7 +131,6 @@
                 </div>
             </div>
             
-            <!-- إضافة منتج مع رفع صورة حقيقي -->
             <div id="sec-add-product" class="admin-section">
                 <div style="background: var(--bg-surface); padding: 35px; border-radius: 16px; border: 1px solid var(--border-neon); max-width: 600px;">
                     <h2 style="color: var(--primary-neon); margin-bottom: 20px;">رفع منتج جديد 🖼️</h2>
@@ -244,14 +243,12 @@
         let allProducts = [], userCart = [], currentUser = null, discountMultiplier = 1;
         let calcSubtotal = 0, calcDiscount = 0, calcShipping = 5000, calcTotal = 0;
         
-        // الاتصال الحي (Sockets) + جرس التنبيه الصوتي للطلبات الجديدة في لوحة التحكم
         const socket = io();
         socket.on('live_update', (count) => {
             document.getElementById('live-count-display').innerText = count;
         });
 
         socket.on('new_order_received', (order) => {
-            // تشغيل جرس تنبيه صوتي فوري للمدير
             playNotificationSound();
             if(currentUser && currentUser.role === 'admin') {
                 alert(`🚨 تنبيه: وصل طلب شراء جديد برقم ${order.transactionId} بقيمة ${order.finalTotal.toLocaleString()} IQD!`);
@@ -265,7 +262,7 @@
                 const ctx = new (window.AudioContext || window.webkitAudioContext)();
                 const osc = ctx.createOscillator();
                 const gain = ctx.createGain();
-                osc.type = 'sine'; osc.frequency.value = 587.33; // نغمة رنين احترافية
+                osc.type = 'sine'; osc.frequency.value = 587.33;
                 gain.gain.setValueAtTime(0.1, ctx.currentTime);
                 osc.connect(gain); gain.connect(ctx.destination);
                 osc.start(); osc.stop(ctx.currentTime + 0.3);
@@ -358,7 +355,7 @@
             if(data.success) { alert(`تم تفعيل الخصم ${data.discount}%`); discountMultiplier = 1 - (data.discount / 100); updateCartModal(); } else alert("كود غير صالح");
         }
 
-        /* الدفع والتحقق الصارم */
+        /* الدفع والتحقق الصارم مع الإصلاح التام لـ PayPal */
         function openCheckoutModal() { if(userCart.length===0) return; closeCartModal(); document.getElementById('checkout-modal').classList.add('active'); }
         function closeCheckoutModal() { document.getElementById('checkout-modal').classList.remove('active'); document.getElementById('payment-processor').style.display = 'none'; }
         
@@ -382,18 +379,42 @@
                 onClick: function(data, actions) {
                     const name = document.getElementById('cust-name').value.trim();
                     const phone = document.getElementById('cust-phone').value.trim();
+                    const address = document.getElementById('cust-address').value.trim();
+                    
                     if(name.length < 5 || !name.includes(' ')) { alert("عذراً، يجب إدخال اسمك الثنائي الحقيقي."); return actions.reject(); }
                     if(!isValidIraqiPhone(phone)) { alert("يرجى إدخال رقم هاتف عراقي صحيح."); return actions.reject(); }
+                    if(address.length < 8) { alert("يرجى كتابة العنوان بشكل واضح ومفصل."); return actions.reject(); }
+                    
                     return actions.resolve();
                 },
                 createOrder: function(data, actions) {
-                    return fetch('/api/paypal/create-order', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ totalInUSD: totalUSD }) }).then(res => res.json()).then(orderData => orderData.id);
+                    return fetch('/api/paypal/create-order', { 
+                        method: 'POST', 
+                        headers: { 'Content-Type': 'application/json' }, 
+                        body: JSON.stringify({ totalInUSD: totalUSD }) 
+                    }).then(res => res.json()).then(orderData => orderData.id);
                 },
                 onApprove: function(data, actions) {
-                    document.getElementById('process-text').innerText = "جاري تأكيد الدفع من بايبال..."; document.getElementById('payment-processor').style.display = 'flex';
-                    return fetch('/api/paypal/capture-order', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderID: data.orderID }) }).then(res => res.json()).then(captureData => {
-                        if (captureData.success) submitFinalOrder(true); else { alert("فشلت عملية الدفع."); document.getElementById('payment-processor').style.display = 'none'; }
+                    document.getElementById('process-text').innerText = "جاري تأكيد الدفع الإلكتروني عبر بايبال..."; 
+                    document.getElementById('payment-processor').style.display = 'flex';
+                    
+                    return actions.order.capture().then(function(details) {
+                        // إرسال الطلب نهائياً وتخزينه وإرسال الواتساب للعميل
+                        submitFinalOrder(true);
+                    }).catch(err => {
+                        console.error(err);
+                        alert("حدث خطأ أثناء تأكيد الدفع عبر بايبال.");
+                        document.getElementById('payment-processor').style.display = 'none';
                     });
+                },
+                onCancel: function (data) {
+                    alert("تم إلغاء عملية الدفع.");
+                    document.getElementById('payment-processor').style.display = 'none';
+                },
+                onError: function (err) {
+                    console.error(err);
+                    alert("حدث خطأ في بوابة بايبال الآمنة.");
+                    document.getElementById('payment-processor').style.display = 'none';
                 }
             }).render('#paypal-button-container');
         }
@@ -421,7 +442,10 @@
                     method: 'POST', headers:{'Content-Type':'application/json'}, 
                     body: JSON.stringify({ customerName: name, customerPhone: phone, customerAddress: address, paymentMethod: method, items: userCart, finalTotal: calcTotal, status: 'قيد المعالجة ⏳', paymentStatus }) 
                 });
-                if((await res.json()).success) { alert("🌟 تم تسجيل طلبك بنجاح! تفقد الواتساب الخاص بك لتأكيد الطلب."); userCart=[]; document.getElementById('cart-count').innerText='0'; discountMultiplier=1; closeCheckoutModal(); }
+                if((await res.json()).success) { 
+                    alert("🌟 تم تسجيل طلبك بنجاح! تفقد الواتساب الخاص بك لتأكيد الطلب الفوري."); 
+                    userCart=[]; document.getElementById('cart-count').innerText='0'; discountMultiplier=1; closeCheckoutModal(); 
+                }
             } catch(e) {}
         }
 
@@ -438,7 +462,7 @@
             } else cont.innerHTML = '<p>لا توجد طلبات مسجلة بهذا الرقم.</p>';
         }
 
-        /* إدارة المركز (رفع الصور والمنتجات) */
+        /* لوحة الإدارة */
         function showDashboard() { document.getElementById('store-view').classList.add('hidden-el'); document.getElementById('main-nav').classList.add('hidden-el'); document.getElementById('dashboard-view').classList.add('active-dashboard'); switchTab('analytics'); }
         function switchTab(tab) { document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active-section')); document.querySelectorAll('.sidebar-links a').forEach(a => a.classList.remove('active')); document.getElementById('sec-' + tab).classList.add('active-section'); document.getElementById('tab-' + tab).classList.add('active'); if(tab === 'view-orders') loadAdminOrders(); if(tab === 'view-users') loadAdminUsers(); if(tab === 'analytics') loadAdminStats(); }
         
@@ -449,7 +473,6 @@
             document.getElementById('stat-users').innerText = stats.usersCount;
         }
 
-        // تحويل الصورة المرفوعة من الجهاز إلى Base64 لرفعها بدون روابط خارجية
         function addNewProductWithImage() {
             const name = document.getElementById('p-name').value; 
             const price = document.getElementById('p-price').value; 
@@ -469,7 +492,7 @@
                     headers: { 'Content-Type': 'application/json' }, 
                     body: JSON.stringify({ name, price, image: base64Image, category }) 
                 }); 
-                alert("تم رفع الصورة والمنتج بنجاح إلى المنصة السحابية! 🚀"); 
+                alert("تم رفع الصورة والمنتج بنجاح! 🚀"); 
                 loadProducts();
                 document.getElementById('p-name').value = '';
                 document.getElementById('p-price').value = '';
@@ -490,17 +513,14 @@
         async function updateOrderStatus(id, newStatus, currentPaymentStatus) { 
             let paymentStatus = currentPaymentStatus; if(newStatus === 'تم التوصيل ✅') paymentStatus = 'مكتمل'; 
             await fetch(`/api/orders/${id}/status`, { method: 'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({status: newStatus, paymentStatus}) });
-            alert("تم تحديث حالة الطلب وإرسال إشعار فوري عبر الواتساب للعميل! 📱");
+            alert("تم تحديث حالة الطلب وإرسال إشعار فوري للعميل عبر الواتساب! 📱");
         }
 
         async function loadAdminUsers() {
             const res = await fetch('/api/users'); const users = await res.json();
             const tbody = document.getElementById('users-table-body');
             if(users.length === 0) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">لا يوجد عملاء مسجلين</td></tr>'; return; }
-            tbody.innerHTML = users.users ? users.users.map((u) => {
-                const roleBadge = u.role === 'admin' ? '🛡️ مدير' : '👤 عميل';
-                return `<tr><td>${u.id}</td><td style="color:var(--primary-neon); font-weight:bold;">${u.phone} (${roleBadge})</td><td style="color:var(--accent-green); font-weight:bold;">${(u.totalSpent || 0).toLocaleString()} IQD</td><td style="font-size:12px; color:var(--text-muted);">${new Date(u.createdAt).toLocaleDateString()}</td></tr>`;
-            }).join('') : users.map((u) => {
+            tbody.innerHTML = users.map((u) => {
                 const roleBadge = u.role === 'admin' ? '🛡️ مدير' : '👤 عميل';
                 return `<tr><td>${u.id}</td><td style="color:var(--primary-neon); font-weight:bold;">${u.phone} (${roleBadge})</td><td style="color:var(--accent-green); font-weight:bold;">${(u.totalSpent || 0).toLocaleString()} IQD</td><td style="font-size:12px; color:var(--text-muted);">${new Date(u.createdAt).toLocaleDateString()}</td></tr>`;
             }).join('');
