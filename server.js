@@ -1,100 +1,130 @@
 const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
-const mongoose = require('mongoose');
 const path = require('path');
+const { Server } = require('socket.io');
+const http = require('http');
+const { Sequelize, DataTypes } = require('sequelize');
 
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, { cors: { origin: "*" } });
+
 app.use(express.json());
 app.use(cors());
 app.use(express.static(__dirname));
 
-const dbURI = 'mongodb+srv://aliabod07800_db_user:CYBER12300@cluster0.vnvizqu.mongodb.net/cyberstore?retryWrites=true&w=majority&appName=Cluster0';
+// ==========================================
+// 1. إعداد الاتصال بقاعدة بيانات MySQL
+// ==========================================
+// استبدل 'cyberstore_db', 'root', 'password' ببيانات قاعدة MySQL الخاصة بك
+const sequelize = new Sequelize('cyberstore_db', 'root', '', {
+    host: 'localhost', // أو رابط استضافة MySQL السحابية (مثل PlanetScale أو AWS RDS)
+    dialect: 'mysql',
+    logging: false // لإيقاف طباعة استعلامات SQL في الطرفية
+});
 
-mongoose.connect(dbURI, { serverSelectionTimeoutMS: 30000 })
-    .then(() => console.log('✅ تم الاتصال بقاعدة البيانات السحابية!'))
-    .catch((err) => console.error('❌ خطأ في الاتصال:', err.message));
+// ==========================================
+// 2. بناء هياكل الجداول (Models)
+// ==========================================
+const Product = sequelize.define('Product', {
+    name: { type: DataTypes.STRING, allowNull: false },
+    price: { type: DataTypes.STRING, allowNull: false },
+    image: { type: DataTypes.STRING },
+    category: { type: DataTypes.STRING, defaultValue: 'أخرى' }
+});
 
-// هيكل المنتج مع المراجعات
-const Product = mongoose.model('Product', new mongoose.Schema({
-    name: String,
-    price: String,
-    image: String,
-    category: { type: String, default: 'أخرى' },
-    reviews: [{ userName: String, rating: Number, comment: String, date: { type: Date, default: Date.now } }],
-    createdAt: { type: Date, default: Date.now }
-}));
+const Review = sequelize.define('Review', {
+    userName: { type: DataTypes.STRING, defaultValue: 'مستخدم مجهول' },
+    rating: { type: DataTypes.INTEGER, allowNull: false },
+    comment: { type: DataTypes.TEXT }
+});
 
-// هيكل الطلبات المتقدم
-const Order = mongoose.model('Order', new mongoose.Schema({
-    customerName: String,
-    customerPhone: String,
-    customerAddress: String,
-    paymentMethod: String,
-    notes: String,
-    items: Array,
-    total: String,
-    discountApplied: { type: Boolean, default: false },
-    status: { type: String, default: 'قيد المعالجة ⏳' }, // الحالات: قيد المعالجة، جاري الشحن، تم التوصيل
-    createdAt: { type: Date, default: Date.now }
-}));
+// العلاقة: المنتج الواحد يمتلك عدة مراجعات
+Product.hasMany(Review, { as: 'reviews', onDelete: 'CASCADE' });
+Review.belongsTo(Product);
 
-// هيكل الكوبونات
-const Coupon = mongoose.model('Coupon', new mongoose.Schema({
-    code: String,
-    discountPercent: Number,
-    isActive: { type: Boolean, default: true }
-}));
+const Order = sequelize.define('Order', {
+    customerName: { type: DataTypes.STRING, allowNull: false },
+    customerPhone: { type: DataTypes.STRING, allowNull: false },
+    customerAddress: { type: DataTypes.TEXT, allowNull: false },
+    paymentMethod: { type: DataTypes.STRING },
+    notes: { type: DataTypes.TEXT },
+    items: { type: DataTypes.JSON }, // تخزين المنتجات كمصفوفة JSON
+    total: { type: DataTypes.STRING },
+    discountApplied: { type: DataTypes.BOOLEAN, defaultValue: false },
+    status: { type: DataTypes.STRING, defaultValue: 'قيد المعالجة ⏳' }
+});
+
+const Coupon = sequelize.define('Coupon', {
+    code: { type: DataTypes.STRING, unique: true, allowNull: false },
+    discountPercent: { type: DataTypes.INTEGER, allowNull: false },
+    isActive: { type: DataTypes.BOOLEAN, defaultValue: true }
+});
+
+// مزامنة الجداول مع قاعدة البيانات (إنشاؤها إذا لم تكن موجودة)
+sequelize.sync({ alter: true })
+    .then(async () => {
+        console.log('✅ تم الاتصال بقاعدة بيانات MySQL ومزامنة الجداول بنجاح!');
+        // إنشاء كوبون افتراضي إذا لم يكن موجوداً
+        await Coupon.findOrCreate({
+            where: { code: 'CYBER20' },
+            defaults: { discountPercent: 20 }
+        });
+    })
+    .catch(err => console.error('❌ خطأ في الاتصال بقاعدة بيانات MySQL:', err));
 
 const otpDatabase = {};
 
-// --- مسارات المنتجات والمراجعات ---
+// ==========================================
+// 3. مسارات واجهة برمجة التطبيقات (API Routes)
+// ==========================================
+
 app.get('/api/products', async (req, res) => {
     try {
-        const products = await Product.find().sort({ createdAt: -1 });
+        const products = await Product.findAll({
+            include: [{ model: Review, as: 'reviews' }],
+            order: [['createdAt', 'DESC']]
+        });
         res.json(products);
-    } catch (err) { res.json([]); }
+    } catch (err) { res.status(500).json([]); }
 });
 
 app.post('/api/products', async (req, res) => {
     try {
-        const { name, price, image, category } = req.body;
-        const newProduct = new Product({ name, price, image, category });
-        await newProduct.save();
+        const newProduct = await Product.create(req.body);
         res.json({ success: true, product: newProduct });
-    } catch (err) { res.status(500).json({ success: false }); }
+    } catch (err) { res.status(500).json({ success: false, error: err.message }); }
 });
 
 app.post('/api/products/:id/review', async (req, res) => {
     try {
-        const { userName, rating, comment } = req.body;
-        const product = await Product.findById(req.params.id);
-        product.reviews.push({ userName, rating, comment });
-        await product.save();
+        await Review.create({ ...req.body, ProductId: req.params.id });
         res.json({ success: true });
     } catch (err) { res.status(500).json({ success: false }); }
 });
 
-// --- مسارات الطلبات وإدارتها ---
 app.post('/api/orders', async (req, res) => {
     try {
-        const newOrder = new Order(req.body);
-        await newOrder.save();
+        const newOrder = await Order.create(req.body);
+        io.emit('new_order_received', newOrder); // إشعار لحظي للوحة الإدارة
         res.json({ success: true, order: newOrder });
-    } catch (err) { res.status(500).json({ success: false }); }
+    } catch (err) { res.status(500).json({ success: false, error: err.message }); }
 });
 
 app.get('/api/orders', async (req, res) => {
     try {
-        const orders = await Order.find().sort({ createdAt: -1 });
+        const orders = await Order.findAll({ order: [['createdAt', 'DESC']] });
         res.json(orders);
-    } catch (err) { res.json([]); }
+    } catch (err) { res.status(500).json([]); }
 });
 
 app.put('/api/orders/:id/status', async (req, res) => {
     try {
         const { status } = req.body;
-        await Order.findByIdAndUpdate(req.params.id, { status });
+        await Order.update({ status }, { where: { id: req.params.id } });
+        const updatedOrder = await Order.findByPk(req.params.id);
+        io.emit('order_status_updated', updatedOrder); // إشعار لحظي للعميل
         res.json({ success: true });
     } catch (err) { res.status(500).json({ success: false }); }
 });
@@ -102,32 +132,35 @@ app.put('/api/orders/:id/status', async (req, res) => {
 app.post('/api/track-order', async (req, res) => {
     try {
         const { phone } = req.body;
-        const userOrders = await Order.find({ customerPhone: phone }).sort({ createdAt: -1 });
+        const userOrders = await Order.findAll({ 
+            where: { customerPhone: phone },
+            order: [['createdAt', 'DESC']]
+        });
         res.json({ success: true, orders: userOrders });
     } catch (err) { res.status(500).json({ success: false }); }
 });
 
-// --- نظام الكوبونات ---
 app.post('/api/validate-coupon', async (req, res) => {
     try {
         const { code } = req.body;
-        const coupon = await Coupon.findOne({ code: code, isActive: true });
+        const coupon = await Coupon.findOne({ where: { code: code, isActive: true } });
         if (coupon) res.json({ success: true, discount: coupon.discountPercent });
         else res.json({ success: false, message: 'الكوبون غير صالح أو منتهي' });
     } catch (err) { res.status(500).json({ success: false }); }
 });
 
-// --- الإحصائيات ---
 app.get('/api/stats', async (req, res) => {
     try {
-        const ordersCount = await Order.countDocuments();
-        const productsCount = await Product.countDocuments();
-        const pendingOrders = await Order.countDocuments({ status: 'قيد المعالجة ⏳' });
+        const ordersCount = await Order.count();
+        const productsCount = await Product.count();
+        const pendingOrders = await Order.count({ where: { status: 'قيد المعالجة ⏳' } });
         res.json({ ordersCount, productsCount, pendingOrders });
     } catch (err) { res.json({ ordersCount: 0, productsCount: 0, pendingOrders: 0 }); }
 });
 
-// --- المصادقة ---
+// ==========================================
+// 4. مسارات المصادقة (OTP)
+// ==========================================
 app.post('/api/send-otp', async (req, res) => {
     const { phone } = req.body;
     if (!phone) return res.status(400).json({ success: false, message: 'يرجى إرسال رقم الهاتف' });
@@ -155,12 +188,14 @@ app.post('/api/verify-otp', (req, res) => {
     }
 });
 
-app.get('/', (req, res) => { res.sendFile(path.join(__dirname, 'index.html')); });
-
-// إنشاء كوبون افتراضي لأغراض الاختبار (CYBER20) يخصم 20%
-Coupon.findOne({ code: 'CYBER20' }).then(c => {
-    if(!c) new Coupon({ code: 'CYBER20', discountPercent: 20 }).save();
+// ==========================================
+// 5. إعداد الاتصال اللحظي وتهيئة الخادم
+// ==========================================
+io.on('connection', (socket) => {
+    console.log('⚡ اتصال جديد عبر WebSockets:', socket.id);
 });
 
+app.get('/', (req, res) => { res.sendFile(path.join(__dirname, 'index.html')); });
+
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🚀 الخادم جاهز على منفذ: ${PORT}`));
+server.listen(PORT, () => console.log(`🚀 الخادم الحي جاهز على منفذ: ${PORT}`));
