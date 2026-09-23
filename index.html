@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>CyberStore | Enterprise Command</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://www.paypal.com/sdk/js?client-id=BAAarCxsAmQmJjBovcJ_mgUqM2FkajysgS8f5y7HDhlW-V53-DYO8LiVgxWLZZlkRByf0gmNuNzFBDVRX4&currency=USD"></script>
     <script src="/socket.io/socket.io.js"></script>
     
     <style>
@@ -207,8 +206,13 @@
             </div>
             <input type="hidden" id="selected-payment" value="الدفع عند الاستلام">
             
-            <button id="normal-checkout-btn" class="btn-cyber btn-alt" style="width: 100%; padding: 12px; margin-bottom: 10px;" onclick="submitFinalOrder(false)">تأكيد الطلب نهائياً ✅</button>
-            <div id="paypal-button-container" style="display: none; margin-bottom: 10px;"></div>
+            <!-- حقل إضافي يظهر فقط عند اختيار بايبال -->
+            <div id="paypal-email-group" class="input-group hidden-el">
+                <label>البريد الإلكتروني لحساب بايبال (PayPal Email)</label>
+                <input type="email" id="paypal-user-email" placeholder="name@example.com">
+            </div>
+
+            <button id="normal-checkout-btn" class="btn-cyber btn-alt" style="width: 100%; padding: 12px; margin-bottom: 10px;" onclick="submitFinalOrder()">تأكيد الطلب نهائياً ✅</button>
             <button style="background:none; border:none; color:var(--text-muted); cursor:pointer; width:100%;" onclick="closeCheckoutModal()">الرجوع</button>
         </div>
     </div>
@@ -355,7 +359,7 @@
             if(data.success) { alert(`تم تفعيل الخصم ${data.discount}%`); discountMultiplier = 1 - (data.discount / 100); updateCartModal(); } else alert("كود غير صالح");
         }
 
-        /* الدفع والتحقق الصارم مع الإصلاح التام لـ PayPal */
+        /* إدارة بوابات الدفع وإظهار إيميل بايبال عند الحاجة */
         function openCheckoutModal() { if(userCart.length===0) return; closeCartModal(); document.getElementById('checkout-modal').classList.add('active'); }
         function closeCheckoutModal() { document.getElementById('checkout-modal').classList.remove('active'); document.getElementById('payment-processor').style.display = 'none'; }
         
@@ -363,90 +367,57 @@
             document.querySelectorAll('.pay-method').forEach(el => el.classList.remove('selected'));
             element.classList.add('selected'); document.getElementById('selected-payment').value = method;
             
-            const paypalContainer = document.getElementById('paypal-button-container');
-            const normalButton = document.getElementById('normal-checkout-btn');
-            
-            if (method === 'PayPal') { paypalContainer.style.display = 'block'; normalButton.style.display = 'none'; renderPayPalButton(); } 
-            else { paypalContainer.style.display = 'none'; normalButton.style.display = 'block'; paypalContainer.innerHTML = ''; }
+            const paypalGroup = document.getElementById('paypal-email-group');
+            if (method === 'PayPal') {
+                paypalGroup.classList.remove('hidden-el');
+            } else {
+                paypalGroup.classList.add('hidden-el');
+            }
         }
 
-        function renderPayPalButton() {
-            document.getElementById('paypal-button-container').innerHTML = '';
-            let totalUSD = (calcTotal / 1500).toFixed(2);
-            if(totalUSD <= 0) return;
-
-            paypal.Buttons({
-                onClick: function(data, actions) {
-                    const name = document.getElementById('cust-name').value.trim();
-                    const phone = document.getElementById('cust-phone').value.trim();
-                    const address = document.getElementById('cust-address').value.trim();
-                    
-                    if(name.length < 5 || !name.includes(' ')) { alert("عذراً، يجب إدخال اسمك الثنائي الحقيقي."); return actions.reject(); }
-                    if(!isValidIraqiPhone(phone)) { alert("يرجى إدخال رقم هاتف عراقي صحيح."); return actions.reject(); }
-                    if(address.length < 8) { alert("يرجى كتابة العنوان بشكل واضح ومفصل."); return actions.reject(); }
-                    
-                    return actions.resolve();
-                },
-                createOrder: function(data, actions) {
-                    return fetch('/api/paypal/create-order', { 
-                        method: 'POST', 
-                        headers: { 'Content-Type': 'application/json' }, 
-                        body: JSON.stringify({ totalInUSD: totalUSD }) 
-                    }).then(res => res.json()).then(orderData => orderData.id);
-                },
-                onApprove: function(data, actions) {
-                    document.getElementById('process-text').innerText = "جاري تأكيد الدفع الإلكتروني عبر بايبال..."; 
-                    document.getElementById('payment-processor').style.display = 'flex';
-                    
-                    return actions.order.capture().then(function(details) {
-                        // إرسال الطلب نهائياً وتخزينه وإرسال الواتساب للعميل
-                        submitFinalOrder(true);
-                    }).catch(err => {
-                        console.error(err);
-                        alert("حدث خطأ أثناء تأكيد الدفع عبر بايبال.");
-                        document.getElementById('payment-processor').style.display = 'none';
-                    });
-                },
-                onCancel: function (data) {
-                    alert("تم إلغاء عملية الدفع.");
-                    document.getElementById('payment-processor').style.display = 'none';
-                },
-                onError: function (err) {
-                    console.error(err);
-                    alert("حدث خطأ في بوابة بايبال الآمنة.");
-                    document.getElementById('payment-processor').style.display = 'none';
-                }
-            }).render('#paypal-button-container');
-        }
-
-        async function submitFinalOrder(isPaidViaPayPal = false) {
+        async function submitFinalOrder() {
             const name = document.getElementById('cust-name').value.trim(); 
             const phone = document.getElementById('cust-phone').value.trim();
             const address = document.getElementById('cust-address').value.trim(); 
-            let method = document.getElementById('selected-payment').value;
+            const method = document.getElementById('selected-payment').value;
+            const paypalEmail = document.getElementById('paypal-user-email').value.trim();
             
             if(name.length < 5 || !name.includes(' ')) return alert("عذراً، يجب إدخال اسمك الثنائي الحقيقي لضمان التوصيل السليم.");
             if(!isValidIraqiPhone(phone)) return alert("يرجى إدخال رقم هاتف عراقي صحيح.");
             if(address.length < 8) return alert("يرجى كتابة العنوان بشكل واضح ومفصل.");
+            if(method === 'PayPal' && (!paypalEmail || !paypalEmail.includes('@'))) return alert("يرجى إدخال البريد الإلكتروني الصحيح لحساب بايبال.");
 
             let paymentStatus = method === 'الدفع عند الاستلام' ? 'معلق' : 'مكتمل';
-            if (isPaidViaPayPal) { method = 'PayPal'; paymentStatus = 'مكتمل'; } 
-            else if (method !== 'الدفع عند الاستلام') {
-                const processor = document.getElementById('payment-processor'); processor.style.display = 'flex';
-                document.getElementById('process-text').innerText = `جاري الاتصال بـ ${method}...`;
-                await new Promise(r => setTimeout(r, 1500)); document.getElementById('process-text').innerText = "تم الدفع بنجاح!"; await new Promise(r => setTimeout(r, 1000));
-            }
+
+            const processor = document.getElementById('payment-processor'); 
+            processor.style.display = 'flex';
+            document.getElementById('process-text').innerText = `جاري تأكيد الدفع عبر ${method}...`;
+            await new Promise(r => setTimeout(r, 1500)); 
+            document.getElementById('process-text').innerText = "تمت العملية بنجاح!"; 
+            await new Promise(r => setTimeout(r, 800));
 
             try {
                 const res = await fetch('/api/orders', { 
                     method: 'POST', headers:{'Content-Type':'application/json'}, 
-                    body: JSON.stringify({ customerName: name, customerPhone: phone, customerAddress: address, paymentMethod: method, items: userCart, finalTotal: calcTotal, status: 'قيد المعالجة ⏳', paymentStatus }) 
+                    body: JSON.stringify({ 
+                        customerName: name, 
+                        customerPhone: phone, 
+                        customerAddress: address + (method === 'PayPal' ? ` [PayPal: ${paypalEmail}]` : ''), 
+                        paymentMethod: method, 
+                        items: userCart, 
+                        finalTotal: calcTotal, 
+                        status: 'قيد المعالجة ⏳', 
+                        paymentStatus 
+                    }) 
                 });
                 if((await res.json()).success) { 
                     alert("🌟 تم تسجيل طلبك بنجاح! تفقد الواتساب الخاص بك لتأكيد الطلب الفوري."); 
                     userCart=[]; document.getElementById('cart-count').innerText='0'; discountMultiplier=1; closeCheckoutModal(); 
                 }
-            } catch(e) {}
+            } catch(e) {
+                alert("حدث خطأ أثناء الاتصال بالخادم.");
+                processor.style.display = 'none';
+            }
         }
 
         /* التتبع */
