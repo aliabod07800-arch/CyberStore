@@ -17,12 +17,15 @@ const sequelize = process.env.DATABASE_URL
     ? new Sequelize(process.env.DATABASE_URL, { dialect: 'postgres', protocol: 'postgres', logging: false })
     : new Sequelize({ dialect: 'sqlite', storage: 'database.sqlite', logging: false });
 
+// جدول المستخدمين مع نظام نقاط الولاء (Cyber-Points)
 const User = sequelize.define('User', {
     phone: { type: DataTypes.STRING, unique: true, allowNull: false },
     role: { type: DataTypes.STRING, defaultValue: 'customer' },
-    totalSpent: { type: DataTypes.FLOAT, defaultValue: 0 }
+    totalSpent: { type: DataTypes.FLOAT, defaultValue: 0 },
+    cyberPoints: { type: DataTypes.INTEGER, defaultValue: 100 } // نقاط ولاء ابتدائية للعميل
 });
 
+// جدول الطلبات
 const Order = sequelize.define('Order', {
     transactionId: { type: DataTypes.STRING, unique: true, allowNull: false },
     customerName: { type: DataTypes.STRING, allowNull: false },
@@ -35,11 +38,22 @@ const Order = sequelize.define('Order', {
     paymentStatus: { type: DataTypes.STRING, defaultValue: 'معلق' }
 });
 
+// جدول المنتجات
 const Product = sequelize.define('Product', {
     name: { type: DataTypes.STRING, allowNull: false },
     price: { type: DataTypes.FLOAT, allowNull: false },
     category: { type: DataTypes.STRING, allowNull: false },
     image: { type: DataTypes.TEXT, allowNull: false }
+});
+
+// جدول المزادات الحية (Live Cyber Auctions)
+const Auction = sequelize.define('Auction', {
+    title: { type: DataTypes.STRING, allowNull: false },
+    currentPrice: { type: DataTypes.FLOAT, allowNull: false },
+    highestBidder: { type: DataTypes.STRING, defaultValue: 'لا يوجد مزايد بعد' },
+    image: { type: DataTypes.TEXT, allowNull: false },
+    endTime: { type: DataTypes.DATE, allowNull: false },
+    status: { type: DataTypes.STRING, defaultValue: 'active' } // active / ended
 });
 
 const Coupon = sequelize.define('Coupon', {
@@ -104,7 +118,7 @@ app.post('/api/verify-otp', async (req, res) => {
                 role = user.role;
             }
 
-            res.json({ success: true, phone: user.phone, role: user.role });
+            res.json({ success: true, phone: user.phone, role: user.role, points: user.cyberPoints });
         } else {
             res.status(400).json({ success: false, error: 'رمز التحقق غير صحيح' });
         }
@@ -125,8 +139,8 @@ app.post('/api/ai-assistant', async (req, res) => {
         if (lowerPrompt.includes('تجميعة') || lowerPrompt.includes('بي سي') || lowerPrompt.includes('pc') || lowerPrompt.includes('ألعاب')) {
             const gamingItems = products.filter(p => p.category === 'أجهزة' || p.category === 'ألعاب');
             aiReply += `أنصحك بتجميعة احترافية تضم أقوى قطع الـ PC المتوفرة لدينا لضمان أداء عالي وسرعة فائقة.\n\nالمنتجات المقترحة:\n` + gamingItems.map(i => `- ${i.name} بسعر ${i.price.toLocaleString()} IQD`).join('\n') + `\n\nتفضل بإضافتها للسلة واستمتع بقوة الأداء!`;
-        } else if (lowerPrompt.includes('سعر') || lowerPrompt.includes('رخيص') || lowerPrompt.includes('ميزانية')) {
-            aiReply += `لدينا عروض وخيارات تناسب كافة الميزانيات مع ضمان حقيقي وتوصيل سريع لكافة المحافظات العراقية. تصفح الأقسام أو أخبرني بما تحتاجه!`;
+        } else if (lowerPrompt.includes('مزايدة') || lowerPrompt.includes('مزاد')) {
+            aiReply += `لدشنا قسم مزادات حية (Live Cyber Auctions) يتيح لك المزايدة على أجهزة نادرة بأسعار مذهلة! تصفح قسم المزادات في المتجر الآن.`;
         } else {
             aiReply += `أنا هنا لمساعدتك في اختيار أفضل الأجهزة والإكسسوارات. اسألني عن أي منتج وسأشرح لك تفاصيله الفنية بدقة!`;
         }
@@ -134,6 +148,42 @@ app.post('/api/ai-assistant', async (req, res) => {
         res.json({ success: true, reply: aiReply });
     } catch(e) {
         res.json({ success: true, reply: "أهلاً بك! تفضل بسؤالي عن أي منتج وسأساعدك فوراً." });
+    }
+});
+
+// مسارات المزادات الحية
+app.get('/api/auctions', async (req, res) => {
+    try {
+        const auctions = await Auction.findAll({ where: { status: 'active' } });
+        res.json(auctions);
+    } catch(e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+app.post('/api/bid', async (req, res) => {
+    try {
+        const { auctionId, phone, bidAmount } = req.body;
+        const auction = await Auction.findByPk(auctionId);
+        
+        if (!auction || auction.status !== 'active') {
+            return res.json({ success: false, error: 'المزاد غير متوفر أو انتهى' });
+        }
+
+        if (bidAmount <= auction.currentPrice) {
+            return res.json({ success: false, error: 'مبلغ المزايدة يجب أن يكون أعلى من السعر الحالي' });
+        }
+
+        auction.currentPrice = bidAmount;
+        auction.highestBidder = phone;
+        await auction.save();
+
+        // بث تحديث المزاد لحظياً عبر الـ WebSockets لكل المتصلين
+        io.emit('auction_update', auction);
+
+        res.json({ success: true, auction });
+    } catch(e) {
+        res.status(500).json({ success: false, error: e.message });
     }
 });
 
@@ -173,11 +223,15 @@ app.post('/api/orders', async (req, res) => {
             paymentStatus
         });
 
+        // منح العميل نقاط ولاء بنسبة 5% من قيمة المشتريات
+        const earnedPoints = Math.floor(finalTotal / 10000);
+        await User.increment('cyberPoints', { by: earnedPoints, where: { phone: customerPhone } });
+
         io.emit('new_order_received', order);
 
-        await sendWhatsAppMessage(customerPhone, `⚡ *CyberStore Global*\n\nعزيزي *${customerName}*,\nتم استلام طلبك برقم المعاملة: *${transactionId}* بقيمة *${finalTotal.toLocaleString()} IQD*.\nطريقة الدفع: *${paymentMethod}* (معلق بانتظار التحقق).\n\nسنقوم بإعلامك فور الموافقة وشحن الطلب!`);
+        await sendWhatsAppMessage(customerPhone, `⚡ *CyberStore Global*\n\nعزيزي *${customerName}*,\nتم استلام طلبك برقم المعاملة: *${transactionId}* بقيمة *${finalTotal.toLocaleString()} IQD*.\nلقد ربحت *${earnedPoints}* نقطة ولاء جديدة في محفظتك!\n\nسنقوم بإعلامك فور الموافقة وشحن الطلب!`);
 
-        res.json({ success: true, order });
+        res.json({ success: true, order, earnedPoints });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
     }
@@ -282,6 +336,20 @@ sequelize.sync().then(async () => {
     const existingCoupon = await Coupon.findOne({ where: { code: 'CYBER20' } });
     if (!existingCoupon) {
         await Coupon.create({ code: 'CYBER20', discount: 20 });
+    }
+
+    // إنشاء مزاد تجريبي حي افتراضي إذا لم يوجد مزاد نشط
+    const activeAuction = await Auction.findOne({ where: { status: 'active' } });
+    if (!activeAuction) {
+        let futureDate = new Date();
+        futureDate.setHours(futureDate.getHours() + 5);
+        await Auction.create({
+            title: 'بطاقة رسوميات فائقة RTX 4090 OC Edition',
+            currentPrice: 1500000,
+            image: 'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&w=600&q=80',
+            endTime: futureDate,
+            status: 'active'
+        });
     }
 
     const PORT = process.env.PORT || 3000;

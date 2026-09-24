@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CyberStore | 3D Space Enterprise</title>
+    <title>CyberStore | 3D Space & Live Auctions</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     
@@ -127,6 +127,29 @@
         }
         .cyber-hero h1 { font-size: 32px; font-weight: 900; margin-bottom: 12px; color: #fff; text-shadow: 0 0 20px var(--primary-neon); }
         .cyber-hero p { color: var(--text-muted); font-size: 14px; max-width: 700px; margin: 0 auto; }
+
+        /* قسم المزادات الحية (Live Auctions Banner) */
+        .auction-banner {
+            background: linear-gradient(135deg, rgba(188, 19, 254, 0.15), rgba(0, 243, 255, 0.15));
+            border: 1px solid var(--secondary-neon);
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 35px;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.6), var(--glow-purple);
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            align-items: center;
+        }
+        .auction-timer {
+            font-size: 22px;
+            font-weight: 900;
+            color: var(--accent-gold);
+            text-shadow: 0 0 15px rgba(255, 183, 0, 0.5);
+            font-family: monospace;
+            margin: 10px 0;
+        }
 
         .tools-bar { 
             display: flex; 
@@ -295,9 +318,27 @@
 
     <div id="store-view" class="store-container">
         <div class="cyber-hero">
-            <h1>مركز التسوق التقني الفضائي</h1>
-            <p>منصة تجارية ثلاثية الأبعاد مؤمنة، مدعومة بالمساعد الذكي للتجميعات وإشعارات الواتساب.</p>
+            <h1>مركز التسوق التقني الفضائي والمزادات الحية</h1>
+            <p>منصة تجارية ثلاثية الأبعاد، مزادات لحظية بالثواني، نقاط ولاء ومحفظة كريبتو، مع مساعد ذكي للتجميعات.</p>
         </div>
+
+        <!-- قسم المزادات الحية (Live Cyber Auctions Banner) -->
+        <div id="live-auction-container" class="auction-banner">
+            <div>
+                <span style="background:var(--accent-red); color:#fff; padding:4px 10px; border-radius:12px; font-size:11px; font-weight:bold;">🔥 مزاد حي مباشر</span>
+                <h2 id="auction-title" style="margin-top:10px; font-size:20px; color:var(--primary-neon);">جاري تحميل المزاد...</h2>
+                <div class="auction-timer" id="auction-timer">00:00:00</div>
+                <p style="font-size:13px; color:var(--text-muted);">أعلى مزايد حالي: <b id="auction-bidder" style="color:var(--accent-gold);">-</b></p>
+            </div>
+            <div style="text-align:center;">
+                <div style="width:100%; height:140px; border-radius:12px; overflow:hidden; margin-bottom:10px; border:1px solid var(--border-neon);">
+                    <img id="auction-img" src="" style="width:100%; height:100%; object-fit:cover;">
+                </div>
+                <div style="font-size:18px; font-weight:900; color:var(--accent-green); margin-bottom:10px;" id="auction-price">0 IQD</div>
+                <button class="btn-cyber btn-alt" style="width:100%; padding:10px;" onclick="placeBid()">زايد الآن بـ +50,000 IQD ⚡</button>
+            </div>
+        </div>
+
         <div class="tools-bar">
             <div class="category-filters" id="category-filters">
                 <button class="filter-btn active" onclick="filterProducts('الكل')">الكل</button>
@@ -375,7 +416,7 @@
                 <h2 style="margin-bottom: 20px; text-shadow: var(--glow-purple);">قاعدة بيانات العملاء (CRM)</h2>
                 <div class="enterprise-table-container">
                     <table class="enterprise-table">
-                        <thead><tr><th>ID</th><th>رقم الهاتف</th><th>إجمالي المشتريات</th><th>التسجيل</th></tr></thead>
+                        <thead><tr><th>ID</th><th>رقم الهاتف</th><th>نقاط الولاء</th><th>المشتريات</th><th>التسجيل</th></tr></thead>
                         <tbody id="users-table-body"></tbody>
                     </table>
                 </div>
@@ -445,7 +486,7 @@
     <div class="modal-overlay" id="auth-modal">
         <div class="modal-box">
             <h2>تسجيل الدخول الإجباري 🔒</h2>
-            <p style="text-align: center; color: var(--text-muted); font-size: 12px; margin-bottom: 12px;">أدخل رقم هاتفك العراقي للتمكن من السلة والشراء.</p>
+            <p style="text-align: center; color: var(--text-muted); font-size: 12px; margin-bottom: 12px;">أدخل رقم هاتفك العراقي للتمكن من السلة والمزادات والشراء.</p>
             <div id="step-phone">
                 <div class="input-group"><label>رقم الهاتف</label><input type="tel" id="phone-number" placeholder="07XXXXXXXXX"></div>
                 <button class="btn-cyber" style="width: 100%; padding: 11px;" onclick="sendWhatsAppCode()">طلب كود الـ OTP عبر الواتساب 📱</button>
@@ -468,7 +509,7 @@
         </div>
     </div>
 
-    <!-- زر المساعد الذكي الخبير العائم (AI Tech Assistant) -->
+    <!-- المساعد الذكي الخبير العائم -->
     <div id="ai-chat-bubble" onclick="toggleAIChat()" style="position: fixed; bottom: 25px; left: 25px; background: linear-gradient(135deg, var(--primary-neon), var(--secondary-neon)); color: #000; width: 60px; height: 60px; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 9998; box-shadow: 0 0 25px var(--primary-neon); font-size: 24px; font-weight: bold; transition: 0.3s;">🤖</div>
 
     <div id="ai-chat-box" style="position: fixed; bottom: 95px; left: 25px; width: 350px; max-width: 90vw; height: 450px; background: rgba(10, 12, 24, 0.95); border: 1px solid var(--primary-neon); border-radius: 20px; z-index: 9998; display: none; flex-direction: column; backdrop-filter: blur(20px); box-shadow: 0 20px 50px rgba(0,0,0,0.8), var(--glow-cyan);">
@@ -477,10 +518,10 @@
             <button onclick="toggleAIChat()" style="background:none; border:none; color:#fff; cursor:pointer; font-size:16px;">✕</button>
         </div>
         <div id="ai-messages-container" style="flex: 1; padding: 15px; overflow-y: auto; font-size: 13px; display: flex; flex-direction: column; gap: 10px;">
-            <div style="background: rgba(0,243,255,0.1); padding: 10px; border-radius: 10px; border-right: 3px solid var(--primary-neon);">مرحباً بك! أنا خبير التجميعات والمنتجات في CyberStore. اسألني عن أي جهاز أو تجميعة وسأشرح لك تفاصيلها فوراً!</div>
+            <div style="background: rgba(0,243,255,0.1); padding: 10px; border-radius: 10px; border-right: 3px solid var(--primary-neon);">مرحباً بك! أنا خبير التجميعات والمزادات الحية. اسألني عن أي جهاز وسأساعدك فوراً!</div>
         </div>
         <div style="padding: 12px; border-top: 1px solid var(--border-neon); display: flex; gap: 8px;">
-            <input type="text" id="ai-user-input" placeholder="اسأل عن تجميعة أو منتج..." style="flex:1; padding:10px; background:rgba(0,0,0,0.8); border:1px solid var(--border-neon); color:#fff; border-radius:8px; outline:none; font-size:13px;" onkeypress="if(event.key==='Enter') sendAIPrompt()">
+            <input type="text" id="ai-user-input" placeholder="اسأل عن تجميعة أو مزاد..." style="flex:1; padding:10px; background:rgba(0,0,0,0.8); border:1px solid var(--border-neon); color:#fff; border-radius:8px; outline:none; font-size:13px;" onkeypress="if(event.key==='Enter') sendAIPrompt()">
             <button class="btn-cyber" onclick="sendAIPrompt()" style="padding: 8px 14px;">إرسال</button>
         </div>
     </div>
@@ -567,7 +608,72 @@
             });
         });
 
-        // وظائف المساعد الذكي
+        // دوال المزادات الحية
+        let currentActiveAuction = null;
+        async function loadLiveAuctions() {
+            try {
+                const res = await fetch('/api/auctions');
+                const auctions = await res.json();
+                if(auctions && auctions.length > 0) {
+                    currentActiveAuction = auctions[0];
+                    document.getElementById('auction-title').innerText = currentActiveAuction.title;
+                    document.getElementById('auction-price').innerText = Number(currentActiveAuction.currentPrice).toLocaleString() + ' IQD';
+                    document.getElementById('auction-bidder').innerText = currentActiveAuction.highestBidder;
+                    document.getElementById('auction-img').src = currentActiveAuction.image;
+                    startAuctionTimer(new Date(currentActiveAuction.endTime));
+                }
+            } catch(e) {}
+        }
+
+        function startAuctionTimer(endTime) {
+            setInterval(() => {
+                const now = new Date().getTime();
+                const distance = endTime - now;
+                if(distance < 0) {
+                    document.getElementById('auction-timer').innerText = "انتهى المزاد 🏁";
+                    return;
+                }
+                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+                document.getElementById('auction-timer').innerText = `${hours.toString().padStart(2,'0')}:${minutes.toString().padStart(2,'0')}:${seconds.toString().padStart(2,'0')}`;
+            }, 1000);
+        }
+
+        async function placeBid() {
+            if(!currentUser) {
+                alert("⚠️ يرجى تسجيل الدخول أولاً للمزايدة في المزادات الحية.");
+                openAuthModal();
+                return;
+            }
+            if(!currentActiveAuction) return alert("لا توجد مزادات نشطة حالياً.");
+
+            const newBidAmount = currentActiveAuction.currentPrice + 50000;
+            const res = await fetch('/api/bid', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ auctionId: currentActiveAuction.id, phone: currentUser.phone, bidAmount: newBidAmount })
+            });
+            const data = await res.json();
+            if(data.success) {
+                alert("⚡ تم قبول مزايدتك بنجاح وأصبحت أعلى مزايد في المزاد!");
+            } else {
+                alert(data.error || "فشلت المزايدة");
+            }
+        }
+
+        const socket = io();
+        socket.on('live_update', (count) => {
+            document.getElementById('live-count-display').innerText = count;
+        });
+
+        socket.on('auction_update', (auction) => {
+            currentActiveAuction = auction;
+            document.getElementById('auction-price').innerText = Number(auction.currentPrice).toLocaleString() + ' IQD';
+            document.getElementById('auction-bidder').innerText = auction.highestBidder;
+            playNotificationSound();
+        });
+
         function toggleAIChat() {
             const box = document.getElementById('ai-chat-box');
             box.style.display = box.style.display === 'flex' ? 'none' : 'flex';
@@ -593,18 +699,13 @@
                 cont.innerHTML += `<div style="background: rgba(0,243,255,0.1); padding: 10px; border-radius: 10px; border-right: 3px solid var(--primary-neon);">${data.reply}</div>`;
                 cont.scrollTop = cont.scrollHeight;
             } catch(e) {
-                cont.innerHTML += `<div style="background: rgba(255,0,0,0.1); color:var(--accent-red); padding: 10px; border-radius: 10px;">عذراً، حدث خطأ في الاتصال بالمساعد الذكي.</div>`;
+                cont.innerHTML += `<div style="background: rgba(255,0,0,0.1); color:var(--accent-red); padding: 10px; border-radius: 10px;">عذراً، حدث خطأ.</div>`;
             }
         }
 
         let allProducts = [], userCart = [], currentUser = null, discountMultiplier = 1;
         let calcSubtotal = 0, calcDiscount = 0, calcShipping = 5000, calcTotal = 0;
         let customerGPSCoords = '';
-        
-        const socket = io();
-        socket.on('live_update', (count) => {
-            document.getElementById('live-count-display').innerText = count;
-        });
 
         socket.on('new_order_received', (order) => {
             playNotificationSound();
@@ -627,7 +728,7 @@
             } catch(e) {}
         }
 
-        window.onload = function() { loadProducts(); checkSavedSession(); };
+        window.onload = function() { loadProducts(); loadLiveAuctions(); checkSavedSession(); };
 
         function checkSavedSession() {
             const saved = localStorage.getItem('cyberstore_user');
@@ -638,8 +739,9 @@
         function updateAuthUI() {
             const nav = document.getElementById('auth-nav-container');
             if (currentUser) {
-                if (currentUser.role === 'admin') nav.innerHTML = `<button class="btn-cyber" style="border-color:var(--secondary-neon); padding: 7px 12px; font-size:12px;" onclick="showDashboard()">الإدارة ⚙️</button>`;
-                else nav.innerHTML = `<span style="color:var(--primary-neon); margin-left:8px; font-size:12px; font-weight:bold;">${currentUser.phone}</span> <button class="btn-cyber btn-alt" style="border-color:var(--accent-red); color:var(--accent-red); padding: 7px 10px; font-size:12px;" onclick="logout()">خروج</button>`;
+                let pointsBadge = `<span style="background:rgba(255,183,0,0.1); border:1px solid var(--accent-gold); color:var(--accent-gold); padding:4px 8px; border-radius:8px; font-size:11px; margin-left:6px;">⭐ نقاط الولاء</span>`;
+                if (currentUser.role === 'admin') nav.innerHTML = `${pointsBadge} <button class="btn-cyber" style="border-color:var(--secondary-neon); padding: 7px 12px; font-size:12px;" onclick="showDashboard()">الإدارة ⚙️</button>`;
+                else nav.innerHTML = `${pointsBadge} <span style="color:var(--primary-neon); margin-left:8px; font-size:12px; font-weight:bold;">${currentUser.phone}</span> <button class="btn-cyber btn-alt" style="border-color:var(--accent-red); color:var(--accent-red); padding: 7px 10px; font-size:12px;" onclick="logout()">خروج</button>`;
             } else { nav.innerHTML = `<button class="btn-cyber" style="padding: 7px 12px; font-size:12px;" onclick="openAuthModal()">دخول</button>`; }
         }
 
@@ -682,10 +784,10 @@
             const res = await fetch('/api/verify-otp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone, otp }) });
             const data = await res.json();
             if(data.success) {
-                currentUser = { phone: data.phone, role: data.role };
+                currentUser = { phone: data.phone, role: data.role, points: data.points };
                 localStorage.setItem('cyberstore_user', JSON.stringify(currentUser));
                 closeAuthModal(); updateAuthUI();
-                alert("تم تسجيل الدخول بنجاح!");
+                alert("تم تسجيل الدخول بنجاح وحصلت على رصيد نقاط ولاء افتتاحي!");
                 if(data.role === 'admin') showDashboard();
             } else alert("الرمز غير صحيح");
         }
@@ -783,7 +885,7 @@
 
             const processor = document.getElementById('payment-processor'); 
             processor.style.display = 'flex';
-            document.getElementById('process-text').innerText = `جاري حفظ الطلب وظهوره بلوحة الإدارة...`;
+            document.getElementById('process-text').innerText = `جاري حفظ الطلب واحتساب نقاط الولاء...`;
             await new Promise(r => setTimeout(r, 1200)); 
 
             try {
@@ -805,7 +907,7 @@
                     processor.style.display = 'none';
                     
                     let itemsSummary = userCart.map(item => `- ${item.name} (${Number(item.price).toLocaleString()} IQD)`).join('\n');
-                    let waMessage = `⚡ *CyberStore Global - تأكيد طلب*\n\nمرحباً الإدارة، أود تأكيد طلبي الجديد:\n\n👤 العميل: *${name}*\n📞 الهاتف: *${phone}*\n📌 العنوان: *${address}*\n💳 طريقة الدفع: *${method}*\n\n🛒 *المنتجات المطلوبة:*\n${itemsSummary}\n\n💰 *الإجمالي النهائي: ${calcTotal.toLocaleString()} IQD*`;
+                    let waMessage = `⚡ *CyberStore Global - تأكيد طلب*\n\nمرحباً الإدارة، أود تأكيد طلبي الجديد:\n\n👤 العميل: *${name}*\n📞 الهاتف: *${phone}*\n📌 العنوان: *${address}*\n💳 طريقة الدفع: *${method}*\n\n🛒 *المنتجات المطلوبة:*\n${itemsSummary}\n\n💰 *الإجمالي النهائي: ${calcTotal.toLocaleString()} IQD*\n⭐ *نقاط الولاء المكتسبة: ${data.earnedPoints} نقطة*`;
                     
                     let merchantWhatsApp = "9647831333337"; 
                     let waEncodedUrl = `https://wa.me/${merchantWhatsApp}?text=${encodeURIComponent(waMessage)}`;
@@ -962,10 +1064,10 @@
             try {
                 const res = await fetch('/api/users'); const users = await res.json();
                 const tbody = document.getElementById('users-table-body');
-                if(!users || users.length === 0) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">لا يوجد عملاء مسجلين</td></tr>'; return; }
+                if(!users || users.length === 0) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">لا يوجد عملاء مسجلين</td></tr>'; return; }
                 tbody.innerHTML = users.map((u) => {
                     const roleBadge = u.role === 'admin' ? '🛡️ مدير' : '👤 عميل';
-                    return `<tr><td>${u.id}</td><td style="color:var(--primary-neon); font-weight:bold;">${u.phone} (${roleBadge})</td><td style="color:var(--accent-green); font-weight:bold;">${(u.totalSpent || 0).toLocaleString()} IQD</td><td style="font-size:12px; color:var(--text-muted);">${new Date(u.createdAt).toLocaleDateString()}</td></tr>`;
+                    return `<tr><td>${u.id}</td><td style="color:var(--primary-neon); font-weight:bold;">${u.phone} (${roleBadge})</td><td style="color:var(--accent-gold); font-weight:bold;">⭐ ${u.cyberPoints} نقطة</td><td style="color:var(--accent-green); font-weight:bold;">${(u.totalSpent || 0).toLocaleString()} IQD</td><td style="font-size:12px; color:var(--text-muted);">${new Date(u.createdAt).toLocaleDateString()}</td></tr>`;
                 }).join('');
             } catch(e) {}
         }
