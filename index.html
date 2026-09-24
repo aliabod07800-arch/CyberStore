@@ -65,7 +65,6 @@
         
         .nav-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
         
-        /* أزرار الهولوغرام والعمق المتطورة */
         .btn-cyber { 
             background: linear-gradient(135deg, rgba(0, 243, 255, 0.08), rgba(188, 19, 254, 0.08)); 
             color: var(--text-main); 
@@ -236,7 +235,7 @@
         .spinner { width: 45px; height: 45px; border: 4px solid rgba(0,243,255,0.15); border-top-color: var(--primary-neon); border-radius: 50%; animation: spin 1s linear infinite; box-shadow: var(--glow-cyan); }
         @keyframes spin { to { transform: rotate(360deg); } }
         
-        /* لوحة القيادة المحدثة والمتطورة (Enterprise Dashboard) */
+        /* لوحة التحكم المتطورة للإدارة */
         .dashboard-container { display: none; height: 100vh; width: 100vw; position: fixed; top: 0; left: 0; z-index: 3000; background: var(--bg-base); }
         .dashboard-container.active-dashboard { display: flex; flex-direction: column; }
         
@@ -297,7 +296,7 @@
     <div id="store-view" class="store-container">
         <div class="cyber-hero">
             <h1>مركز التسوق التقني الفضائي</h1>
-            <p>منصة تجارية ثلاثية الأبعاد مؤمنة، متوافقة كلياً مع الهواتف، مع إشعارات تفاعلية عبر الواتساب.</p>
+            <p>منصة تجارية ثلاثية الأبعاد مؤمنة، متوافقة كلياً مع الهواتف، مع إشعارات تفاعلية وتأكيد الدفع عبر الواتساب.</p>
         </div>
         <div class="tools-bar">
             <div class="category-filters" id="category-filters">
@@ -313,7 +312,7 @@
         <div class="products-grid" id="products-list"></div>
     </div>
 
-    <!-- لوحة القيادة المتطورة للادارة (Enterprise Dashboard) -->
+    <!-- لوحة القيادة المتطورة للإدارة -->
     <div id="dashboard-view" class="dashboard-container">
         <div class="sidebar">
             <div>
@@ -354,7 +353,7 @@
                 </div>
             </div>
 
-            <!-- قسم إدارة الطلبات وحالة الدفع المطور -->
+            <!-- قسم إدارة الطلبات وتأكيد الدفع المطور -->
             <div id="sec-view-orders" class="admin-section">
                 <h2 style="margin-bottom: 20px; text-shadow: var(--glow-cyan);">تتبع الطلبات وحالة الدفع والشحن</h2>
                 <div class="enterprise-table-container">
@@ -385,7 +384,7 @@
         </div>
     </div>
 
-    <!-- السلة والدفع والتأكيد عبر الواتساب -->
+    <!-- السلة والدفع -->
     <div class="modal-overlay" id="cart-modal">
         <div class="modal-box">
             <h2>السلة 🛒</h2>
@@ -405,7 +404,7 @@
         </div>
     </div>
 
-    <!-- نافذة إتمام الطلب وظهور زر توجيه الواتساب للتاكيد -->
+    <!-- نافذة إتمام الطلب وتوليد رابط الواتساب -->
     <div class="modal-overlay" id="checkout-modal">
         <div class="modal-box">
             <div id="payment-processor" class="processing-overlay">
@@ -435,9 +434,8 @@
             
             <button id="normal-checkout-btn" class="btn-cyber" style="width: 100%; padding: 11px; margin-bottom: 8px;" onclick="submitFinalOrder()">إتمام الطلب وتوليد رابط الواتساب ✅</button>
             
-            <!-- خيار توجيه المستخدم المباشر للواتساب لتأكيد الطلب -->
             <div id="whatsapp-redirect-box" class="hidden-el" style="text-align: center; margin-top: 10px; background: rgba(0,255,102,0.08); border: 1px solid var(--accent-green); padding: 15px; border-radius: 12px;">
-                <p style="font-size: 13px; margin-bottom: 10px; color: var(--accent-green); font-weight: bold;">✅ تم حفظ طلبك بنجاح! انقر أدناه لإرسال التفاصيل وتأكيد الطلب عبر الواتساب فوراً:</p>
+                <p style="font-size: 13px; margin-bottom: 10px; color: var(--accent-green); font-weight: bold;">✅ تم حفظ طلبك وظهوره في لوحة الإدارة! انقر أدناه لإرسال التفاصيل وتأكيد الطلب عبر الواتساب فوراً:</p>
                 <a id="whatsapp-confirm-link" href="#" target="_blank" class="btn-cyber" style="display: inline-block; background: var(--accent-green); color: #000; border-color: var(--accent-green); text-decoration: none; padding: 10px 20px; font-weight: bold;">تأكيد الطلب عبر الواتساب 💬</a>
             </div>
 
@@ -473,7 +471,6 @@
     </div>
 
     <script>
-        // محرك الفضاء والنجوم والنيازك الثلاثية الأبعاد
         const canvas = document.getElementById('space-canvas');
         const ctx = canvas.getContext('2d');
         let width, height;
@@ -538,7 +535,6 @@
         }
         animateSpace();
 
-        // تفاعل الـ 3D Tilt للبطاقات
         document.addEventListener('mousemove', (e) => {
             document.querySelectorAll('.product-card').forEach(card => {
                 const rect = card.getBoundingClientRect();
@@ -713,6 +709,7 @@
             document.getElementById('checkout-modal').classList.add('active'); 
             document.getElementById('cust-phone').value = currentUser.phone;
             document.getElementById('whatsapp-redirect-box').classList.add('hidden-el');
+            document.getElementById('normal-checkout-btn').style.display = 'block';
         }
 
         function closeCheckoutModal() { document.getElementById('checkout-modal').classList.remove('active'); document.getElementById('payment-processor').style.display = 'none'; }
@@ -737,11 +734,12 @@
                 finalAddressWithGPS += ` | 🌍 GPS: ${customerGPSCoords}`;
             }
 
-            let paymentStatus = method === 'نقداً عند الاستلام' ? 'معلق' : 'مكتمل';
+            // تحديد حالة الدفع تلقائياً: نقداً = معلق، زين كاش أو بايبال = معلق بانتظار تأكيد التحويل من الإدارة
+            let paymentStatus = method === 'نقداً عند الاستلام' ? 'معلق' : 'معلق';
 
             const processor = document.getElementById('payment-processor'); 
             processor.style.display = 'flex';
-            document.getElementById('process-text').innerText = `جاري حفظ الطلب وتوليد بيانات الواتساب...`;
+            document.getElementById('process-text').innerText = `جاري حفظ الطلب وظهوره بلوحة الإدارة...`;
             await new Promise(r => setTimeout(r, 1200)); 
 
             try {
@@ -762,11 +760,9 @@
                 if(data.success) { 
                     processor.style.display = 'none';
                     
-                    // إعداد نص رسالة الواتساب التفاعلية التي تتضمن التفاصيل ورقم الهاتف وسعر المنتج
                     let itemsSummary = userCart.map(item => `- ${item.name} (${Number(item.price).toLocaleString()} IQD)`).join('\n');
                     let waMessage = `⚡ *CyberStore Global - تأكيد طلب*\n\nمرحباً الإدارة، أود تأكيد طلبي الجديد:\n\n👤 العميل: *${name}*\n📞 الهاتف: *${phone}*\n📌 العنوان: *${address}*\n💳 طريقة الدفع: *${method}*\n\n🛒 *المنتجات المطلوبة:*\n${itemsSummary}\n\n💰 *الإجمالي النهائي: ${calcTotal.toLocaleString()} IQD*\n\nرقم المعاملة: *${data.order.transactionId}*`;
                     
-                    // رقم الواتساب الرسمي للتاجر (يمكنك تغيير هذا الرقم برقمك الخاص)
                     let merchantWhatsApp = "9647831333337"; 
                     let waEncodedUrl = `https://wa.me/${merchantWhatsApp}?text=${encodeURIComponent(waMessage)}`;
                     
@@ -833,7 +829,7 @@
             };
         }
 
-        // لوحة التحكم المطورة لتتبع الطلبات وحالة الدفع
+        // لوحة التحكم لتتبع الطلبات وزر تأكيد الدفع الفوري
         async function loadAdminOrders() {
             try {
                 const res = await fetch('/api/orders'); 
@@ -846,7 +842,10 @@
                 }
                 
                 tbody.innerHTML = orders.map((o) => {
-                    const paymentBadge = o.paymentStatus === 'مكتمل' ? '<span style="color:var(--accent-green); font-size:11px;">مكتمل ✅</span>' : '<span style="color:var(--accent-gold); font-size:11px;">معلق ⏳</span>';
+                    const paymentBadge = o.paymentStatus === 'مكتمل' 
+                        ? '<span style="color:var(--accent-green); font-size:11px;">مكتمل ✅</span>' 
+                        : `<button onclick="approveOrderPayment('${o.id}')" style="background:var(--accent-gold); color:#000; border:none; padding:5px 10px; border-radius:6px; cursor:pointer; font-size:11px; font-weight:bold; box-shadow:0 0 10px rgba(255,183,0,0.4);">تأكيد الدفع 💵</button>`;
+                    
                     let addressText = o.customerAddress || 'عنوان غير متوفر';
                     let mapLink = '';
                     
@@ -856,7 +855,6 @@
                         mapLink = `<br><a href="${parts[1]}" target="_blank" style="color: var(--primary-neon); font-size: 11px; font-weight: bold;">🗺️ عرض موقع الخريطة</a>`;
                     }
 
-                    // عرض قائمة المنتجات المباعة داخل جدول الطلبات
                     let itemsHtml = '';
                     if(o.items && Array.isArray(o.items)) {
                         itemsHtml = o.items.map(it => `<div style="font-size:11px; color:var(--text-muted);">• ${it.name} (${Number(it.price).toLocaleString()} IQD)</div>`).join('');
@@ -875,7 +873,7 @@
                         </td>
                         <td>
                             <div style="font-size:12px; font-weight:bold;">${o.paymentMethod}</div>
-                            <div>${paymentBadge}</div>
+                            <div style="margin-top:4px;">${paymentBadge}</div>
                         </td>
                         <td>
                             <select class="select-status" onchange="updateOrderStatus('${o.id}', this.value, '${o.paymentStatus}')">
@@ -889,6 +887,23 @@
                 }).join('');
             } catch (err) {
                 console.error("خطأ في تحميل الطلبات:", err);
+            }
+        }
+
+        async function approveOrderPayment(orderId) {
+            if(!confirm("هل تأكدت من استلام وتحويل الأموال وتود الموافقة على الطلب؟")) return;
+            
+            const res = await fetch(`/api/orders/${orderId}/status`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: 'قيد المعالجة ⏳', paymentStatus: 'مكتمل' })
+            });
+            
+            const data = await res.json();
+            if(data.success) {
+                alert("✅ تم تأكيد الدفع بنجاح، وإرسال رسالة واتساب للعميل تؤكد الموافقة!");
+                loadAdminOrders();
+                loadAdminStats();
             }
         }
 
