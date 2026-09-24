@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CyberStore | Holographic 3D Marketplace</title>
+    <title>CyberStore | Marketplace & Auctions</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     
@@ -26,7 +26,6 @@
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Tajawal', sans-serif; -webkit-tap-highlight-color: transparent; }
         body { background-color: var(--bg-base); color: var(--text-main); overflow-x: hidden; min-height: 100vh; display: flex; flex-direction: column; perspective: 1200px; }
-        
         #space-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; background: radial-gradient(circle at center, #050b18 0%, #010205 100%); }
 
         nav { display: flex; justify-content: space-between; align-items: center; padding: 15px 25px; background: rgba(1, 2, 5, 0.92); backdrop-filter: blur(25px); border-bottom: 1px solid var(--border-neon); position: sticky; top: 0; z-index: 1000; box-shadow: 0 10px 30px rgba(0,0,0,0.7); }
@@ -35,14 +34,12 @@
         .nav-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
         
         .btn-cyber { background: linear-gradient(135deg, rgba(0, 243, 255, 0.1), rgba(188, 19, 254, 0.1)); color: var(--text-main); border: 1px solid var(--primary-neon); padding: 8px 16px; border-radius: 12px; cursor: pointer; font-size: 13px; font-weight: 700; transition: all 0.3s; box-shadow: inset 0 0 15px rgba(0,243,255,0.2); }
-        .btn-cyber:hover:not(:disabled) { background: var(--primary-neon); color: #000; box-shadow: var(--glow-cyan), 0 5px 20px rgba(0,0,0,0.5); transform: translateY(-2px); }
+        .btn-cyber:hover:not(:disabled) { background: var(--primary-neon); color: #000; box-shadow: var(--glow-cyan); transform: translateY(-2px); }
         .btn-alt { border-color: var(--secondary-neon); box-shadow: inset 0 0 15px rgba(188,19,254,0.2); }
-        .btn-alt:hover:not(:disabled) { background: var(--secondary-neon); box-shadow: var(--glow-purple), 0 5px 20px rgba(0,0,0,0.5); }
+        .btn-alt:hover:not(:disabled) { background: var(--secondary-neon); box-shadow: var(--glow-purple); }
 
         .store-container { padding: 25px; flex: 1; max-width: 1600px; margin: 0 auto; width: 100%; z-index: 1; }
-        
-        .cyber-hero { text-align: center; margin-bottom: 30px; padding: 45px 20px; background: var(--bg-surface); border: 1px solid var(--border-neon); border-radius: 24px; backdrop-filter: blur(20px); box-shadow: 0 20px 50px rgba(0,0,0,0.8), var(--glow-cyan); position: relative; overflow: hidden; }
-        .cyber-hero::after { content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: linear-gradient(45deg, transparent, rgba(0,243,255,0.05), transparent); transform: rotate(45deg); pointer-events: none; }
+        .cyber-hero { text-align: center; margin-bottom: 30px; padding: 45px 20px; background: var(--bg-surface); border: 1px solid var(--border-neon); border-radius: 24px; backdrop-filter: blur(20px); box-shadow: 0 20px 50px rgba(0,0,0,0.8), var(--glow-cyan); }
         .cyber-hero h1 { font-size: 34px; font-weight: 900; margin-bottom: 12px; color: #fff; text-shadow: 0 0 25px var(--primary-neon); }
         .cyber-hero p { color: var(--text-muted); font-size: 14px; max-width: 700px; margin: 0 auto; }
 
@@ -50,34 +47,29 @@
         .auction-timer { font-size: 24px; font-weight: 900; color: var(--accent-gold); font-family: monospace; margin: 10px 0; text-shadow: 0 0 15px rgba(255,183,0,0.6); }
 
         .tools-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; gap: 15px; flex-wrap: wrap; background: var(--bg-surface); padding: 18px; border-radius: 16px; border: 1px solid var(--border-neon); backdrop-filter: blur(15px); }
-        .search-box input { width: 100%; padding: 12px 20px; border-radius: 30px; border: 1px solid var(--border-neon); background: rgba(1, 2, 5, 0.85); color: #fff; outline: none; font-size: 14px; transition: 0.3s; }
-        .search-box input:focus { border-color: var(--primary-neon); box-shadow: var(--glow-cyan); }
-        
+        .search-box input { width: 100%; padding: 12px 20px; border-radius: 30px; border: 1px solid var(--border-neon); background: rgba(1, 2, 5, 0.85); color: #fff; outline: none; font-size: 14px; }
         .category-filters { display: flex; gap: 8px; flex-wrap: wrap; }
-        .filter-btn { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); padding: 8px 16px; border-radius: 20px; color: #fff; cursor: pointer; transition: 0.3s; }
+        .filter-btn { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); padding: 8px 16px; border-radius: 20px; color: #fff; cursor: pointer; }
         .filter-btn.active, .filter-btn:hover { background: var(--secondary-neon); border-color: var(--secondary-neon); box-shadow: var(--glow-purple); }
 
         .products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 22px; }
-        .product-card { background: var(--bg-surface); padding: 18px; border-radius: 20px; border: 1px solid var(--border-neon); text-align: center; display: flex; flex-direction: column; justify-content: space-between; backdrop-filter: blur(15px); box-shadow: 0 15px 35px rgba(0,0,0,0.5); transition: 0.3s; transform-style: preserve-3d; }
-        .product-card:hover { border-color: var(--secondary-neon); box-shadow: var(--glow-purple), 0 20px 45px rgba(0,0,0,0.7); transform: translateY(-5px); }
+        .product-card { background: var(--bg-surface); padding: 18px; border-radius: 20px; border: 1px solid var(--border-neon); text-align: center; display: flex; flex-direction: column; justify-content: space-between; backdrop-filter: blur(15px); box-shadow: 0 15px 35px rgba(0,0,0,0.5); }
         .product-image-wrap { width: 100%; height: 200px; border-radius: 14px; overflow: hidden; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.08); }
-        .product-card img { width: 100%; height: 100%; object-fit: cover; transition: 0.5s; }
-        .product-card:hover img { transform: scale(1.08); }
-        .product-price { color: var(--primary-neon); font-size: 18px; font-weight: 900; margin-bottom: 12px; text-shadow: 0 0 10px rgba(0,243,255,0.3); }
+        .product-card img { width: 100%; height: 100%; object-fit: cover; }
+        .product-price { color: var(--primary-neon); font-size: 18px; font-weight: 900; margin-bottom: 12px; }
 
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(1, 2, 5, 0.88); backdrop-filter: blur(25px); display: flex; justify-content: center; align-items: center; z-index: 9999; opacity: 0; pointer-events: none; transition: 0.4s; padding: 15px; }
         .modal-overlay.active { opacity: 1; pointer-events: all; }
         .modal-box { background: rgba(10, 15, 30, 0.98); padding: 28px; border-radius: 24px; border: 1px solid var(--primary-neon); width: 480px; max-width: 100%; max-height: 90vh; overflow-y: auto; text-align: right; box-shadow: 0 25px 60px rgba(0,0,0,0.9), var(--glow-cyan); }
-        .modal-box h2 { text-align: center; color: var(--primary-neon); margin-bottom: 18px; text-shadow: 0 0 15px rgba(0,243,255,0.4); }
+        .modal-box h2 { text-align: center; color: var(--primary-neon); margin-bottom: 18px; }
         
         .input-group { margin-bottom: 15px; }
         .input-group label { display: block; margin-bottom: 6px; color: var(--text-muted); font-size: 12px; font-weight: bold; }
-        .input-group input, .input-group textarea, .input-group select { width: 100%; padding: 12px 15px; background: rgba(1, 2, 5, 0.92); border: 1px solid var(--border-neon); color: #fff; border-radius: 10px; outline: none; font-size: 14px; transition: 0.3s; }
-        .input-group input:focus, .input-group textarea:focus { border-color: var(--primary-neon); box-shadow: var(--glow-cyan); }
+        .input-group input, .input-group textarea, .input-group select { width: 100%; padding: 12px 15px; background: rgba(1, 2, 5, 0.92); border: 1px solid var(--border-neon); color: #fff; border-radius: 10px; outline: none; font-size: 14px; }
 
         .payment-methods { display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap; }
-        .pay-method { flex: 1; min-width: 90px; text-align: center; padding: 11px; border: 1px solid var(--border-neon); border-radius: 10px; cursor: pointer; font-size: 12px; background: rgba(255,255,255,0.02); transition: 0.3s; }
-        .pay-method.selected { background: var(--primary-neon); color: #000; font-weight: bold; border-color: var(--primary-neon); box-shadow: var(--glow-cyan); }
+        .pay-method { flex: 1; min-width: 90px; text-align: center; padding: 11px; border: 1px solid var(--border-neon); border-radius: 10px; cursor: pointer; font-size: 12px; background: rgba(255,255,255,0.02); }
+        .pay-method.selected { background: var(--primary-neon); color: #000; font-weight: bold; border-color: var(--primary-neon); }
 
         .dashboard-container { display: none; height: 100vh; width: 100vw; position: fixed; top: 0; left: 0; z-index: 3000; background: var(--bg-base); flex-direction: column; }
         .dashboard-container.active-dashboard { display: flex; }
@@ -92,14 +84,14 @@
         .admin-section { display: none; }
         .admin-section.active-section { display: block; }
         
-        .enterprise-table-container { width: 100%; overflow-x: auto; background: var(--bg-surface); border-radius: 18px; border: 1px solid var(--border-neon); backdrop-filter: blur(15px); }
+        .enterprise-table-container { width: 100%; overflow-x: auto; background: var(--bg-surface); border-radius: 18px; border: 1px solid var(--border-neon); }
         .enterprise-table { width: 100%; border-collapse: collapse; text-align: right; min-width: 750px; }
         .enterprise-table th { background: rgba(0, 243, 255, 0.08); padding: 15px; color: var(--primary-neon); font-size: 13px; }
         .enterprise-table td { padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 13px; }
         .select-status { background: #010205; color: #fff; border: 1px solid var(--border-neon); padding: 7px; border-radius: 8px; }
         
         .processing-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(1, 2, 5, 0.95); border-radius: 20px; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10; display: none; }
-        .spinner { width: 45px; height: 45px; border: 4px solid rgba(0,243,255,0.15); border-top-color: var(--primary-neon); border-radius: 50%; animation: spin 1s linear infinite; box-shadow: var(--glow-cyan); }
+        .spinner { width: 45px; height: 45px; border: 4px solid rgba(0,243,255,0.15); border-top-color: var(--primary-neon); border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
         .hidden-el { display: none !important; }
     </style>
@@ -121,7 +113,7 @@
     <div id="store-view" class="store-container">
         <div class="cyber-hero">
             <h1>منصة التجارة الهولوغرافي والمزادات الحية</h1>
-            <p>تسوق بذكاء عبر منصتنا الفضائية، شارك في المزادات، أو اعرض منتجاتك للبيع بسوق المواطنين.</p>
+            <p>تسوق بذكاء، شارك في المزادات، أو اعرض منتجاتك للبيع بسوق المواطنين.</p>
         </div>
 
         <div id="live-auction-container" class="auction-banner">
@@ -189,7 +181,11 @@
                     <div class="input-group"><label>التصنيف</label>
                         <select id="p-category"><option value="أجهزة">أجهزة و PC</option><option value="ألعاب">ألعاب وبطاقات</option><option value="إكسسوارات">إكسسوارات</option></select>
                     </div>
-                    <div class="input-group"><label>رابط الصورة المباشر</label><input type="text" id="p-image-url" placeholder="https://..."></div>
+                    <div class="input-group">
+                        <label>صورة المنتج (اختر ملف أو أدخل رابط)</label>
+                        <input type="file" id="p-file" accept="image/*" onchange="convertImageFile(event, 'p-image-url')" style="margin-bottom:8px;">
+                        <input type="text" id="p-image-url" placeholder="https:// أو رابط الصورة">
+                    </div>
                     <button class="btn-cyber" style="width: 100%; padding: 12px;" onclick="addNewProductByUrl()">نشر المنتج 🚀</button>
                 </div>
             </div>
@@ -241,7 +237,7 @@
         </div>
     </div>
 
-    <!-- نافذة بيع منتج للمواطن -->
+    <!-- نافذة بيع منتج للمواطن مع دعم رفع الصور بالملفات -->
     <div class="modal-overlay" id="sell-modal">
         <div class="modal-box">
             <h2>سوق المواطنين: اعرض منتجك للبيع 🏷️</h2>
@@ -250,21 +246,27 @@
             <div class="input-group"><label>التصنيف</label>
                 <select id="sell-category"><option value="أجهزة">أجهزة و PC</option><option value="ألعاب">ألعاب</option><option value="إكسسوارات">إكسسوارات</option></select>
             </div>
-            <div class="input-group"><label>رابط الصورة</label><input type="text" id="sell-img"></div>
+            <div class="input-group">
+                <label>صورة المنتج (اختر ملف صورة من جهازك)</label>
+                <input type="file" id="sell-file" accept="image/*" onchange="convertImageFile(event, 'sell-img')" style="margin-bottom:8px;">
+                <input type="text" id="sell-img" placeholder="أو أدخل رابط الصورة المباشر">
+            </div>
             <button class="btn-cyber" style="width: 100%; padding: 11px; margin-bottom: 8px;" onclick="submitCitizenProduct()">إرسال للإدارة ✅</button>
             <button style="background:none; border:none; color:var(--text-muted); cursor:pointer; width:100%;" onclick="closeSellModal()">إغلاق</button>
         </div>
     </div>
 
-    <!-- السلة والدفع -->
+    <!-- السلة وتفاصيل السلة الكاملة والمنتجات -->
     <div class="modal-overlay" id="cart-modal">
         <div class="modal-box">
-            <h2>السلة 🛒</h2>
-            <div id="cart-items-container" style="max-height: 140px; overflow-y:auto; margin-bottom:12px;"></div>
-            <div style="background: rgba(255,255,255,0.03); padding: 12px; border-radius: 9px; margin-bottom: 10px; font-size: 13px;">
-                <div style="display:flex; justify-content:space-between;"><span>الإجمالي النهائي:</span><span id="summ-total" style="color:var(--primary-neon);">0</span></div>
+            <h2>تفاصيل السلة والمشتريات 🛒</h2>
+            <div id="cart-items-container" style="max-height: 180px; overflow-y:auto; margin-bottom:12px;"></div>
+            <div style="background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px; margin-bottom: 15px; font-size: 13px; border: 1px solid var(--border-neon);">
+                <div style="display:flex; justify-content:space-between; margin-bottom:6px;"><span>المجموع الفرعي:</span><span id="summ-sub">0</span></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:6px;"><span>رسوم التوصيل:</span><span style="color:var(--accent-gold);">5,000 IQD</span></div>
+                <div style="display:flex; justify-content:space-between; border-top:1px solid #333; padding-top:6px; font-weight:bold; color:var(--primary-neon);"><span>الإجمالي النهائي:</span><span id="summ-total">0</span></div>
             </div>
-            <button class="btn-cyber" style="width: 100%; margin-bottom: 8px; padding: 11px;" onclick="openCheckoutModal()">متابعة الدفع 💳</button>
+            <button class="btn-cyber" style="width: 100%; margin-bottom: 8px; padding: 11px;" onclick="openCheckoutModal()">متابعة لمعلومات التوصيل والدفع 💳</button>
             <button style="background:none; border:none; color:var(--text-muted); width:100%; cursor:pointer;" onclick="closeCartModal()">إغلاق</button>
         </div>
     </div>
@@ -272,12 +274,12 @@
     <div class="modal-overlay" id="checkout-modal">
         <div class="modal-box">
             <div id="payment-processor" class="processing-overlay"><div class="spinner"></div><h3 style="color: var(--primary-neon); margin-top:15px;">جاري معالجة الطلب...</h3></div>
-            <h2>بوابة الدفع الآمنة 🔒</h2>
+            <h2>تأكيد تفاصيل التوصيل والدفع 🔒</h2>
             <div class="input-group"><label>الاسم الثنائي</label><input type="text" id="cust-name"></div>
             <div class="input-group"><label>رقم الهاتف</label><input type="tel" id="cust-phone" readonly style="color:var(--primary-neon);"></div>
-            <div class="input-group"><label>العنوان بالتفصيل</label><textarea id="cust-address" rows="2"></textarea></div>
+            <div class="input-group"><label>العنوان بالتفصيل (محافظة، منطقة، نقطة دالة)</label><textarea id="cust-address" rows="2"></textarea></div>
             <div class="input-group">
-                <button type="button" class="btn-cyber btn-alt" style="width:100%; padding:9px;" onclick="getGeoLocation()">📍 تحديد موقعي GPS</button>
+                <button type="button" class="btn-cyber btn-alt" style="width:100%; padding:9px;" onclick="getGeoLocation()">📍 تحديد موقعي الحالي GPS</button>
                 <input type="text" id="cust-gps" readonly style="margin-top:6px; font-size:11px; color:var(--primary-neon);">
             </div>
             <div class="payment-methods">
@@ -290,25 +292,26 @@
                 <p id="pay-info-text" style="color:var(--primary-neon); margin-bottom:8px; font-weight:bold;"></p>
                 <div class="input-group" style="margin-bottom:0;"><label>رقم الإيصال أو العملية:</label><input type="text" id="cust-receipt"></div>
             </div>
-            <button id="normal-checkout-btn" class="btn-cyber" style="width:100%; padding:11px;" onclick="submitFinalOrder()">إتمام المعاملة ✅</button>
+            <button id="normal-checkout-btn" class="btn-cyber" style="width:100%; padding:11px;" onclick="submitFinalOrder()">تأكيد وإرسال الطلب نهائياً ✅</button>
             <div id="whatsapp-redirect-box" class="hidden-el" style="text-align:center; margin-top:10px; background:rgba(0,255,102,0.08); padding:15px; border-radius:12px;">
-                <p style="font-size:13px; margin-bottom:10px; color:var(--accent-green); font-weight:bold;">✅ تم حفظ طلبك وظهوره عند الأدمن!</p>
+                <p style="font-size:13px; margin-bottom:10px; color:var(--accent-green); font-weight:bold;">✅ تم حفظ طلبك وظهوره عند الأدمن بنجاح!</p>
                 <a id="whatsapp-confirm-link" href="#" target="_blank" class="btn-cyber" style="display:inline-block; background:var(--accent-green); color:#000; text-decoration:none; padding:10px 20px; font-weight:bold;">إرسال الإيصال عبر الواتساب 💬</a>
             </div>
             <button style="background:none; border:none; color:var(--text-muted); cursor:pointer; width:100%; margin-top:8px;" onclick="closeCheckoutModal()">إغلاق</button>
         </div>
     </div>
 
-    <!-- نافذة تسجيل الدخول مع التحقق الحقيقي حصرياً من الواتساب -->
+    <!-- نافذة تسجيل الدخول مع إنشاء وتخصيص يوزرنايم فريد لكل مواطن -->
     <div class="modal-overlay" id="auth-modal">
         <div class="modal-box">
-            <h2>تسجيل الدخول الآمن 🔒</h2>
+            <h2>تسجيل الدخول الهولوغرافي 🔒</h2>
             <div id="step-phone">
                 <div class="input-group"><label>رقم الهاتف العراقي</label><input type="tel" id="phone-number" placeholder="07XXXXXXXXX"></div>
+                <div class="input-group"><label>اختر يوزرنايم (Username) فريد خاص بك</label><input type="text" id="custom-username" placeholder="مثال: CyberHero99"></div>
                 <button class="btn-cyber" style="width:100%; padding:11px;" onclick="sendWhatsAppCode()">إرسال كود الـ OTP عبر الواتساب 📱</button>
             </div>
             <div id="step-otp" class="hidden-el">
-                <div class="input-group"><label>أدخل الرمز المستلم على الواتساب</label><input type="text" id="otp-code" style="text-align:center; letter-spacing:4px; font-size:18px;"></div>
+                <div class="input-group"><label>أدخل رمز التحقق المرسل لهاتفك</label><input type="text" id="otp-code" style="text-align:center; letter-spacing:4px; font-size:18px;"></div>
                 <button class="btn-cyber" style="width:100%; padding:11px;" onclick="verifyOTP()">تأكيد ودخول 🚀</button>
             </div>
             <button style="background:none; border:none; color:var(--text-muted); margin-top:15px; cursor:pointer; width:100%;" onclick="closeAuthModal()">إغلاق</button>
@@ -326,7 +329,19 @@
     </div>
 
     <script>
-        // تأثيرات النيازك والهولوغرام الثلاثي الأبعاد على الـ Canvas
+        // تحويل ملف الصورة المرفوع إلى Base64 لضمان ثباتها وعدم اختفائها
+        function convertImageFile(event, targetInputId) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(uploadEvent) {
+                document.getElementById(targetInputId).value = uploadEvent.target.result;
+                alert("✅ تم تحميل وتثبيت الصورة بنجاح!");
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // تأثيرات الفضاء والهولوغرام
         const canvas = document.getElementById('space-canvas');
         const ctx = canvas.getContext('2d');
         let width, height, stars = [], meteors = [];
@@ -389,7 +404,7 @@
             if(!currentActiveAuction) return alert("لا يوجد مزاد نشط حالياً.");
             const res = await fetch('/api/bid', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ auctionId: currentActiveAuction.id, phone: currentUser.phone, bidAmount: currentActiveAuction.currentPrice + 50000 }) });
             const data = await res.json();
-            if(data.success) alert("⚡ تم قبول مزايدتك بنجاح!");
+            if(data.success) alert("⚡ تم قبول مزايدتك بنجاح برقمك المستعار!");
             else alert(data.error);
         }
 
@@ -451,7 +466,10 @@
 
         async function sendWhatsAppCode() {
             const phone = document.getElementById('phone-number').value;
+            const customUsername = document.getElementById('custom-username').value.trim();
             if(!isValidIraqiPhone(phone)) return alert("رقم الهاتف غير صحيح");
+            if(!customUsername) return alert("يرجى إدخال يوزرنايم خاص بك");
+
             const res = await fetch('/api/send-otp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone }) });
             if((await res.json()).success) { 
                 alert("تم إرسال رمز التحقق الحقيقي إلى رقم الواتساب الخاص بك!");
@@ -461,16 +479,19 @@
         }
 
         async function verifyOTP() {
-            const otp = document.getElementById('otp-code').value; const phone = document.getElementById('phone-number').value;
-            const res = await fetch('/api/verify-otp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone, otp }) });
+            const otp = document.getElementById('otp-code').value; 
+            const phone = document.getElementById('phone-number').value;
+            const customUsername = document.getElementById('custom-username').value.trim();
+
+            const res = await fetch('/api/verify-otp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone, otp, customUsername }) });
             const data = await res.json();
             if(data.success) {
                 currentUser = { phone: data.phone, username: data.username, role: data.role, points: data.points };
                 localStorage.setItem('cyberstore_user', JSON.stringify(currentUser));
                 closeAuthModal(); updateAuthUI();
-                alert(`أهلاً بك يا ${data.username}! تم التحقق بنجاح.`);
+                alert(`أهلاً بك يا ${data.username}! تم تسجيل الدخول بنجاح.`);
                 if(data.role === 'admin') showDashboard();
-            } else alert("رمز التحقق غير صحيح أو منتهي الصلاحية");
+            } else alert(data.error || "رمز التحقق غير صحيح");
         }
         function logout() { localStorage.removeItem('cyberstore_user'); location.reload(); }
 
@@ -484,7 +505,10 @@
             const image = document.getElementById('sell-img').value.trim();
             if(!name || !price || !image) return alert("املأ كافة الحقول");
             await fetch('/api/products', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, price, category, image, sellerPhone: currentUser.phone, status: 'pending' }) });
-            alert("تم إرسال المنتج للإدارة بنجاح!"); closeSellModal();
+            alert("تم إرسال منتجك للإدارة للموافقة والنشر بنجاح!"); closeSellModal();
+            document.getElementById('sell-name').value = '';
+            document.getElementById('sell-price').value = '';
+            document.getElementById('sell-img').value = '';
         }
 
         async function loadProducts() {
@@ -499,15 +523,22 @@
         function filterProducts(cat) { document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active')); event.target.classList.add('active'); renderProducts(cat === 'الكل' ? allProducts : allProducts.filter(p => p.category === cat)); }
         function searchProducts() { const term = document.getElementById('search-input').value.toLowerCase(); renderProducts(allProducts.filter(p => p.name.toLowerCase().includes(term))); }
 
-        function addToCart(p) { if(!currentUser) return openAuthModal(); userCart.push(p); document.getElementById('cart-count').innerText = userCart.length; alert("أضيف للسلة!"); }
+        function addToCart(p) { if(!currentUser) return openAuthModal(); userCart.push(p); document.getElementById('cart-count').innerText = userCart.length; alert("تمت إضافة المنتج للسلة! 🛒"); }
         function openCartModal() { if(!currentUser) return openAuthModal(); document.getElementById('cart-modal').classList.add('active'); updateCartModal(); }
         function closeCartModal() { document.getElementById('cart-modal').classList.remove('active'); }
+        
+        // تفاصيل السلة الكاملة للمواطن مع الحسابات الدقيقة
         function updateCartModal() {
             const cont = document.getElementById('cart-items-container');
-            if(userCart.length === 0) { cont.innerHTML = '<p>السلة فارغة</p>'; calcTotal = 0; document.getElementById('summ-total').innerText = '0'; return; }
+            if(userCart.length === 0) { cont.innerHTML = '<p style="text-align:center;">السلة فارغة</p>'; calcSubtotal = 0; calcTotal = 0; document.getElementById('summ-sub').innerText = '0'; document.getElementById('summ-total').innerText = '0'; return; }
             cont.innerHTML = ''; calcSubtotal = 0;
-            userCart.forEach((item, i) => { calcSubtotal += Number(item.price); cont.innerHTML += `<div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:13px;"><span>${item.name}</span><span>${Number(item.price).toLocaleString()}</span><button style="background:none; border:none; color:var(--accent-red); cursor:pointer;" onclick="userCart.splice(${i},1); updateCartModal();">✕</button></div>`; });
-            calcTotal = calcSubtotal + 5000; document.getElementById('summ-total').innerText = calcTotal.toLocaleString() + ' IQD';
+            userCart.forEach((item, i) => { 
+                calcSubtotal += Number(item.price); 
+                cont.innerHTML += `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:6px; font-size:13px;"><span>${item.name}</span><span style="color:var(--primary-neon);">${Number(item.price).toLocaleString()} IQD</span><button style="background:none; border:none; color:var(--accent-red); cursor:pointer;" onclick="userCart.splice(${i},1); updateCartModal();">✕</button></div>`; 
+            });
+            calcTotal = calcSubtotal + 5000; 
+            document.getElementById('summ-sub').innerText = calcSubtotal.toLocaleString() + ' IQD';
+            document.getElementById('summ-total').innerText = calcTotal.toLocaleString() + ' IQD';
         }
 
         function openCheckoutModal() { closeCartModal(); document.getElementById('checkout-modal').classList.add('active'); document.getElementById('cust-phone').value = currentUser.phone; }
@@ -521,7 +552,7 @@
         }
 
         function getGeoLocation() {
-            navigator.geolocation.getCurrentPosition(pos => { customerGPSCoords = `https://maps.google.com/?q=${pos.coords.latitude},${pos.coords.longitude}`; document.getElementById('cust-gps').value = "تم تحديد الموقع ✅"; });
+            navigator.geolocation.getCurrentPosition(pos => { customerGPSCoords = `https://maps.google.com/?q=${pos.coords.latitude},${pos.coords.longitude}`; document.getElementById('cust-gps').value = "تم تحديد الموقع بنجاح ✅"; });
         }
 
         async function submitFinalOrder() {
@@ -531,7 +562,7 @@
             const method = document.getElementById('selected-payment').value;
             const receiptId = document.getElementById('cust-receipt').value.trim();
             if(name.length < 5 || !name.includes(' ')) return alert("أدخل اسمك الثنائي الحقيقي");
-            if(address.length < 5) return alert("أدخل العنوان بالتفصيل");
+            if(address.length < 5) return alert("أدخل تفاصيل العنوان بالتفصيل");
 
             document.getElementById('payment-processor').style.display = 'flex';
             await new Promise(r => setTimeout(r, 1000));
@@ -570,23 +601,29 @@
 
         async function addNewProductByUrl() {
             const name = document.getElementById('p-name').value, price = document.getElementById('p-price').value, category = document.getElementById('p-category').value, image = document.getElementById('p-image-url').value;
+            if(!name || !price || !image) return alert("املأ كافة الحقول");
             await fetch('/api/products', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, price, category, image, status: 'approved', sellerPhone: 'admin' }) });
-            alert("تم نشر المنتج!"); loadProducts();
+            alert("تم نشر المنتج رسمياً!"); loadProducts();
+            document.getElementById('p-name').value = '';
+            document.getElementById('p-price').value = '';
+            document.getElementById('p-image-url').value = '';
+            document.getElementById('p-file').value = '';
         }
 
         async function loadCitizenProducts() {
             const res = await fetch('/api/admin/products'); const products = await res.json();
             const citizen = products.filter(p => p.sellerPhone !== 'admin');
-            document.getElementById('citizen-products-tbody').innerHTML = citizen.map(p => `<tr><td>${p.sellerPhone}</td><td>${p.name}</td><td>${Number(p.price).toLocaleString()} IQD</td><td>${p.status}</td><td>${p.status !== 'approved' ? `<button onclick="approveCitizenProduct('${p.id}')" style="background:var(--accent-green); border:none; padding:4px 8px; cursor:pointer;">موافقة ✅</button>` : ''} <button onclick="deleteCitizenProduct('${p.id}')" style="background:var(--accent-red); color:#fff; border:none; padding:4px 8px; cursor:pointer;">حذف</button></td></tr>`).join('') || '<tr><td colspan="5" style="text-align:center;">لا توجد منتجات</td></tr>';
+            document.getElementById('citizen-products-tbody').innerHTML = citizen.map(p => `<tr><td>${p.sellerPhone}</td><td><div style="display:flex;align-items:center;gap:8px;"><img src="${p.image}" style="width:35px;height:35px;border-radius:6px;object-fit:cover;"><span>${p.name}</span></div></td><td>${Number(p.price).toLocaleString()} IQD</td><td>${p.status}</td><td>${p.status !== 'approved' ? `<button onclick="approveCitizenProduct('${p.id}')" style="background:var(--accent-green); border:none; padding:4px 8px; cursor:pointer; font-weight:bold;">موافقة ✅</button>` : ''} <button onclick="deleteCitizenProduct('${p.id}')" style="background:var(--accent-red); color:#fff; border:none; padding:4px 8px; cursor:pointer;">حذف</button></td></tr>`).join('') || '<tr><td colspan="5" style="text-align:center;">لا توجد منتجات</td></tr>';
         }
 
         async function approveCitizenProduct(id) { await fetch(`/api/products/${id}/approve`, { method: 'PUT' }); loadCitizenProducts(); loadProducts(); }
         async function deleteCitizenProduct(id) { await fetch(`/api/products/${id}`, { method: 'DELETE' }); loadCitizenProducts(); loadProducts(); }
 
+        // الطلبات محفوظة وثابتة دائماً لدى الأدمن
         async function loadAdminOrders() {
             const res = await fetch('/api/orders'); const orders = await res.json();
             const tbody = document.getElementById('orders-table-body');
-            if(!orders || orders.length === 0) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">لا توجد طلبات</td></tr>'; return; }
+            if(!orders || orders.length === 0) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">لا توجد طلبات محفوظة</td></tr>'; return; }
             tbody.innerHTML = orders.map(o => `<tr>
                 <td><b>${o.transactionId}</b><br><span style="color:var(--accent-gold);">إيصال: ${o.receiptId}</span></td>
                 <td><b>${o.customerName}</b><br><span style="color:var(--primary-neon);">${o.customerPhone}</span><br><span style="font-size:11px; color:#aaa;">${o.customerAddress}</span></td>

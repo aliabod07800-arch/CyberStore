@@ -17,9 +17,7 @@ let sequelize;
 try {
     if (process.env.DATABASE_URL && process.env.DATABASE_URL.startsWith('postgres')) {
         sequelize = new Sequelize(process.env.DATABASE_URL, { 
-            dialect: 'postgres', 
-            protocol: 'postgres', 
-            logging: false,
+            dialect: 'postgres', protocol: 'postgres', logging: false,
             dialectOptions: { ssl: { require: true, rejectUnauthorized: false } }
         });
     } else {
@@ -30,7 +28,7 @@ try {
 }
 
 const STORE_CONFIG = {
-    storeName: "CyberStore.iq Holographic Marketplace",
+    storeName: "CyberStore.iq Enterprise",
     merchantPhone: "9647831333337",
     zainCashWallet: "07831333337",
     shippingCost: 5000,
@@ -66,7 +64,7 @@ const Product = sequelize.define('Product', {
     name: { type: DataTypes.STRING, allowNull: false },
     price: { type: DataTypes.FLOAT, allowNull: false },
     category: { type: DataTypes.STRING, allowNull: false },
-    image: { type: DataTypes.TEXT, allowNull: false },
+    image: { type: DataTypes.TEXT, allowNull: false }, // تدعم الروابط أو Base64 لثبات الصور
     status: { type: DataTypes.STRING, defaultValue: 'approved' },
     sellerPhone: { type: DataTypes.STRING, defaultValue: 'admin' }
 });
@@ -102,40 +100,54 @@ async function sendWhatsAppMessage(phone, message) {
 
 const otpStorage = {};
 
-// إرسال الكود الحقيقي حصرياً عبر الواتساب دون قبول أكواد وهمية
 app.post('/api/send-otp', async (req, res) => {
     try {
         const { phone } = req.body;
         const otp = Math.floor(1000 + Math.random() * 9000).toString();
         otpStorage[phone] = otp;
-        await sendWhatsAppMessage(phone, `🔐 كود التحقق الخاص بك في CyberStore هو: *${otp}*\nلا تقم بمشاركته مع أي شخص.`);
+        await sendWhatsAppMessage(phone, `🔐 كود التحقق في CyberStore: *${otp}*`);
         res.json({ success: true });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
     }
 });
 
-// التحقق الصارم من الـ OTP المرسل فعلياً عبر الواتساب
+// التحقق من الـ OTP مع استقبال اليوزرنايم المخصص للمواطن وضمان تففرده
 app.post('/api/verify-otp', async (req, res) => {
     try {
-        const { phone, otp } = req.body;
+        const { phone, otp, customUsername } = req.body;
         if (otpStorage[phone] && otpStorage[phone] === otp) {
             delete otpStorage[phone];
             let user = await User.findOne({ where: { phone } });
             const ADMIN_PHONE = '07831333337'; 
             let role = (phone === ADMIN_PHONE) ? 'admin' : 'customer';
 
+            let usernameToSet = customUsername ? customUsername.trim() : null;
+            if (role === 'admin') usernameToSet = 'CyberAdmin_VIP';
+
             if (!user) {
-                const randomId = Math.floor(1000 + Math.random() * 9000);
-                const username = role === 'admin' ? 'CyberAdmin_VIP' : `CyberUser_${randomId}`;
-                user = await User.create({ phone, username, role });
-            } else if (user.role !== role) {
-                user.role = role;
+                if (!usernameToSet) {
+                    return res.status(400).json({ success: false, error: 'يرجى إدخال يوزرنايم خاص بك' });
+                }
+                const existingUser = await User.findOne({ where: { username: usernameToSet } });
+                if (existingUser) {
+                    return res.status(400).json({ success: false, error: 'هذا اليوزر مستخدم بالفعل، اختر يوزراً آخر' });
+                }
+                user = await User.create({ phone, username: usernameToSet, role });
+            } else {
+                if (usernameToSet && usernameToSet !== user.username) {
+                    const existingUser = await User.findOne({ where: { username: usernameToSet } });
+                    if (existingUser) {
+                        return res.status(400).json({ success: false, error: 'هذا اليوزر مستخدم بالفعل' });
+                    }
+                    user.username = usernameToSet;
+                }
+                if (user.role !== role) user.role = role;
                 await user.save();
             }
             res.json({ success: true, phone: user.phone, username: user.username, role: user.role, points: user.cyberPoints });
         } else {
-            res.status(400).json({ success: false, error: 'رمز التحقق غير صحيح أو منتهي الصلاحية' });
+            res.status(400).json({ success: false, error: 'رمز التحقق غير صحيح' });
         }
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
@@ -143,7 +155,7 @@ app.post('/api/verify-otp', async (req, res) => {
 });
 
 app.post('/api/ai-assistant', async (req, res) => {
-    res.json({ success: true, reply: "أهلاً بك في منصة CyberStore الهولوغرافي! أنا مساعدك الذكي." });
+    res.json({ success: true, reply: "أهلاً بك في CyberStore! أنا مساعدك الذكي." });
 });
 
 app.get('/api/products', async (req, res) => {
@@ -216,6 +228,7 @@ app.post('/api/bid', async (req, res) => {
     res.json({ success: true, auction });
 });
 
+// حفظ الطلبات بشكل دائم في قاعدة البيانات لتظهر دائماً لدى الأدمن
 app.post('/api/orders', async (req, res) => {
     try {
         const { customerName, customerPhone, customerAddress, paymentMethod, receiptId, items, finalTotal } = req.body;
@@ -298,6 +311,6 @@ app.get('/api/users', async (req, res) => {
 sequelize.sync().then(async () => {
     const PORT = process.env.PORT || 3000;
     server.listen(PORT, () => {
-        console.log(`🚀 Holographic Server running on port ${PORT}`);
+        console.log(`🚀 CyberStore Enterprise Server running on port ${PORT}`);
     });
 });
