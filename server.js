@@ -32,21 +32,41 @@ try {
     sequelize = new Sequelize({ dialect: 'sqlite', storage: 'database.sqlite', logging: false });
 }
 
-// جدول المستخدمين ونقاط الولاء
+// 🌐 API عام وقابل للتعديل مستقبلاً لإعدادات المتجر وبيانات الدفع
+const STORE_CONFIG = {
+    storeName: "CyberStore.iq Enterprise",
+    merchantPhone: "9647831333337",
+    shippingCost: 5000,
+    loyaltyRewardRate: 0.05, // 5% من قيمة المشتريات نقاط ولاء
+    supportedPaymentMethods: [
+        { id: 'cash', name: 'نقداً عند الاستلام 💵', requiresApproval: false },
+        { id: 'zaincash', name: 'زين كاش 📱', requiresApproval: true },
+        { id: 'paypal', name: 'PayPal 🌐', requiresApproval: true }
+    ]
+};
+
+// مسار عام لجلب تعديلات ومتحولات الـ API مستقبلاً
+app.get('/api/config', (req, res) => {
+    res.json({ success: true, config: STORE_CONFIG });
+});
+
+// جدول المستخدمين مع توليد Username فريد لكل هاتف للحفاظ على الخصوصية
 const User = sequelize.define('User', {
     phone: { type: DataTypes.STRING, unique: true, allowNull: false },
+    username: { type: DataTypes.STRING, unique: true, allowNull: false },
     role: { type: DataTypes.STRING, defaultValue: 'customer' },
     totalSpent: { type: DataTypes.FLOAT, defaultValue: 0 },
     cyberPoints: { type: DataTypes.INTEGER, defaultValue: 100 }
 });
 
-// جدول الطلبات
+// جدول الطلبات مع تفاصيل الدفع الكاملة
 const Order = sequelize.define('Order', {
     transactionId: { type: DataTypes.STRING, unique: true, allowNull: false },
     customerName: { type: DataTypes.STRING, allowNull: false },
     customerPhone: { type: DataTypes.STRING, allowNull: false },
     customerAddress: { type: DataTypes.TEXT, allowNull: false },
     paymentMethod: { type: DataTypes.STRING, allowNull: false },
+    paymentDetails: { type: DataTypes.JSON, defaultValue: {} }, // تفاصيل الدفع الإضافية
     items: { type: DataTypes.JSON, allowNull: false },
     finalTotal: { type: DataTypes.FLOAT, allowNull: false },
     status: { type: DataTypes.STRING, defaultValue: 'قيد المعالجة ⏳' },
@@ -61,7 +81,7 @@ const Product = sequelize.define('Product', {
     image: { type: DataTypes.TEXT, allowNull: false }
 });
 
-// جدول المزادات الحية
+// جدول المزادات الحية (يعرض الـ Username فقط لحماية الخصوصية)
 const Auction = sequelize.define('Auction', {
     title: { type: DataTypes.STRING, allowNull: false },
     currentPrice: { type: DataTypes.FLOAT, allowNull: false },
@@ -114,33 +134,33 @@ app.post('/api/send-otp', async (req, res) => {
     }
 });
 
-// التحقق من الـ OTP وعزل حساب الأدمن حصرياً عن بقية المستخدمين
+// التحقق من الـ OTP وتوليد يوزرنايم مستعار للمستخدم للحفاظ على الخصوصية
 app.post('/api/verify-otp', async (req, res) => {
     try {
         const { phone, otp } = req.body;
         
-        // التحقق من صحة الكود (مع قبول الكود التجريبي العام أو الـ OTP المرسل)
         if ((otpStorage[phone] && otpStorage[phone] === otp) || otp === '1234' || otp === '0000') {
             if (otpStorage[phone]) delete otpStorage[phone];
             
             let user = await User.findOne({ where: { phone } });
             
-            // 🛑 رقم هاتف الأدمن المعزول حصرياً (استبدله برقمك الحقيقي بصيغة 07XXXXXXXXX)
+            // 🛑 رقم هاتف الأدمن المعزول حصرياً
             const ADMIN_PHONE = '07831333337'; 
-            
             let role = (phone === ADMIN_PHONE) ? 'admin' : 'customer';
 
             if (!user) {
-                user = await User.create({ phone, role });
+                // توليد يوزرنايم فريد ومستعار لكل مستخدم جديد
+                const randomId = Math.floor(1000 + Math.random() * 9000);
+                const username = role === 'admin' ? 'CyberAdmin_VIP' : `CyberUser_${randomId}`;
+                user = await User.create({ phone, username, role });
             } else {
-                // تحديث وإلزام الدور الصحيح للحساب دائمًا
                 if (user.role !== role) {
                     user.role = role;
                     await user.save();
                 }
             }
 
-            res.json({ success: true, phone: user.phone, role: user.role, points: user.cyberPoints });
+            res.json({ success: true, phone: user.phone, username: user.username, role: user.role, points: user.cyberPoints });
         } else {
             res.status(400).json({ success: false, error: 'رمز التحقق غير صحيح' });
         }
@@ -149,7 +169,7 @@ app.post('/api/verify-otp', async (req, res) => {
     }
 });
 
-// المساعد الذكي الخبير بالتجميعات والمنتجات
+// المساعد الذكي
 app.post('/api/ai-assistant', async (req, res) => {
     try {
         const { prompt } = req.body;
@@ -158,13 +178,11 @@ app.post('/api/ai-assistant', async (req, res) => {
         let aiReply = "مرحباً بك في CyberStore.iq! أنا مساعدك التقني الذكي. ";
         const lowerPrompt = prompt.toLowerCase();
         
-        if (lowerPrompt.includes('تجميعة') || lowerPrompt.includes('بي سي') || lowerPrompt.includes('pc') || lowerPrompt.includes('ألعاب')) {
+        if (lowerPrompt.includes('تجميعة') || lowerPrompt.includes('بي سي') || lowerPrompt.includes('pc')) {
             const gamingItems = products.filter(p => p.category === 'أجهزة' || p.category === 'ألعاب');
-            aiReply += `أنصحك بتجميعة احترافية تضم أقوى قطع الـ PC المتوفرة لدينا لضمان أداء عالي وسرعة فائقة.\n\nالمنتجات المقترحة:\n` + gamingItems.map(i => `- ${i.name} بسعر ${i.price.toLocaleString()} IQD`).join('\n') + `\n\nتفضل بإضافتها للسلة واستمتع بقوة الأداء!`;
-        } else if (lowerPrompt.includes('مزايدة') || lowerPrompt.includes('مزاد')) {
-            aiReply += `لدينا قسم مزادات حية (Live Cyber Auctions) يتيح لك المزايدة على أجهزة نادرة بأسعار مذهلة! تصفح قسم المزادات في المتجر الآن.`;
+            aiReply += `أنصحك بتجميعة احترافية تضم أقوى قطع الـ PC المتوفرة لدينا:\n` + gamingItems.map(i => `- ${i.name} بسعر ${i.price.toLocaleString()} IQD`).join('\n');
         } else {
-            aiReply += `أنا هنا لمساعدتك في اختيار أفضل الأجهزة والإكسسوارات. اسألني عن أي منتج وسأشرح لك تفاصيله الفنية بدقة!`;
+            aiReply += `أنا هنا لمساعدتك في اختيار أفضل الأجهزة، المزادات الحية، والتوصيل السريع لكافة المحافظات!`;
         }
 
         res.json({ success: true, reply: aiReply });
@@ -173,7 +191,7 @@ app.post('/api/ai-assistant', async (req, res) => {
     }
 });
 
-// مسارات المزادات الحية
+// مسارات المزادات الحية (تعرض الـ Username فقط للحفاظ على الخصوصية)
 app.get('/api/auctions', async (req, res) => {
     try {
         const auctions = await Auction.findAll({ where: { status: 'active' } });
@@ -209,6 +227,7 @@ app.post('/api/auctions', async (req, res) => {
 app.post('/api/bid', async (req, res) => {
     try {
         const { auctionId, phone, bidAmount } = req.body;
+        const user = await User.findOne({ where: { phone } });
         const auction = await Auction.findByPk(auctionId);
         
         if (!auction || auction.status !== 'active') {
@@ -219,8 +238,9 @@ app.post('/api/bid', async (req, res) => {
             return res.json({ success: false, error: 'مبلغ المزايدة يجب أن يكون أعلى من السعر الحالي' });
         }
 
+        // استخدام الـ Username المستعار بدلاً من رقم الهاتف للحفاظ على الخصوصية التامة
         auction.currentPrice = bidAmount;
-        auction.highestBidder = phone;
+        auction.highestBidder = user ? user.username : 'CyberUser_Anon';
         await auction.save();
 
         io.emit('auction_update', auction);
@@ -250,9 +270,10 @@ app.post('/api/products', async (req, res) => {
     }
 });
 
+// إتمام الطلب مع تفاصيل الدفع الكاملة
 app.post('/api/orders', async (req, res) => {
     try {
-        const { customerName, customerPhone, customerAddress, paymentMethod, items, finalTotal, status, paymentStatus } = req.body;
+        const { customerName, customerPhone, customerAddress, paymentMethod, paymentDetails, items, finalTotal, status, paymentStatus } = req.body;
         const transactionId = 'CYBER-' + Math.floor(100000 + Math.random() * 900000);
 
         const order = await Order.create({
@@ -261,18 +282,19 @@ app.post('/api/orders', async (req, res) => {
             customerPhone,
             customerAddress,
             paymentMethod,
+            paymentDetails: paymentDetails || {},
             items,
             finalTotal,
             status,
             paymentStatus
         });
 
-        const earnedPoints = Math.floor(finalTotal / 10000);
+        const earnedPoints = Math.floor(finalTotal * STORE_CONFIG.loyaltyRewardRate);
         await User.increment('cyberPoints', { by: earnedPoints, where: { phone: customerPhone } });
 
         io.emit('new_order_received', order);
 
-        await sendWhatsAppMessage(customerPhone, `⚡ *CyberStore Global*\n\nعزيزي *${customerName}*,\nتم استلام طلبك برقم المعاملة: *${transactionId}* بقيمة *${finalTotal.toLocaleString()} IQD*.\nلقد ربحت *${earnedPoints}* نقطة ولاء جديدة في محفظتك!\n\nسنقوم بإعلامك فور الموافقة وشحن الطلب!`);
+        await sendWhatsAppMessage(customerPhone, `⚡ *${STORE_CONFIG.storeName}*\n\nعزيزي *${customerName}*,\nتم استلام طلبك برقم المعاملة: *${transactionId}* بقيمة *${finalTotal.toLocaleString()} IQD*.\nطريقة الدفع: *${paymentMethod}*\nلقد ربحت *${earnedPoints}* نقطة ولاء في محفظتك!`);
 
         res.json({ success: true, order, earnedPoints });
     } catch (err) {
@@ -302,10 +324,10 @@ app.put('/api/orders/:id/status', async (req, res) => {
         
         await Order.update({ status, paymentStatus }, { where: { id: req.params.id } });
 
-        let statusMsg = `⚡ *CyberStore Global*\n\nعزيزي *${order.customerName}*,\nتم تحديث حالة طلبك (*${order.transactionId}*) إلى:\n👉 *${status}*`;
+        let statusMsg = `⚡ *${STORE_CONFIG.storeName}*\n\nعزيزي *${order.customerName}*,\nتم تحديث حالة طلبك (*${order.transactionId}*) إلى:\n👉 *${status}*`;
         
         if (paymentStatus === 'مكتمل') {
-            statusMsg = `⚡ *CyberStore Global*\n\nعزيزي *${order.customerName}*,\n🎉 تم تأكيد استلام تحويل الأموال بنجاح والموافقة على طلبك (*${order.transactionId}*)!\n\n📦 الحالة الحالية: *${status}*\n\nشكراً لثقتك بمتجرنا التقني!`;
+            statusMsg = `⚡ *${STORE_CONFIG.storeName}*\n\nعزيزي *${order.customerName}*,\n🎉 تم تأكيد استلام تحويل الأموال بنجاح والموافقة على طلبك (*${order.transactionId}*)!\n\n📦 الحالة الحالية: *${status}*`;
         }
 
         await sendWhatsAppMessage(order.customerPhone, statusMsg);
@@ -322,7 +344,7 @@ app.post('/api/track-order', async (req, res) => {
         const orders = await Order.findAll({ where: { customerPhone: phone }, order: [['createdAt', 'DESC']] });
         res.json({ success: true, orders });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ success: false, error: err.message });
     }
 });
 
