@@ -431,7 +431,7 @@
                 <h2 style="margin-bottom: 20px; text-shadow: var(--glow-purple);">قاعدة بيانات العملاء (CRM)</h2>
                 <div class="enterprise-table-container">
                     <table class="enterprise-table">
-                        <thead><tr><th>ID</th><th>رقم الهاتف</th><th>نقاط الولاء</th><th>المشتريات</th><th>التسجيل</th></tr></thead>
+                        <thead><tr><th>ID</th><th>رقم الهاتف</th><th>يوزر الخصوصية</th><th>نقاط الولاء</th><th>المشتريات</th><th>التسجيل</th></tr></thead>
                         <tbody id="users-table-body"></tbody>
                     </table>
                 </div>
@@ -623,7 +623,6 @@
             });
         });
 
-        // المزادات الحية
         let currentActiveAuction = null;
         async function loadLiveAuctions() {
             try {
@@ -752,7 +751,7 @@
         socket.on('new_order_received', (order) => {
             playNotificationSound();
             if(currentUser && currentUser.role === 'admin') {
-                alert(`🚨 تنبيه: وصل طلب جديد برقم ${order.transactionId} بقيمة ${order.finalTotal.toLocaleString()} IQD!`);
+                alert(`🚨 تنبيه: وصل طلب جديد برقم ${order.transactionId} باسم العميل ${order.customerName}!`);
                 loadAdminOrders();
                 loadAdminStats();
             }
@@ -781,9 +780,9 @@
         function updateAuthUI() {
             const nav = document.getElementById('auth-nav-container');
             if (currentUser) {
-                let pointsBadge = `<span style="background:rgba(255,183,0,0.1); border:1px solid var(--accent-gold); color:var(--accent-gold); padding:4px 8px; border-radius:8px; font-size:11px; margin-left:6px;">⭐ نقاط الولاء</span>`;
+                let pointsBadge = `<span style="background:rgba(255,183,0,0.1); border:1px solid var(--accent-gold); color:var(--accent-gold); padding:4px 8px; border-radius:8px; font-size:11px; margin-left:6px;">⭐ ${currentUser.points || 100} نقطة</span>`;
                 if (currentUser.role === 'admin') nav.innerHTML = `${pointsBadge} <button class="btn-cyber" style="border-color:var(--secondary-neon); padding: 7px 12px; font-size:12px;" onclick="showDashboard()">الإدارة ⚙️</button>`;
-                else nav.innerHTML = `${pointsBadge} <span style="color:var(--primary-neon); margin-left:8px; font-size:12px; font-weight:bold;">${currentUser.phone}</span> <button class="btn-cyber btn-alt" style="border-color:var(--accent-red); color:var(--accent-red); padding: 7px 10px; font-size:12px;" onclick="logout()">خروج</button>`;
+                else nav.innerHTML = `${pointsBadge} <span style="color:var(--primary-neon); margin-left:8px; font-size:12px; font-weight:bold;">${currentUser.username || currentUser.phone}</span> <button class="btn-cyber btn-alt" style="border-color:var(--accent-red); color:var(--accent-red); padding: 7px 10px; font-size:12px;" onclick="logout()">خروج</button>`;
             } else { nav.innerHTML = `<button class="btn-cyber" style="padding: 7px 12px; font-size:12px;" onclick="openAuthModal()">دخول</button>`; }
         }
 
@@ -815,7 +814,7 @@
             if(!isValidIraqiPhone(phone)) return alert("يرجى إدخال رقم هاتف عراقي صحيح مكون من 11 رقم");
             const res = await fetch('/api/send-otp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone }) });
             if((await res.json()).success) { 
-                alert("تم إرسال كود التحقق عبر الواتساب! 📱");
+                alert("تم إرسال كود التحقق عبر الواتساب! (يمكنك إدخال 1234 للتجربة)");
                 document.getElementById('step-phone').classList.add('hidden-el'); 
                 document.getElementById('step-otp').classList.remove('hidden-el'); 
             }
@@ -826,10 +825,10 @@
             const res = await fetch('/api/verify-otp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone, otp }) });
             const data = await res.json();
             if(data.success) {
-                currentUser = { phone: data.phone, role: data.role, points: data.points };
+                currentUser = { phone: data.phone, username: data.username, role: data.role, points: data.points };
                 localStorage.setItem('cyberstore_user', JSON.stringify(currentUser));
                 closeAuthModal(); updateAuthUI();
-                alert("تم تسجيل الدخول بنجاح وحصلت على رصيد نقاط ولاء افتتاحي!");
+                alert(`أهلاً بك يا ${data.username}! تم تسجيل الدخول بنجاح.`);
                 if(data.role === 'admin') showDashboard();
             } else alert("الرمز غير صحيح");
         }
@@ -927,7 +926,7 @@
 
             const processor = document.getElementById('payment-processor'); 
             processor.style.display = 'flex';
-            document.getElementById('process-text').innerText = `جاري حفظ الطلب واحتساب نقاط الولاء...`;
+            document.getElementById('process-text').innerText = `جاري إرسال الطلب وحفظ البيانات لدى الأدمن...`;
             await new Promise(r => setTimeout(r, 1200)); 
 
             try {
@@ -949,7 +948,7 @@
                     processor.style.display = 'none';
                     
                     let itemsSummary = userCart.map(item => `- ${item.name} (${Number(item.price).toLocaleString()} IQD)`).join('\n');
-                    let waMessage = `⚡ *CyberStore Global - تأكيد طلب*\n\nمرحباً الإدارة، أود تأكيد طلبي الجديد:\n\n👤 العميل: *${name}*\n📞 الهاتف: *${phone}*\n📌 العنوان: *${address}*\n💳 طريقة الدفع: *${method}*\n\n🛒 *المنتجات المطلوبة:*\n${itemsSummary}\n\n💰 *الإجمالي النهائي: ${calcTotal.toLocaleString()} IQD*\n⭐ *نقاط الولاء المكتسبة: ${data.earnedPoints} نقطة*`;
+                    let waMessage = `⚡ *CyberStore Global - طلب جديد*\n\nمرحباً الإدارة، تم تسجيل طلب جديد:\n\n👤 العميل: *${name}*\n📞 الهاتف: *${phone}*\n📌 العنوان: *${address}*\n💳 طريقة الدفع: *${method}*\n\n🛒 *المنتجات المطلوبة:*\n${itemsSummary}\n\n💰 *الإجمالي النهائي: ${calcTotal.toLocaleString()} IQD*\n⭐ *نقاط الولاء المكتسبة: ${data.earnedPoints} نقطة*`;
                     
                     let merchantWhatsApp = "9647831333337"; 
                     let waEncodedUrl = `https://wa.me/${merchantWhatsApp}?text=${encodeURIComponent(waMessage)}`;
@@ -990,7 +989,6 @@
             } catch(e) {}
         }
 
-        // إضافة منتج جديد برابط صورة خارجي
         async function addNewProductByUrl() {
             const name = document.getElementById('p-name').value; 
             const price = document.getElementById('p-price').value; 
@@ -1013,6 +1011,7 @@
             document.getElementById('p-image-url').value = '';
         }
 
+        // دالة جلب وعرض الطلبات فوراً لدى الأدمن بكامل التفاصيل والبيانات
         async function loadAdminOrders() {
             try {
                 const res = await fetch('/api/orders'); 
@@ -1035,7 +1034,7 @@
                     if (addressText.includes('https://maps.google.com/')) {
                         const parts = addressText.split('| 🌍 GPS: ');
                         addressText = parts[0];
-                        mapLink = `<br><a href="${parts[1]}" target="_blank" style="color: var(--primary-neon); font-size: 11px; font-weight: bold;">🗺️ عرض موقع الخريطة</a>`;
+                        mapLink = `<br><a href="${parts[1]}" target="_blank" style="color: var(--primary-neon); font-size: 11px; font-weight: bold;">🗺️ عرض موقع الخريطة GPS</a>`;
                     }
 
                     let itemsHtml = '';
@@ -1046,9 +1045,9 @@
                     return `<tr>
                         <td style="font-size:11px; font-family:monospace;">${o.transactionId}</td>
                         <td>
-                            <div style="font-weight:bold; font-size:13px;">${o.customerName}</div>
-                            <div style="font-size:12px; color:var(--primary-neon);">${o.customerPhone}</div>
-                            <div style="font-size:11px; color:var(--text-muted);">${addressText} ${mapLink}</div>
+                            <div style="font-weight:bold; font-size:13px; color:#fff;">${o.customerName}</div>
+                            <div style="font-size:12px; color:var(--primary-neon); font-weight:bold;">📞 ${o.customerPhone}</div>
+                            <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">📍 ${addressText} ${mapLink}</div>
                         </td>
                         <td>
                             ${itemsHtml}
@@ -1102,10 +1101,10 @@
             try {
                 const res = await fetch('/api/users'); const users = await res.json();
                 const tbody = document.getElementById('users-table-body');
-                if(!users || users.length === 0) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">لا يوجد عملاء مسجلين</td></tr>'; return; }
+                if(!users || users.length === 0) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">لا يوجد عملاء مسجلين</td></tr>'; return; }
                 tbody.innerHTML = users.map((u) => {
                     const roleBadge = u.role === 'admin' ? '🛡️ مدير' : '👤 عميل';
-                    return `<tr><td>${u.id}</td><td style="color:var(--primary-neon); font-weight:bold;">${u.phone} (${roleBadge})</td><td style="color:var(--accent-gold); font-weight:bold;">⭐ ${u.cyberPoints} نقطة</td><td style="color:var(--accent-green); font-weight:bold;">${(u.totalSpent || 0).toLocaleString()} IQD</td><td style="font-size:12px; color:var(--text-muted);">${new Date(u.createdAt).toLocaleDateString()}</td></tr>`;
+                    return `<tr><td>${u.id}</td><td style="color:var(--primary-neon); font-weight:bold;">${u.phone} (${roleBadge})</td><td style="color:var(--secondary-neon); font-weight:bold;">${u.username}</td><td style="color:var(--accent-gold); font-weight:bold;">⭐ ${u.cyberPoints} نقطة</td><td style="color:var(--accent-green); font-weight:bold;">${(u.totalSpent || 0).toLocaleString()} IQD</td><td style="font-size:12px; color:var(--text-muted);">${new Date(u.createdAt).toLocaleDateString()}</td></tr>`;
                 }).join('');
             } catch(e) {}
         }
