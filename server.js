@@ -32,25 +32,26 @@ try {
     sequelize = new Sequelize({ dialect: 'sqlite', storage: 'database.sqlite', logging: false });
 }
 
-// 🌐 API عام وقابل للتعديل مستقبلاً لإعدادات المتجر وبيانات الدفع
+// 🌐 API عام وقابل للتعديل لإعدادات بوابات الدفع والمعاملات المالية
 const STORE_CONFIG = {
-    storeName: "CyberStore.iq Enterprise",
+    storeName: "CyberStore.iq Fintech",
     merchantPhone: "9647831333337",
+    zainCashWallet: "07831333337", // رقم محفظة زين كاش التجارية للمتجر
     shippingCost: 5000,
-    loyaltyRewardRate: 0.05, // 5% من قيمة المشتريات نقاط ولاء
-    supportedPaymentMethods: [
-        { id: 'cash', name: 'نقداً عند الاستلام 💵', requiresApproval: false },
-        { id: 'zaincash', name: 'زين كاش 📱', requiresApproval: true },
-        { id: 'paypal', name: 'PayPal 🌐', requiresApproval: true }
+    loyaltyRewardRate: 0.05,
+    paymentMethods: [
+        { id: 'cash', name: 'نقداً عند الاستلام 💵', requiresReceipt: false },
+        { id: 'zaincash', name: 'زين كاش (تحويل فوري) 📱', requiresReceipt: true },
+        { id: 'mastercard', name: 'ماستركارد / زين كاش محلي 💳', requiresReceipt: true },
+        { id: 'paypal', name: 'PayPal دولي 🌐', requiresReceipt: true }
     ]
 };
 
-// مسار عام لجلب تعديلات ومتحولات الـ API مستقبلاً
 app.get('/api/config', (req, res) => {
     res.json({ success: true, config: STORE_CONFIG });
 });
 
-// جدول المستخدمين مع توليد Username فريد لكل هاتف للحفاظ على الخصوصية
+// جدول المستخدمين وتوليد يوزرنايم فريد للمزادات
 const User = sequelize.define('User', {
     phone: { type: DataTypes.STRING, unique: true, allowNull: false },
     username: { type: DataTypes.STRING, unique: true, allowNull: false },
@@ -59,18 +60,18 @@ const User = sequelize.define('User', {
     cyberPoints: { type: DataTypes.INTEGER, defaultValue: 100 }
 });
 
-// جدول الطلبات مع تفاصيل الدفع الكاملة
+// جدول الطلبات مع حقول تفاصيل الإيصال والدفع المالي
 const Order = sequelize.define('Order', {
     transactionId: { type: DataTypes.STRING, unique: true, allowNull: false },
     customerName: { type: DataTypes.STRING, allowNull: false },
     customerPhone: { type: DataTypes.STRING, allowNull: false },
     customerAddress: { type: DataTypes.TEXT, allowNull: false },
     paymentMethod: { type: DataTypes.STRING, allowNull: false },
-    paymentDetails: { type: DataTypes.JSON, defaultValue: {} }, // تفاصيل الدفع الإضافية
+    receiptId: { type: DataTypes.STRING, defaultValue: 'غير مطلوب (نقداً)' }, // رقم إيصال التحويل المالي
     items: { type: DataTypes.JSON, allowNull: false },
     finalTotal: { type: DataTypes.FLOAT, allowNull: false },
     status: { type: DataTypes.STRING, defaultValue: 'قيد المعالجة ⏳' },
-    paymentStatus: { type: DataTypes.STRING, defaultValue: 'معلق' }
+    paymentStatus: { type: DataTypes.STRING, defaultValue: 'بانتظار التدقيق المالي 🔍' }
 });
 
 // جدول المنتجات
@@ -81,7 +82,7 @@ const Product = sequelize.define('Product', {
     image: { type: DataTypes.TEXT, allowNull: false }
 });
 
-// جدول المزادات الحية (يعرض الـ Username فقط لحماية الخصوصية)
+// جدول المزادات الحية
 const Auction = sequelize.define('Auction', {
     title: { type: DataTypes.STRING, allowNull: false },
     currentPrice: { type: DataTypes.FLOAT, allowNull: false },
@@ -134,7 +135,6 @@ app.post('/api/send-otp', async (req, res) => {
     }
 });
 
-// التحقق من الـ OTP وتوليد يوزرنايم مستعار للمستخدم للحفاظ على الخصوصية
 app.post('/api/verify-otp', async (req, res) => {
     try {
         const { phone, otp } = req.body;
@@ -143,13 +143,10 @@ app.post('/api/verify-otp', async (req, res) => {
             if (otpStorage[phone]) delete otpStorage[phone];
             
             let user = await User.findOne({ where: { phone } });
-            
-            // 🛑 رقم هاتف الأدمن المعزول حصرياً
             const ADMIN_PHONE = '07831333337'; 
             let role = (phone === ADMIN_PHONE) ? 'admin' : 'customer';
 
             if (!user) {
-                // توليد يوزرنايم فريد ومستعار لكل مستخدم جديد
                 const randomId = Math.floor(1000 + Math.random() * 9000);
                 const username = role === 'admin' ? 'CyberAdmin_VIP' : `CyberUser_${randomId}`;
                 user = await User.create({ phone, username, role });
@@ -178,20 +175,19 @@ app.post('/api/ai-assistant', async (req, res) => {
         let aiReply = "مرحباً بك في CyberStore.iq! أنا مساعدك التقني الذكي. ";
         const lowerPrompt = prompt.toLowerCase();
         
-        if (lowerPrompt.includes('تجميعة') || lowerPrompt.includes('بي سي') || lowerPrompt.includes('pc')) {
-            const gamingItems = products.filter(p => p.category === 'أجهزة' || p.category === 'ألعاب');
-            aiReply += `أنصحك بتجميعة احترافية تضم أقوى قطع الـ PC المتوفرة لدينا:\n` + gamingItems.map(i => `- ${i.name} بسعر ${i.price.toLocaleString()} IQD`).join('\n');
+        if (lowerPrompt.includes('دفع') || lowerPrompt.includes('زين كاش') || lowerPrompt.includes('تحويل')) {
+            aiReply += `ندعم الدفع النقدي، التحويل الفوري عبر محفظة زين كاش (${STORE_CONFIG.zainCashWallet})، وماستركارد. بعد التحويل أدخل رقم العملية لتأكيد طلبك فوراً!`;
         } else {
-            aiReply += `أنا هنا لمساعدتك في اختيار أفضل الأجهزة، المزادات الحية، والتوصيل السريع لكافة المحافظات!`;
+            aiReply += `أنا هنا لمساعدتك في اختيار أفضل الأجهزة والتجميعات وتتبع طلباتك المالية لحظياً!`;
         }
 
         res.json({ success: true, reply: aiReply });
     } catch(e) {
-        res.json({ success: true, reply: "أهلاً بك! تفضل بسؤالي عن أي منتج وسأساعدك فوراً." });
+        res.json({ success: true, reply: "أهلاً بك! تفضل بسؤالي وسأساعدك فوراً." });
     }
 });
 
-// مسارات المزادات الحية (تعرض الـ Username فقط للحفاظ على الخصوصية)
+// المزادات الحية
 app.get('/api/auctions', async (req, res) => {
     try {
         const auctions = await Auction.findAll({ where: { status: 'active' } });
@@ -238,7 +234,6 @@ app.post('/api/bid', async (req, res) => {
             return res.json({ success: false, error: 'مبلغ المزايدة يجب أن يكون أعلى من السعر الحالي' });
         }
 
-        // استخدام الـ Username المستعار بدلاً من رقم الهاتف للحفاظ على الخصوصية التامة
         auction.currentPrice = bidAmount;
         auction.highestBidder = user ? user.username : 'CyberUser_Anon';
         await auction.save();
@@ -270,11 +265,13 @@ app.post('/api/products', async (req, res) => {
     }
 });
 
-// إتمام الطلب مع تفاصيل الدفع الكاملة
+// مسار استقبال الطلبات والتحقق المالي
 app.post('/api/orders', async (req, res) => {
     try {
-        const { customerName, customerPhone, customerAddress, paymentMethod, paymentDetails, items, finalTotal, status, paymentStatus } = req.body;
+        const { customerName, customerPhone, customerAddress, paymentMethod, receiptId, items, finalTotal } = req.body;
         const transactionId = 'CYBER-' + Math.floor(100000 + Math.random() * 900000);
+
+        let initialPaymentStatus = paymentMethod === 'نقداً عند الاستلام' ? 'معلق عند التوصيل 💵' : 'بانتظار التدقيق المالي 🔍';
 
         const order = await Order.create({
             transactionId,
@@ -282,11 +279,11 @@ app.post('/api/orders', async (req, res) => {
             customerPhone,
             customerAddress,
             paymentMethod,
-            paymentDetails: paymentDetails || {},
+            receiptId: receiptId || 'غير متوفر',
             items,
             finalTotal,
-            status,
-            paymentStatus
+            status: 'قيد المعالجة ⏳',
+            paymentStatus: initialPaymentStatus
         });
 
         const earnedPoints = Math.floor(finalTotal * STORE_CONFIG.loyaltyRewardRate);
@@ -294,7 +291,7 @@ app.post('/api/orders', async (req, res) => {
 
         io.emit('new_order_received', order);
 
-        await sendWhatsAppMessage(customerPhone, `⚡ *${STORE_CONFIG.storeName}*\n\nعزيزي *${customerName}*,\nتم استلام طلبك برقم المعاملة: *${transactionId}* بقيمة *${finalTotal.toLocaleString()} IQD*.\nطريقة الدفع: *${paymentMethod}*\nلقد ربحت *${earnedPoints}* نقطة ولاء في محفظتك!`);
+        await sendWhatsAppMessage(customerPhone, `⚡ *${STORE_CONFIG.storeName}*\n\nعزيزي *${customerName}*,\nتم استلام طلبك برقم المعاملة: *${transactionId}* بقيمة *${finalTotal.toLocaleString()} IQD*.\nطريقة الدفع: *${paymentMethod}* ${receiptId ? `\nرقم الإيصال: *${receiptId}*` : ''}\n\nالحالة المالية: *${initialPaymentStatus}*\nلقد ربحت *${earnedPoints}* نقطة ولاء!`);
 
         res.json({ success: true, order, earnedPoints });
     } catch (err) {
@@ -311,6 +308,7 @@ app.get('/api/orders', async (req, res) => {
     }
 });
 
+// تحديث وتأكيد الدفع المالي من الأدمن
 app.put('/api/orders/:id/status', async (req, res) => {
     try {
         const { status, paymentStatus } = req.body;
@@ -318,17 +316,13 @@ app.put('/api/orders/:id/status', async (req, res) => {
         
         if (!order) return res.status(404).json({ success: false, error: 'الطلب غير موجود' });
 
-        if(paymentStatus === 'مكتمل' && order.paymentStatus !== 'مكتمل') {
+        if(paymentStatus === 'مكتمل ✅' && order.paymentStatus !== 'مكتمل ✅') {
             await User.increment('totalSpent', { by: order.finalTotal, where: { phone: order.customerPhone } });
         }
         
         await Order.update({ status, paymentStatus }, { where: { id: req.params.id } });
 
-        let statusMsg = `⚡ *${STORE_CONFIG.storeName}*\n\nعزيزي *${order.customerName}*,\nتم تحديث حالة طلبك (*${order.transactionId}*) إلى:\n👉 *${status}*`;
-        
-        if (paymentStatus === 'مكتمل') {
-            statusMsg = `⚡ *${STORE_CONFIG.storeName}*\n\nعزيزي *${order.customerName}*,\n🎉 تم تأكيد استلام تحويل الأموال بنجاح والموافقة على طلبك (*${order.transactionId}*)!\n\n📦 الحالة الحالية: *${status}*`;
-        }
+        let statusMsg = `⚡ *${STORE_CONFIG.storeName}*\n\nعزيزي *${order.customerName}*,\nتم تحديث حالة طلبك (*${order.transactionId}*) إلى:\n👉 *${status}*\nالحالة المالية: *${paymentStatus}*`;
 
         await sendWhatsAppMessage(order.customerPhone, statusMsg);
 
@@ -366,7 +360,7 @@ app.get('/api/stats', async (req, res) => {
     try {
         const ordersCount = await Order.count();
         const usersCount = await User.count();
-        const revenueResult = await Order.sum('finalTotal', { where: { paymentStatus: 'مكتمل' } });
+        const revenueResult = await Order.sum('finalTotal', { where: { paymentStatus: 'مكتمل ✅' } });
         
         res.json({
             ordersCount,
@@ -418,6 +412,6 @@ sequelize.sync().then(async () => {
 
     const PORT = process.env.PORT || 3000;
     server.listen(PORT, () => {
-        console.log(`🚀 CyberStore Enterprise Server running on port ${PORT}`);
+        console.log(`🚀 CyberStore Enterprise Fintech Server running on port ${PORT}`);
     });
 });

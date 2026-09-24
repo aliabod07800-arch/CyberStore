@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CyberStore | 3D Space & Live Auctions</title>
+    <title>CyberStore | Fintech Payment Gateway</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     
@@ -223,7 +223,7 @@
             padding: 25px; 
             border-radius: 20px; 
             border: 1px solid var(--primary-neon); 
-            width: 460px; 
+            width: 480px; 
             max-width: 100%; 
             max-height: 90vh; 
             overflow-y: auto; 
@@ -250,7 +250,7 @@
         .input-group input:focus, .input-group textarea:focus { border-color: var(--primary-neon); box-shadow: var(--glow-cyan); }
         
         .payment-methods { display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap; }
-        .pay-method { flex: 1; min-width: 75px; text-align: center; padding: 10px; border: 1px solid var(--border-neon); border-radius: 9px; cursor: pointer; transition: 0.3s; font-size: 12px; background: rgba(255,255,255,0.02); }
+        .pay-method { flex: 1; min-width: 90px; text-align: center; padding: 10px; border: 1px solid var(--border-neon); border-radius: 9px; cursor: pointer; transition: 0.3s; font-size: 12px; background: rgba(255,255,255,0.02); }
         .pay-method.selected { background: var(--primary-neon); color: #000; font-weight: bold; box-shadow: var(--glow-cyan); border-color: var(--primary-neon); }
 
         .processing-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background:rgba(1,2,5,0.95); border-radius: 20px; display:flex; flex-direction:column; justify-content:center; align-items:center; z-index: 10; display: none; }
@@ -294,7 +294,7 @@
         .stat-card p { font-size: 30px; font-weight: 900; margin-top: 8px; }
         
         .enterprise-table-container { width: 100%; overflow-x: auto; background: var(--bg-surface); border-radius: 16px; border: 1px solid var(--border-neon); box-shadow: 0 15px 35px rgba(0,0,0,0.4); backdrop-filter: blur(15px); }
-        .enterprise-table { width: 100%; border-collapse: collapse; text-align: right; min-width: 700px; }
+        .enterprise-table { width: 100%; border-collapse: collapse; text-align: right; min-width: 750px; }
         .enterprise-table th { background: rgba(0, 243, 255, 0.08); padding: 14px 16px; color: var(--primary-neon); font-size: 13px; border-bottom: 1px solid var(--border-neon); white-space: nowrap; }
         .enterprise-table td { padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 13px; vertical-align: middle; }
         .select-status { background: #010205; color: #fff; border: 1px solid var(--border-neon); padding: 6px; border-radius: 6px; outline: none; cursor: pointer; font-size: 12px; }
@@ -317,8 +317,8 @@
 
     <div id="store-view" class="store-container">
         <div class="cyber-hero">
-            <h1>مركز التسوق التقني الفضائي والمزادات الحية</h1>
-            <p>منصة تجارية ثلاثية الأبعاد، مزادات لحظية بالثواني، نقاط ولاء ومحفظة كريبتو، مع مساعد ذكي للتجميعات.</p>
+            <h1>بوابة الدفع المالي الذكية والمزادات الحية</h1>
+            <p>منصة تجارية متكاملة مع بوابات دفع محلية ودولية موثقة وتتبع لحظي.</p>
         </div>
 
         <!-- قسم المزادات الحية -->
@@ -356,24 +356,24 @@
     <div id="dashboard-view" class="dashboard-container">
         <div class="sidebar">
             <div>
-                <h3>Enterprise Admin</h3>
+                <h3>Fintech Admin</h3>
                 <div class="live-badge">رادار الزوار: <span id="live-count-display">1</span> متصل 🔴</div>
             </div>
             <div class="sidebar-links">
-                <a onclick="switchTab('analytics')" id="tab-analytics" class="active">📊 التقارير</a>
+                <a onclick="switchTab('analytics')" id="tab-analytics" class="active">📊 التقارير والتدقيق</a>
                 <a onclick="switchTab('add-product')" id="tab-add">➕ رفع منتج</a>
                 <a onclick="switchTab('manage-auction')" id="tab-auction">⚡ إدارة المزادات</a>
-                <a onclick="switchTab('view-orders')" id="tab-orders">📦 الطلبات والدفع</a>
+                <a onclick="switchTab('view-orders')" id="tab-orders">📦 إدارة الطلبات والأموال</a>
                 <a onclick="switchTab('view-users')" id="tab-users">👥 العملاء (VIP)</a>
                 <a style="color: var(--accent-red); font-weight: bold;" onclick="logout()">خروج</a>
             </div>
         </div>
         <div class="dashboard-content">
             <div id="sec-analytics" class="admin-section active-section">
-                <h2 style="margin-bottom: 20px; text-shadow: var(--glow-cyan);">التقارير المالية والتشغيلية</h2>
+                <h2 style="margin-bottom: 20px; text-shadow: var(--glow-cyan);">التقارير المالية والتدقيق</h2>
                 <div class="stats-grid">
                     <div class="stat-card"><h4>إجمالي الطلبات</h4><p id="stat-orders" style="color:var(--primary-neon);">0</p></div>
-                    <div class="stat-card"><h4>الإيرادات (IQD)</h4><p id="stat-revenue" style="color:var(--secondary-neon);">0</p></div>
+                    <div class="stat-card"><h4>الإيرادات المؤكدة (IQD)</h4><p id="stat-revenue" style="color:var(--secondary-neon);">0</p></div>
                     <div class="stat-card"><h4>قاعدة الحسابات</h4><p id="stat-users" style="color:var(--accent-gold);">0</p></div>
                 </div>
             </div>
@@ -394,7 +394,6 @@
                 </div>
             </div>
 
-            <!-- قسم إدارة المزادات الحية من الأدمن -->
             <div id="sec-manage-auction" class="admin-section">
                 <div style="background: var(--bg-surface); padding: 25px; border-radius: 16px; border: 1px solid var(--border-neon); max-width: 600px; backdrop-filter: blur(15px);">
                     <h2 style="color: var(--secondary-neon); margin-bottom: 15px; font-size: 20px;">إنشاء وتحديث المزاد الحي ⚡</h2>
@@ -410,16 +409,16 @@
             </div>
 
             <div id="sec-view-orders" class="admin-section">
-                <h2 style="margin-bottom: 20px; text-shadow: var(--glow-cyan);">تتبع الطلبات وحالة الدفع والشحن</h2>
+                <h2 style="margin-bottom: 20px; text-shadow: var(--glow-cyan);">تدقيق الطلبات والأموال وإيصالات التحويل</h2>
                 <div class="enterprise-table-container">
                     <table class="enterprise-table">
                         <thead>
                             <tr>
-                                <th>TXN</th>
+                                <th>TXN / الإيصال</th>
                                 <th>العميل ورقم الهاتف</th>
                                 <th>المنتجات المبلغ</th>
-                                <th>حالة الدفع</th>
-                                <th>حالة الشحنة والإجراءات</th>
+                                <th>تفاصيل الدفع</th>
+                                <th>الإجراءات والتحقق المالي</th>
                             </tr>
                         </thead>
                         <tbody id="orders-table-body"></tbody>
@@ -454,17 +453,18 @@
                 <div style="display:flex; justify-content:space-between; margin-bottom:4px; border-bottom:1px solid #222; padding-bottom:4px;"><span>التوصيل:</span><span id="summ-shipping">5000</span></div>
                 <div style="display:flex; justify-content:space-between; margin-top:4px; font-weight:bold; color:var(--primary-neon);"><span>الإجمالي النهائي:</span><span id="summ-total">0</span></div>
             </div>
-            <button class="btn-cyber" style="width: 100%; margin-bottom: 8px; padding: 11px;" onclick="openCheckoutModal()">متابعة الشحن والدفع 💳</button>
+            <button class="btn-cyber" style="width: 100%; margin-bottom: 8px; padding: 11px;" onclick="openCheckoutModal()">متابعة الدفع المالي 💳</button>
             <button style="background:none; border:none; color:var(--text-muted); width:100%; cursor:pointer; font-size: 13px;" onclick="closeCartModal()">إغلاق</button>
         </div>
     </div>
 
+    <!-- بوابة الدفع المتقدمة -->
     <div class="modal-overlay" id="checkout-modal">
         <div class="modal-box">
             <div id="payment-processor" class="processing-overlay">
-                <div class="spinner"></div><h3 style="color: var(--primary-neon); margin-top:15px; font-size:16px;" id="process-text">جاري معالجة الطلب...</h3>
+                <div class="spinner"></div><h3 style="color: var(--primary-neon); margin-top:15px; font-size:16px;" id="process-text">جاري معالجة المعاملة المالية...</h3>
             </div>
-            <h2>تأكيد الطلب وإرسال الواتساب 🔒</h2>
+            <h2>بوابة الدفع الآمنة 🔒</h2>
             <div class="input-group"><label>الاسم الثنائي الحقيقي</label><input type="text" id="cust-name" placeholder="الاسم الكامل لضمان التوصيل"></div>
             <div class="input-group"><label>رقم الهاتف المسجل</label><input type="tel" id="cust-phone" readonly style="color: var(--primary-neon); background: rgba(0,243,255,0.05);"></div>
             
@@ -478,19 +478,29 @@
                 <input type="text" id="cust-gps" placeholder="إحداثيات الموقع (ستظهر تلقائياً)" readonly style="margin-top: 6px; font-size: 11px; color: var(--primary-neon);">
             </div>
             
-            <label style="color:var(--text-muted); font-size:12px; margin-bottom:6px; display:block;">اختر طريقة الدفع:</label>
+            <label style="color:var(--text-muted); font-size:12px; margin-bottom:6px; display:block;">اختر وسيلة الدفع المالي:</label>
             <div class="payment-methods">
                 <div class="pay-method selected" onclick="selectPayment(this, 'نقداً عند الاستلام')">نقداً 💵</div>
                 <div class="pay-method" onclick="selectPayment(this, 'زين كاش')">زين كاش 📱</div>
+                <div class="pay-method" onclick="selectPayment(this, 'ماستركارد')">ماستركارد 💳</div>
                 <div class="pay-method" onclick="selectPayment(this, 'PayPal')">PayPal 🌐</div>
             </div>
             <input type="hidden" id="selected-payment" value="نقداً عند الاستلام">
+
+            <!-- تعليمات ورقم التحويل تظهر ديناميكياً حسب وسيلة الدفع -->
+            <div id="payment-instructions" style="background: rgba(0,243,255,0.05); border: 1px solid var(--border-neon); padding: 12px; border-radius: 9px; margin-bottom: 15px; font-size: 12px; display: none;">
+                <p id="pay-info-text" style="color: var(--primary-neon); margin-bottom: 8px; font-weight: bold;"></p>
+                <div class="input-group" style="margin-bottom:0;">
+                    <label id="receipt-label">رقم إيصال التحويل المالي / العملية:</label>
+                    <input type="text" id="cust-receipt" placeholder="أدخل رقم العملية أو الإيصال من تطبيقك">
+                </div>
+            </div>
             
-            <button id="normal-checkout-btn" class="btn-cyber" style="width: 100%; padding: 11px; margin-bottom: 8px;" onclick="submitFinalOrder()">إتمام الطلب وتوليد رابط الواتساب ✅</button>
+            <button id="normal-checkout-btn" class="btn-cyber" style="width: 100%; padding: 11px; margin-bottom: 8px;" onclick="submitFinalOrder()">إتمام المعاملة وإرسال الطلب ✅</button>
             
             <div id="whatsapp-redirect-box" class="hidden-el" style="text-align: center; margin-top: 10px; background: rgba(0,255,102,0.08); border: 1px solid var(--accent-green); padding: 15px; border-radius: 12px;">
-                <p style="font-size: 13px; margin-bottom: 10px; color: var(--accent-green); font-weight: bold;">✅ تم حفظ طلبك وظهوره في لوحة الإدارة! انقر أدناه لإرسال التفاصيل وتأكيد الطلب عبر الواتساب فوراً:</p>
-                <a id="whatsapp-confirm-link" href="#" target="_blank" class="btn-cyber" style="display: inline-block; background: var(--accent-green); color: #000; border-color: var(--accent-green); text-decoration: none; padding: 10px 20px; font-weight: bold;">تأكيد الطلب عبر الواتساب 💬</a>
+                <p style="font-size: 13px; margin-bottom: 10px; color: var(--accent-green); font-weight: bold;">✅ تم حفظ طلبك وإرساله للتدقيق المالي! انقر أدناه لإرسال الإيصال للأدمن عبر الواتساب فوراً:</p>
+                <a id="whatsapp-confirm-link" href="#" target="_blank" class="btn-cyber" style="display: inline-block; background: var(--accent-green); color: #000; border-color: var(--accent-green); text-decoration: none; padding: 10px 20px; font-weight: bold;">إرسال تفاصيل الإيصال عبر الواتساب 💬</a>
             </div>
 
             <button style="background:none; border:none; color:var(--text-muted); cursor:pointer; width:100%; margin-top:8px; font-size: 13px;" onclick="closeCheckoutModal()">إغلاق</button>
@@ -500,8 +510,8 @@
     <!-- المصادقة والتتبع -->
     <div class="modal-overlay" id="auth-modal">
         <div class="modal-box">
-            <h2>تسجيل الدخول الإجباري 🔒</h2>
-            <p style="text-align: center; color: var(--text-muted); font-size: 12px; margin-bottom: 12px;">أدخل رقم هاتفك العراقي للتمكن من السلة والمزادات والشراء.</p>
+            <h2>تسجيل الدخول المالي 🔒</h2>
+            <p style="text-align: center; color: var(--text-muted); font-size: 12px; margin-bottom: 12px;">أدخل رقم هاتفك العراقي للوصول لمحفظتك ونقاط الولاء.</p>
             <div id="step-phone">
                 <div class="input-group"><label>رقم الهاتف</label><input type="tel" id="phone-number" placeholder="07XXXXXXXXX"></div>
                 <button class="btn-cyber" style="width: 100%; padding: 11px;" onclick="sendWhatsAppCode()">طلب كود الـ OTP عبر الواتساب 📱</button>
@@ -516,7 +526,7 @@
 
     <div class="modal-overlay" id="track-modal">
         <div class="modal-box">
-            <h2>تتبع الطلب 📍</h2>
+            <h2>تتبع الطلب وحالة التدقيق المالي 📍</h2>
             <div class="input-group"><label>رقم الهاتف المسجل</label><input type="tel" id="track-phone" placeholder="07XXXXXXXXX"></div>
             <button class="btn-cyber" style="width: 100%; padding: 11px; margin-bottom: 12px;" onclick="trackMyOrder()">استعلام 🔎</button>
             <div id="track-results" style="text-align: right; max-height: 200px; overflow-y: auto; font-size: 13px;"></div>
@@ -533,10 +543,10 @@
             <button onclick="toggleAIChat()" style="background:none; border:none; color:#fff; cursor:pointer; font-size:16px;">✕</button>
         </div>
         <div id="ai-messages-container" style="flex: 1; padding: 15px; overflow-y: auto; font-size: 13px; display: flex; flex-direction: column; gap: 10px;">
-            <div style="background: rgba(0,243,255,0.1); padding: 10px; border-radius: 10px; border-right: 3px solid var(--primary-neon);">مرحباً بك! أنا خبير التجميعات والمزادات الحية. اسألني عن أي جهاز وسأساعدك فوراً!</div>
+            <div style="background: rgba(0,243,255,0.1); padding: 10px; border-radius: 10px; border-right: 3px solid var(--primary-neon);">مرحباً بك! أنا مساعد بوابات الدفع والمزادات الحية. اسألني عن طرق التحويل وسأرشدك فوراً!</div>
         </div>
         <div style="padding: 12px; border-top: 1px solid var(--border-neon); display: flex; gap: 8px;">
-            <input type="text" id="ai-user-input" placeholder="اسأل عن تجميعة أو مزاد..." style="flex:1; padding:10px; background:rgba(0,0,0,0.8); border:1px solid var(--border-neon); color:#fff; border-radius:8px; outline:none; font-size:13px;" onkeypress="if(event.key==='Enter') sendAIPrompt()">
+            <input type="text" id="ai-user-input" placeholder="اسأل عن الدفع أو المزادات..." style="flex:1; padding:10px; background:rgba(0,0,0,0.8); border:1px solid var(--border-neon); color:#fff; border-radius:8px; outline:none; font-size:13px;" onkeypress="if(event.key==='Enter') sendAIPrompt()">
             <button class="btn-cyber" onclick="sendAIPrompt()" style="padding: 8px 14px;">إرسال</button>
         </div>
     </div>
@@ -606,22 +616,14 @@
         }
         animateSpace();
 
-        document.addEventListener('mousemove', (e) => {
-            document.querySelectorAll('.product-card').forEach(card => {
-                const rect = card.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const y = e.clientY - rect.top;
-                if (x >= 0 && x <= rect.width && y >= 0 && y <= rect.height) {
-                    const centerX = rect.width / 2;
-                    const centerY = rect.height / 2;
-                    const rotateX = (y - centerY) / 12;
-                    const rotateY = (centerX - x) / 12;
-                    card.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-5px)`;
-                } else {
-                    card.style.transform = `rotateX(0deg) rotateY(0deg) translateY(0px)`;
-                }
-            });
-        });
+        let storeConfig = null;
+        async function fetchStoreConfig() {
+            try {
+                const res = await fetch('/api/config');
+                const data = await res.json();
+                if(data.success) storeConfig = data.config;
+            } catch(e) {}
+        }
 
         let currentActiveAuction = null;
         async function loadLiveAuctions() {
@@ -656,7 +658,7 @@
 
         async function placeBid() {
             if(!currentUser) {
-                alert("⚠️ يرجى تسجيل الدخول أولاً للمزايدة في المزادات الحية.");
+                alert("⚠️ يرجى تسجيل الدخول أولاً للمزايدة.");
                 openAuthModal();
                 return;
             }
@@ -670,7 +672,7 @@
             });
             const data = await res.json();
             if(data.success) {
-                alert("⚡ تم قبول مزايدتك بنجاح وأصبحت أعلى مزايد في المزاد!");
+                alert("⚡ تم قبول مزايدتك بنجاح برقمك المستعار الخاص!");
             } else {
                 alert(data.error || "فشلت المزايدة");
             }
@@ -691,7 +693,7 @@
             });
             const data = await res.json();
             if(data.success) {
-                alert("⚡ تم إطلاق المزاد الحي بنجاح وأصبح ظاهراً لجميع الزوار!");
+                alert("⚡ تم إطلاق المزاد الحي بنجاح!");
                 loadLiveAuctions();
                 document.getElementById('auc-title').value = '';
                 document.getElementById('auc-price').value = '';
@@ -751,7 +753,7 @@
         socket.on('new_order_received', (order) => {
             playNotificationSound();
             if(currentUser && currentUser.role === 'admin') {
-                alert(`🚨 تنبيه: وصل طلب جديد برقم ${order.transactionId} باسم العميل ${order.customerName}!`);
+                alert(`🚨 تنبيه مالي: وصل طلب جديد برقم ${order.transactionId} بقيمة ${order.finalTotal.toLocaleString()} IQD عبر (${order.paymentMethod})!`);
                 loadAdminOrders();
                 loadAdminStats();
             }
@@ -769,7 +771,7 @@
             } catch(e) {}
         }
 
-        window.onload = function() { loadProducts(); loadLiveAuctions(); checkSavedSession(); };
+        window.onload = function() { loadProducts(); loadLiveAuctions(); fetchStoreConfig(); checkSavedSession(); };
 
         function checkSavedSession() {
             const saved = localStorage.getItem('cyberstore_user');
@@ -811,10 +813,10 @@
 
         async function sendWhatsAppCode() { 
             const phone = document.getElementById('phone-number').value;
-            if(!isValidIraqiPhone(phone)) return alert("يرجى إدخال رقم هاتف عراقي صحيح مكون من 11 رقم");
+            if(!isValidIraqiPhone(phone)) return alert("يرجى إدخال رقم هاتف عراقي صحيح");
             const res = await fetch('/api/send-otp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone }) });
             if((await res.json()).success) { 
-                alert("تم إرسال كود التحقق عبر الواتساب! (يمكنك إدخال 1234 للتجربة)");
+                alert("تم إرسال كود التحقق عبر الواتساب! (يمكنك استخدام 1234 للتجربة)");
                 document.getElementById('step-phone').classList.add('hidden-el'); 
                 document.getElementById('step-otp').classList.remove('hidden-el'); 
             }
@@ -898,13 +900,31 @@
             document.getElementById('cust-phone').value = currentUser.phone;
             document.getElementById('whatsapp-redirect-box').classList.add('hidden-el');
             document.getElementById('normal-checkout-btn').style.display = 'block';
+            selectPayment(document.querySelector('.pay-method'), 'نقداً عند الاستلام');
         }
 
         function closeCheckoutModal() { document.getElementById('checkout-modal').classList.remove('active'); document.getElementById('payment-processor').style.display = 'none'; }
         
         function selectPayment(element, method) {
             document.querySelectorAll('.pay-method').forEach(el => el.classList.remove('selected'));
-            element.classList.add('selected'); document.getElementById('selected-payment').value = method;
+            element.classList.add('selected'); 
+            document.getElementById('selected-payment').value = method;
+
+            const instBox = document.getElementById('payment-instructions');
+            const infoText = document.getElementById('pay-info-text');
+
+            if (method === 'نقداً عند الاستلام') {
+                instBox.style.display = 'none';
+            } else if (method === 'زين كاش') {
+                instBox.style.display = 'block';
+                infoText.innerHTML = `📱 قم بالتحويل الفوري لمبلغ <b>${calcTotal.toLocaleString()} IQD</b> إلى محفظة زين كاش التجارية: <b style="color:var(--accent-gold); font-size:14px;">07831333337</b> ثم أدخل رقم عملية التحويل أدناه:`;
+            } else if (method === 'ماستركارد') {
+                instBox.style.display = 'block';
+                infoText.innerHTML = `💳 قم بالتحويل إلى ماستركارد المتجر المعتمد ثم أدخل رقم الإيصال المالي المكون من 8 أرقام أدناه:`;
+            } else {
+                instBox.style.display = 'block';
+                infoText.innerHTML = `🌐 أدخل رقم معاملة تحويل الـ PayPal الخاص بك أدناه لتدقيق الحساب:`;
+            }
         }
 
         async function submitFinalOrder() {
@@ -912,21 +932,21 @@
             const phone = document.getElementById('cust-phone').value.trim();
             const address = document.getElementById('cust-address').value.trim(); 
             const method = document.getElementById('selected-payment').value;
+            const receiptId = document.getElementById('cust-receipt').value.trim();
             
             if(name.length < 5 || !name.includes(' ')) return alert("يجب إدخال اسمك الثنائي الحقيقي.");
             if(!isValidIraqiPhone(phone)) return alert("رقم الهاتف غير صحيح.");
             if(address.length < 5) return alert("يرجى إدخال تفاصيل العنوان.");
+            if(method !== 'نقداً عند الاستلام' && !receiptId) return alert("يرجى إدخال رقم إيصال أو عملية التحويل المالي.");
 
             let finalAddressWithGPS = address;
             if (customerGPSCoords) {
                 finalAddressWithGPS += ` | 🌍 GPS: ${customerGPSCoords}`;
             }
 
-            let paymentStatus = 'معلق';
-
             const processor = document.getElementById('payment-processor'); 
             processor.style.display = 'flex';
-            document.getElementById('process-text').innerText = `جاري إرسال الطلب وحفظ البيانات لدى الأدمن...`;
+            document.getElementById('process-text').innerText = `جاري إرسال المعاملة لبوابة التدقيق المالي...`;
             await new Promise(r => setTimeout(r, 1200)); 
 
             try {
@@ -937,10 +957,9 @@
                         customerPhone: phone, 
                         customerAddress: finalAddressWithGPS, 
                         paymentMethod: method, 
+                        receiptId: receiptId || 'نقداً',
                         items: userCart, 
-                        finalTotal: calcTotal, 
-                        status: 'قيد المعالجة ⏳', 
-                        paymentStatus 
+                        finalTotal: calcTotal 
                     }) 
                 });
                 const data = await res.json();
@@ -948,7 +967,7 @@
                     processor.style.display = 'none';
                     
                     let itemsSummary = userCart.map(item => `- ${item.name} (${Number(item.price).toLocaleString()} IQD)`).join('\n');
-                    let waMessage = `⚡ *CyberStore Global - طلب جديد*\n\nمرحباً الإدارة، تم تسجيل طلب جديد:\n\n👤 العميل: *${name}*\n📞 الهاتف: *${phone}*\n📌 العنوان: *${address}*\n💳 طريقة الدفع: *${method}*\n\n🛒 *المنتجات المطلوبة:*\n${itemsSummary}\n\n💰 *الإجمالي النهائي: ${calcTotal.toLocaleString()} IQD*\n⭐ *نقاط الولاء المكتسبة: ${data.earnedPoints} نقطة*`;
+                    let waMessage = `⚡ *CyberStore Fintech - تدقيق مالي*\n\nمرحباً الإدارة، تم إرسال طلب ومعاملة جديدة للتدقيق:\n\n👤 العميل: *${name}*\n📞 الهاتف: *${phone}*\n📌 العنوان: *${address}*\n💳 طريقة الدفع: *${method}*\n🧾 رقم الإيصال: *${receiptId || 'نقداً'}*\n\n🛒 *المنتجات:*\n${itemsSummary}\n\n💰 *الإجمالي: ${calcTotal.toLocaleString()} IQD*`;
                     
                     let merchantWhatsApp = "9647831333337"; 
                     let waEncodedUrl = `https://wa.me/${merchantWhatsApp}?text=${encodeURIComponent(waMessage)}`;
@@ -973,7 +992,7 @@
             const res = await fetch('/api/track-order', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({phone}) });
             const data = await res.json(); const cont = document.getElementById('track-results');
             if(data.orders && data.orders.length > 0) {
-                cont.innerHTML = data.orders.map(o => `<div style="background:rgba(255,255,255,0.03); padding:12px; border-radius:8px; margin-bottom:10px; border-right: 4px solid var(--primary-neon);"><p style="font-size:12px;">TXN: ${o.transactionId}</p><p><b>${Number(o.finalTotal).toLocaleString()} IQD</b> | الدفع: ${o.paymentStatus}</p><div><span style="background:rgba(0,255,102,0.1); color:var(--accent-green); padding:3px 6px; border-radius:6px; font-size:11px;">${o.status}</span></div></div>`).join('');
+                cont.innerHTML = data.orders.map(o => `<div style="background:rgba(255,255,255,0.03); padding:12px; border-radius:8px; margin-bottom:10px; border-right: 4px solid var(--primary-neon);"><p style="font-size:12px;">TXN: ${o.transactionId} | الإيصال: ${o.receiptId}</p><p><b>${Number(o.finalTotal).toLocaleString()} IQD</b> | التدقيق: ${o.paymentStatus}</p><div><span style="background:rgba(0,255,102,0.1); color:var(--accent-green); padding:3px 6px; border-radius:6px; font-size:11px;">${o.status}</span></div></div>`).join('');
             } else cont.innerHTML = '<p>لا توجد طلبات مسجلة بهذا الرقم.</p>';
         }
 
@@ -1011,7 +1030,6 @@
             document.getElementById('p-image-url').value = '';
         }
 
-        // دالة جلب وعرض الطلبات فوراً لدى الأدمن بكامل التفاصيل والبيانات
         async function loadAdminOrders() {
             try {
                 const res = await fetch('/api/orders'); 
@@ -1024,9 +1042,9 @@
                 }
                 
                 tbody.innerHTML = orders.map((o) => {
-                    const paymentBadge = o.paymentStatus === 'مكتمل' 
-                        ? '<span style="color:var(--accent-green); font-size:11px;">مكتمل ✅</span>' 
-                        : `<button onclick="approveOrderPayment('${o.id}')" style="background:var(--accent-gold); color:#000; border:none; padding:5px 10px; border-radius:6px; cursor:pointer; font-size:11px; font-weight:bold; box-shadow:0 0 10px rgba(255,183,0,0.4);">تأكيد الدفع 💵</button>`;
+                    const paymentBadge = o.paymentStatus === 'مكتمل ✅' 
+                        ? '<span style="color:var(--accent-green); font-size:11px;">مكتمل ومؤكد ✅</span>' 
+                        : `<button onclick="verifyPayment('${o.id}')" style="background:var(--accent-gold); color:#000; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:11px; font-weight:bold; box-shadow:0 0 10px rgba(255,183,0,0.4);">مطابقة وتأكيد الأموال ✅</button>`;
                     
                     let addressText = o.customerAddress || 'عنوان غير متوفر';
                     let mapLink = '';
@@ -1043,7 +1061,10 @@
                     }
 
                     return `<tr>
-                        <td style="font-size:11px; font-family:monospace;">${o.transactionId}</td>
+                        <td>
+                            <div style="font-size:11px; font-family:monospace; font-weight:bold;">${o.transactionId}</div>
+                            <div style="font-size:11px; color:var(--accent-gold); margin-top:2px;">🧾 الإيصال: ${o.receiptId}</div>
+                        </td>
                         <td>
                             <div style="font-weight:bold; font-size:13px; color:#fff;">${o.customerName}</div>
                             <div style="font-size:12px; color:var(--primary-neon); font-weight:bold;">📞 ${o.customerPhone}</div>
@@ -1054,10 +1075,11 @@
                             <div style="color:var(--secondary-neon); font-weight:bold; margin-top:4px;">الإجمالي: ${Number(o.finalTotal || 0).toLocaleString()} IQD</div>
                         </td>
                         <td>
-                            <div style="font-size:12px; font-weight:bold;">${o.paymentMethod}</div>
-                            <div style="margin-top:4px;">${paymentBadge}</div>
+                            <div style="font-size:12px; font-weight:bold; color:var(--accent-gold);">${o.paymentMethod}</div>
+                            <div style="font-size:11px; margin-top:4px; color:var(--text-muted);">الحالة: ${o.paymentStatus}</div>
                         </td>
                         <td>
+                            <div style="margin-bottom:6px;">${paymentBadge}</div>
                             <select class="select-status" onchange="updateOrderStatus('${o.id}', this.value, '${o.paymentStatus}')">
                                 <option value="قيد المعالجة ⏳" ${o.status === 'قيد المعالجة ⏳' ? 'selected' : ''}>قيد المعالجة</option>
                                 <option value="جاري الشحن 🚚" ${o.status === 'جاري الشحن 🚚' ? 'selected' : ''}>جاري الشحن</option>
@@ -1072,27 +1094,25 @@
             }
         }
 
-        async function approveOrderPayment(orderId) {
-            if(!confirm("هل تأكدت من استلام وتحويل الأموال وتود الموافقة على الطلب؟")) return;
+        async function verifyPayment(orderId) {
+            if(!confirm("هل تحققت من وصول الأموال إلى محفظة المتجر وتود اعتماد وتحويل الطلب إلى مكتمل؟")) return;
             
             const res = await fetch(`/api/orders/${orderId}/status`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ status: 'قيد المعالجة ⏳', paymentStatus: 'مكتمل' })
+                body: JSON.stringify({ status: 'قيد المعالجة ⏳', paymentStatus: 'مكتمل ✅' })
             });
             
             const data = await res.json();
             if(data.success) {
-                alert("✅ تم تأكيد الدفع بنجاح، وإرسال رسالة واتساب للعميل تؤكد الموافقة!");
+                alert("✅ تم تأكيد التدقيق المالي وإضافة الإيرادات واحتساب النقاط بنجاح!");
                 loadAdminOrders();
                 loadAdminStats();
             }
         }
 
         async function updateOrderStatus(id, newStatus, currentPaymentStatus) { 
-            let paymentStatus = currentPaymentStatus; 
-            if(newStatus === 'تم التوصيل ✅') paymentStatus = 'مكتمل'; 
-            await fetch(`/api/orders/${id}/status`, { method: 'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({status: newStatus, paymentStatus}) });
+            await fetch(`/api/orders/${id}/status`, { method: 'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({status: newStatus, paymentStatus: currentPaymentStatus}) });
             alert("تم تحديث حالة الطلب وإرسال إشعار الواتساب للعميل! 📱");
             loadAdminOrders();
         }
