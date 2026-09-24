@@ -128,7 +128,6 @@
         .cyber-hero h1 { font-size: 32px; font-weight: 900; margin-bottom: 12px; color: #fff; text-shadow: 0 0 20px var(--primary-neon); }
         .cyber-hero p { color: var(--text-muted); font-size: 14px; max-width: 700px; margin: 0 auto; }
 
-        /* قسم المزادات الحية (Live Auctions Banner) */
         .auction-banner {
             background: linear-gradient(135deg, rgba(188, 19, 254, 0.15), rgba(0, 243, 255, 0.15));
             border: 1px solid var(--secondary-neon);
@@ -322,7 +321,7 @@
             <p>منصة تجارية ثلاثية الأبعاد، مزادات لحظية بالثواني، نقاط ولاء ومحفظة كريبتو، مع مساعد ذكي للتجميعات.</p>
         </div>
 
-        <!-- قسم المزادات الحية (Live Cyber Auctions Banner) -->
+        <!-- قسم المزادات الحية -->
         <div id="live-auction-container" class="auction-banner">
             <div>
                 <span style="background:var(--accent-red); color:#fff; padding:4px 10px; border-radius:12px; font-size:11px; font-weight:bold;">🔥 مزاد حي مباشر</span>
@@ -363,6 +362,7 @@
             <div class="sidebar-links">
                 <a onclick="switchTab('analytics')" id="tab-analytics" class="active">📊 التقارير</a>
                 <a onclick="switchTab('add-product')" id="tab-add">➕ رفع منتج</a>
+                <a onclick="switchTab('manage-auction')" id="tab-auction">⚡ إدارة المزادات</a>
                 <a onclick="switchTab('view-orders')" id="tab-orders">📦 الطلبات والدفع</a>
                 <a onclick="switchTab('view-users')" id="tab-users">👥 العملاء (VIP)</a>
                 <a style="color: var(--accent-red); font-weight: bold;" onclick="logout()">خروج</a>
@@ -387,10 +387,25 @@
                         <select id="p-category"><option value="أجهزة">أجهزة و PC</option><option value="ألعاب">ألعاب وبطاقات</option><option value="إكسسوارات">إكسسوارات</option></select>
                     </div>
                     <div class="input-group">
-                        <label>صورة المنتج (من جهازك)</label>
-                        <input type="file" id="p-image-file" accept="image/*" style="padding:8px;">
+                        <label>صورة المنتج (رابط صورة خارجي مباشر)</label>
+                        <input type="text" id="p-image-url" placeholder="https://example.com/image.jpg">
                     </div>
-                    <button class="btn-cyber" style="width: 100%; padding: 12px;" onclick="addNewProductWithImage()">نشر المنتج 🚀</button>
+                    <button class="btn-cyber" style="width: 100%; padding: 12px;" onclick="addNewProductByUrl()">نشر المنتج في المتجر 🚀</button>
+                </div>
+            </div>
+
+            <!-- قسم إدارة المزادات الحية من الأدمن -->
+            <div id="sec-manage-auction" class="admin-section">
+                <div style="background: var(--bg-surface); padding: 25px; border-radius: 16px; border: 1px solid var(--border-neon); max-width: 600px; backdrop-filter: blur(15px);">
+                    <h2 style="color: var(--secondary-neon); margin-bottom: 15px; font-size: 20px;">إنشاء وتحديث المزاد الحي ⚡</h2>
+                    <div class="input-group"><label>اسم المنتج المعروض للمزاد</label><input type="text" id="auc-title" placeholder="مثال: بطاقة RTX 4090"></div>
+                    <div class="input-group"><label>السعر الابتدائي (IQD)</label><input type="number" id="auc-price" placeholder="1500000"></div>
+                    <div class="input-group"><label>مدة المزاد (بالساعات)</label><input type="number" id="auc-hours" value="5"></div>
+                    <div class="input-group">
+                        <label>صورة المنتج (رابط خارجي مباشر)</label>
+                        <input type="text" id="auc-img" placeholder="https://example.com/image.jpg">
+                    </div>
+                    <button class="btn-cyber btn-alt" style="width: 100%; padding: 12px;" onclick="createNewAuction()">إطلاق المزاد الحي فوراً 🚀</button>
                 </div>
             </div>
 
@@ -608,7 +623,7 @@
             });
         });
 
-        // دوال المزادات الحية
+        // المزادات الحية
         let currentActiveAuction = null;
         async function loadLiveAuctions() {
             try {
@@ -662,6 +677,31 @@
             }
         }
 
+        async function createNewAuction() {
+            const title = document.getElementById('auc-title').value;
+            const currentPrice = document.getElementById('auc-price').value;
+            const hoursLeft = document.getElementById('auc-hours').value;
+            const image = document.getElementById('auc-img').value;
+
+            if(!title || !currentPrice || !image) return alert("يرجى تعبئة كافة حقول المزاد");
+
+            const res = await fetch('/api/auctions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, currentPrice, image, hoursLeft })
+            });
+            const data = await res.json();
+            if(data.success) {
+                alert("⚡ تم إطلاق المزاد الحي بنجاح وأصبح ظاهراً لجميع الزوار!");
+                loadLiveAuctions();
+                document.getElementById('auc-title').value = '';
+                document.getElementById('auc-price').value = '';
+                document.getElementById('auc-img').value = '';
+            } else {
+                alert("فشل إنشاء المزاد");
+            }
+        }
+
         const socket = io();
         socket.on('live_update', (count) => {
             document.getElementById('live-count-display').innerText = count;
@@ -669,8 +709,10 @@
 
         socket.on('auction_update', (auction) => {
             currentActiveAuction = auction;
+            document.getElementById('auction-title').innerText = auction.title;
             document.getElementById('auction-price').innerText = Number(auction.currentPrice).toLocaleString() + ' IQD';
             document.getElementById('auction-bidder').innerText = auction.highestBidder;
+            document.getElementById('auction-img').src = auction.image;
             playNotificationSound();
         });
 
@@ -948,31 +990,27 @@
             } catch(e) {}
         }
 
-        function addNewProductWithImage() {
+        // إضافة منتج جديد برابط صورة خارجي
+        async function addNewProductByUrl() {
             const name = document.getElementById('p-name').value; 
             const price = document.getElementById('p-price').value; 
             const category = document.getElementById('p-category').value; 
-            const fileInput = document.getElementById('p-image-file');
+            const image = document.getElementById('p-image-url').value;
 
-            if(!name || !price || fileInput.files.length === 0) {
-                return alert("يرجى إدخال البيانات واختيار صورة.");
+            if(!name || !price || !image) {
+                return alert("يرجى إدخال اسم المنتج، السعر، ورابط الصورة.");
             }
 
-            const reader = new FileReader();
-            reader.readAsDataURL(fileInput.files[0]);
-            reader.onload = async function() {
-                const base64Image = reader.result;
-                await fetch('/api/products', { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json' }, 
-                    body: JSON.stringify({ name, price, image: base64Image, category }) 
-                }); 
-                alert("تم رفع المنتج بنجاح! 🚀"); 
-                loadProducts();
-                document.getElementById('p-name').value = '';
-                document.getElementById('p-price').value = '';
-                fileInput.value = '';
-            };
+            await fetch('/api/products', { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' }, 
+                body: JSON.stringify({ name, price, image, category }) 
+            }); 
+            alert("تم نشر المنتج في المتجر بنجاح! 🚀"); 
+            loadProducts();
+            document.getElementById('p-name').value = '';
+            document.getElementById('p-price').value = '';
+            document.getElementById('p-image-url').value = '';
         }
 
         async function loadAdminOrders() {

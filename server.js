@@ -17,12 +17,12 @@ const sequelize = process.env.DATABASE_URL
     ? new Sequelize(process.env.DATABASE_URL, { dialect: 'postgres', protocol: 'postgres', logging: false })
     : new Sequelize({ dialect: 'sqlite', storage: 'database.sqlite', logging: false });
 
-// جدول المستخدمين مع نظام نقاط الولاء (Cyber-Points)
+// جدول المستخدمين ونقاط الولاء
 const User = sequelize.define('User', {
     phone: { type: DataTypes.STRING, unique: true, allowNull: false },
     role: { type: DataTypes.STRING, defaultValue: 'customer' },
     totalSpent: { type: DataTypes.FLOAT, defaultValue: 0 },
-    cyberPoints: { type: DataTypes.INTEGER, defaultValue: 100 } // نقاط ولاء ابتدائية للعميل
+    cyberPoints: { type: DataTypes.INTEGER, defaultValue: 100 }
 });
 
 // جدول الطلبات
@@ -46,14 +46,14 @@ const Product = sequelize.define('Product', {
     image: { type: DataTypes.TEXT, allowNull: false }
 });
 
-// جدول المزادات الحية (Live Cyber Auctions)
+// جدول المزادات الحية
 const Auction = sequelize.define('Auction', {
     title: { type: DataTypes.STRING, allowNull: false },
     currentPrice: { type: DataTypes.FLOAT, allowNull: false },
     highestBidder: { type: DataTypes.STRING, defaultValue: 'لا يوجد مزايد بعد' },
     image: { type: DataTypes.TEXT, allowNull: false },
     endTime: { type: DataTypes.DATE, allowNull: false },
-    status: { type: DataTypes.STRING, defaultValue: 'active' } // active / ended
+    status: { type: DataTypes.STRING, defaultValue: 'active' }
 });
 
 const Coupon = sequelize.define('Coupon', {
@@ -127,7 +127,7 @@ app.post('/api/verify-otp', async (req, res) => {
     }
 });
 
-// مسار المساعد الذكي الخبير بالتجميعات والمنتجات
+// المساعد الذكي الخبير بالتجميعات والمنتجات
 app.post('/api/ai-assistant', async (req, res) => {
     try {
         const { prompt } = req.body;
@@ -140,7 +140,7 @@ app.post('/api/ai-assistant', async (req, res) => {
             const gamingItems = products.filter(p => p.category === 'أجهزة' || p.category === 'ألعاب');
             aiReply += `أنصحك بتجميعة احترافية تضم أقوى قطع الـ PC المتوفرة لدينا لضمان أداء عالي وسرعة فائقة.\n\nالمنتجات المقترحة:\n` + gamingItems.map(i => `- ${i.name} بسعر ${i.price.toLocaleString()} IQD`).join('\n') + `\n\nتفضل بإضافتها للسلة واستمتع بقوة الأداء!`;
         } else if (lowerPrompt.includes('مزايدة') || lowerPrompt.includes('مزاد')) {
-            aiReply += `لدشنا قسم مزادات حية (Live Cyber Auctions) يتيح لك المزايدة على أجهزة نادرة بأسعار مذهلة! تصفح قسم المزادات في المتجر الآن.`;
+            aiReply += `لدينا قسم مزادات حية (Live Cyber Auctions) يتيح لك المزايدة على أجهزة نادرة بأسعار مذهلة! تصفح قسم المزادات في المتجر الآن.`;
         } else {
             aiReply += `أنا هنا لمساعدتك في اختيار أفضل الأجهزة والإكسسوارات. اسألني عن أي منتج وسأشرح لك تفاصيله الفنية بدقة!`;
         }
@@ -151,11 +151,34 @@ app.post('/api/ai-assistant', async (req, res) => {
     }
 });
 
-// مسارات المزادات الحية
+// المزادات الحية
 app.get('/api/auctions', async (req, res) => {
     try {
         const auctions = await Auction.findAll({ where: { status: 'active' } });
         res.json(auctions);
+    } catch(e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+app.post('/api/auctions', async (req, res) => {
+    try {
+        const { title, currentPrice, image, hoursLeft } = req.body;
+        let futureDate = new Date();
+        futureDate.setHours(futureDate.getHours() + Number(hoursLeft || 5));
+        
+        await Auction.update({ status: 'ended' }, { where: { status: 'active' } });
+
+        const newAuction = await Auction.create({
+            title,
+            currentPrice,
+            image,
+            endTime: futureDate,
+            status: 'active'
+        });
+
+        io.emit('auction_update', newAuction);
+        res.json({ success: true, newAuction });
     } catch(e) {
         res.status(500).json({ error: e.message });
     }
@@ -178,7 +201,6 @@ app.post('/api/bid', async (req, res) => {
         auction.highestBidder = phone;
         await auction.save();
 
-        // بث تحديث المزاد لحظياً عبر الـ WebSockets لكل المتصلين
         io.emit('auction_update', auction);
 
         res.json({ success: true, auction });
@@ -223,7 +245,6 @@ app.post('/api/orders', async (req, res) => {
             paymentStatus
         });
 
-        // منح العميل نقاط ولاء بنسبة 5% من قيمة المشتريات
         const earnedPoints = Math.floor(finalTotal / 10000);
         await User.increment('cyberPoints', { by: earnedPoints, where: { phone: customerPhone } });
 
@@ -338,7 +359,6 @@ sequelize.sync().then(async () => {
         await Coupon.create({ code: 'CYBER20', discount: 20 });
     }
 
-    // إنشاء مزاد تجريبي حي افتراضي إذا لم يوجد مزاد نشط
     const activeAuction = await Auction.findOne({ where: { status: 'active' } });
     if (!activeAuction) {
         let futureDate = new Date();
