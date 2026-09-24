@@ -32,13 +32,13 @@ try {
     sequelize = new Sequelize({ dialect: 'sqlite', storage: 'database.sqlite', logging: false });
 }
 
-// 🌐 API عام وقابل للتعديل لإعدادات بوابات الدفع والمعاملات المالية
+// إعدادات المتجر العامة والـ API القابل للتعديل
 const STORE_CONFIG = {
-    storeName: "CyberStore.iq Fintech",
+    storeName: "CyberStore.iq Marketplace",
     merchantPhone: "9647831333337",
-    zainCashWallet: "07831333337", // رقم محفظة زين كاش التجارية للمتجر
+    zainCashWallet: "07831333337",
     shippingCost: 5000,
-    loyaltyRewardRate: 0.05,
+    loyaltyRewardRate: 0.05, // 5% نقاط ولاء للمستخدم العادي فقط
     paymentMethods: [
         { id: 'cash', name: 'نقداً عند الاستلام 💵', requiresReceipt: false },
         { id: 'zaincash', name: 'زين كاش (تحويل فوري) 📱', requiresReceipt: true },
@@ -51,7 +51,7 @@ app.get('/api/config', (req, res) => {
     res.json({ success: true, config: STORE_CONFIG });
 });
 
-// جدول المستخدمين وتوليد يوزرنايم فريد للمزادات
+// جداول قاعدة البيانات
 const User = sequelize.define('User', {
     phone: { type: DataTypes.STRING, unique: true, allowNull: false },
     username: { type: DataTypes.STRING, unique: true, allowNull: false },
@@ -60,26 +60,27 @@ const User = sequelize.define('User', {
     cyberPoints: { type: DataTypes.INTEGER, defaultValue: 100 }
 });
 
-// جدول الطلبات مع حقول تفاصيل الإيصال والدفع المالي
 const Order = sequelize.define('Order', {
     transactionId: { type: DataTypes.STRING, unique: true, allowNull: false },
     customerName: { type: DataTypes.STRING, allowNull: false },
     customerPhone: { type: DataTypes.STRING, allowNull: false },
     customerAddress: { type: DataTypes.TEXT, allowNull: false },
     paymentMethod: { type: DataTypes.STRING, allowNull: false },
-    receiptId: { type: DataTypes.STRING, defaultValue: 'غير مطلوب (نقداً)' }, // رقم إيصال التحويل المالي
+    receiptId: { type: DataTypes.STRING, defaultValue: 'نقداً' },
     items: { type: DataTypes.JSON, allowNull: false },
     finalTotal: { type: DataTypes.FLOAT, allowNull: false },
     status: { type: DataTypes.STRING, defaultValue: 'قيد المعالجة ⏳' },
     paymentStatus: { type: DataTypes.STRING, defaultValue: 'بانتظار التدقيق المالي 🔍' }
 });
 
-// جدول المنتجات
+// جدول المنتجات (يشمل منتجات المتجر ومنتجات المواطنين المقبولة)
 const Product = sequelize.define('Product', {
     name: { type: DataTypes.STRING, allowNull: false },
     price: { type: DataTypes.FLOAT, allowNull: false },
     category: { type: DataTypes.STRING, allowNull: false },
-    image: { type: DataTypes.TEXT, allowNull: false }
+    image: { type: DataTypes.TEXT, allowNull: false },
+    status: { type: DataTypes.STRING, defaultValue: 'approved' }, // approved / pending
+    sellerPhone: { type: DataTypes.STRING, defaultValue: 'admin' }
 });
 
 // جدول المزادات الحية
@@ -96,8 +97,6 @@ const Coupon = sequelize.define('Coupon', {
     code: { type: DataTypes.STRING, unique: true, allowNull: false },
     discount: { type: DataTypes.FLOAT, allowNull: false }
 });
-
-let activeVisitors = 0;
 
 async function sendWhatsAppMessage(phone, message) {
     const instance = process.env.ULTRAMSG_INSTANCE;
@@ -138,7 +137,6 @@ app.post('/api/send-otp', async (req, res) => {
 app.post('/api/verify-otp', async (req, res) => {
     try {
         const { phone, otp } = req.body;
-        
         if ((otpStorage[phone] && otpStorage[phone] === otp) || otp === '1234' || otp === '0000') {
             if (otpStorage[phone]) delete otpStorage[phone];
             
@@ -170,15 +168,15 @@ app.post('/api/verify-otp', async (req, res) => {
 app.post('/api/ai-assistant', async (req, res) => {
     try {
         const { prompt } = req.body;
-        const products = await Product.findAll();
+        const products = await Product.findAll({ where: { status: 'approved' } });
         
         let aiReply = "مرحباً بك في CyberStore.iq! أنا مساعدك التقني الذكي. ";
         const lowerPrompt = prompt.toLowerCase();
         
-        if (lowerPrompt.includes('دفع') || lowerPrompt.includes('زين كاش') || lowerPrompt.includes('تحويل')) {
-            aiReply += `ندعم الدفع النقدي، التحويل الفوري عبر محفظة زين كاش (${STORE_CONFIG.zainCashWallet})، وماستركارد. بعد التحويل أدخل رقم العملية لتأكيد طلبك فوراً!`;
+        if (lowerPrompt.includes('بيع') || lowerPrompt.includes('عرض منتج')) {
+            aiReply += `يمكنك إضافة أي منتج تود بيعه عبر زر "بيع منتجك" في القائمة، وسنقوم بمراجعته ونشره في المتجر فوراً!`;
         } else {
-            aiReply += `أنا هنا لمساعدتك في اختيار أفضل الأجهزة والتجميعات وتتبع طلباتك المالية لحظياً!`;
+            aiReply += `أنا هنا لمساعدتك في تصفح المنتجات المعتمدة، المزادات الحية، وتتبع طلباتك!`;
         }
 
         res.json({ success: true, reply: aiReply });
@@ -187,10 +185,67 @@ app.post('/api/ai-assistant', async (req, res) => {
     }
 });
 
-// المزادات الحية
+// مسارات المنتجات (المعتمدة والـ Pending للمواطنين)
+app.get('/api/products', async (req, res) => {
+    try {
+        const products = await Product.findAll({ where: { status: 'approved' } });
+        res.json(products);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.get('/api/admin/products', async (req, res) => {
+    try {
+        const products = await Product.findAll();
+        res.json(products);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/products', async (req, res) => {
+    try {
+        const { name, price, category, image, sellerPhone, status } = req.body;
+        const product = await Product.create({ 
+            name, 
+            price, 
+            category, 
+            image, 
+            sellerPhone: sellerPhone || 'admin',
+            status: status || 'approved' 
+        });
+        io.emit('product_update');
+        res.json({ success: true, product });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.put('/api/products/:id/approve', async (req, res) => {
+    try {
+        await Product.update({ status: 'approved' }, { where: { id: req.params.id } });
+        io.emit('product_update');
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+app.delete('/api/products/:id', async (req, res) => {
+    try {
+        await Product.destroy({ where: { id: req.params.id } });
+        io.emit('product_update');
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// مسارات المزادات (مع إمكانية التعديل والحذف للأدمن)
 app.get('/api/auctions', async (req, res) => {
     try {
-        const auctions = await Auction.findAll({ where: { status: 'active' } });
+        const auctions = await Auction.findAll();
         res.json(auctions);
     } catch(e) {
         res.status(500).json({ error: e.message });
@@ -202,8 +257,6 @@ app.post('/api/auctions', async (req, res) => {
         const { title, currentPrice, image, hoursLeft } = req.body;
         let futureDate = new Date();
         futureDate.setHours(futureDate.getHours() + Number(hoursLeft || 5));
-        
-        await Auction.update({ status: 'ended' }, { where: { status: 'active' } });
 
         const newAuction = await Auction.create({
             title,
@@ -215,6 +268,28 @@ app.post('/api/auctions', async (req, res) => {
 
         io.emit('auction_update', newAuction);
         res.json({ success: true, newAuction });
+    } catch(e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+app.put('/api/auctions/:id', async (req, res) => {
+    try {
+        const { title, currentPrice, status } = req.body;
+        await Auction.update({ title, currentPrice, status }, { where: { id: req.params.id } });
+        const updated = await Auction.findByPk(req.params.id);
+        io.emit('auction_update', updated);
+        res.json({ success: true });
+    } catch(e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+app.delete('/api/auctions/:id', async (req, res) => {
+    try {
+        await Auction.destroy({ where: { id: req.params.id } });
+        io.emit('auction_update', null);
+        res.json({ success: true });
     } catch(e) {
         res.status(500).json({ error: e.message });
     }
@@ -239,33 +314,13 @@ app.post('/api/bid', async (req, res) => {
         await auction.save();
 
         io.emit('auction_update', auction);
-
         res.json({ success: true, auction });
     } catch(e) {
         res.status(500).json({ success: false, error: e.message });
     }
 });
 
-app.get('/api/products', async (req, res) => {
-    try {
-        const products = await Product.findAll();
-        res.json(products);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-app.post('/api/products', async (req, res) => {
-    try {
-        const { name, price, category, image } = req.body;
-        const product = await Product.create({ name, price, category, image });
-        res.json({ success: true, product });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// مسار استقبال الطلبات والتحقق المالي
+// مسارات الطلبات وإرسال الواتساب للمواطن واحتساب النقاط حصرياً للشخص العادي
 app.post('/api/orders', async (req, res) => {
     try {
         const { customerName, customerPhone, customerAddress, paymentMethod, receiptId, items, finalTotal } = req.body;
@@ -286,14 +341,8 @@ app.post('/api/orders', async (req, res) => {
             paymentStatus: initialPaymentStatus
         });
 
-        const earnedPoints = Math.floor(finalTotal * STORE_CONFIG.loyaltyRewardRate);
-        await User.increment('cyberPoints', { by: earnedPoints, where: { phone: customerPhone } });
-
         io.emit('new_order_received', order);
-
-        await sendWhatsAppMessage(customerPhone, `⚡ *${STORE_CONFIG.storeName}*\n\nعزيزي *${customerName}*,\nتم استلام طلبك برقم المعاملة: *${transactionId}* بقيمة *${finalTotal.toLocaleString()} IQD*.\nطريقة الدفع: *${paymentMethod}* ${receiptId ? `\nرقم الإيصال: *${receiptId}*` : ''}\n\nالحالة المالية: *${initialPaymentStatus}*\nلقد ربحت *${earnedPoints}* نقطة ولاء!`);
-
-        res.json({ success: true, order, earnedPoints });
+        res.json({ success: true, order });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
     }
@@ -308,7 +357,6 @@ app.get('/api/orders', async (req, res) => {
     }
 });
 
-// تحديث وتأكيد الدفع المالي من الأدمن
 app.put('/api/orders/:id/status', async (req, res) => {
     try {
         const { status, paymentStatus } = req.body;
@@ -316,17 +364,31 @@ app.put('/api/orders/:id/status', async (req, res) => {
         
         if (!order) return res.status(404).json({ success: false, error: 'الطلب غير موجود' });
 
+        let earnedPoints = 0;
+        const ADMIN_PHONE = '07831333337';
+
+        // حساب نقاط الولاء حصرياً للشخص العادي وعند تأكيد الدفع فقط
         if(paymentStatus === 'مكتمل ✅' && order.paymentStatus !== 'مكتمل ✅') {
             await User.increment('totalSpent', { by: order.finalTotal, where: { phone: order.customerPhone } });
+            
+            if (order.customerPhone !== ADMIN_PHONE) {
+                earnedPoints = Math.floor(order.finalTotal * STORE_CONFIG.loyaltyRewardRate);
+                await User.increment('cyberPoints', { by: earnedPoints, where: { phone: order.customerPhone } });
+            }
         }
         
         await Order.update({ status, paymentStatus }, { where: { id: req.params.id } });
 
-        let statusMsg = `⚡ *${STORE_CONFIG.storeName}*\n\nعزيزي *${order.customerName}*,\nتم تحديث حالة طلبك (*${order.transactionId}*) إلى:\n👉 *${status}*\nالحالة المالية: *${paymentStatus}*`;
+        // إرسال رسالة واتساب تلقائية للمواطن بتأكيد طلبه ونقاط الولاء
+        let statusMsg = `⚡ *${STORE_CONFIG.storeName}*\n\nعزيزي *${order.customerName}*,\n🎉 تم تأكيد طلبك برقم المعاملة (*${order.transactionId}*) بنجاح!\n\n📦 حالة الشحن: *${status}*\n💳 حالة الدفع: *${paymentStatus}*`;
+        
+        if (earnedPoints > 0) {
+            statusMsg += `\n⭐ لقد تمت إضافة *${earnedPoints}* نقطة ولاء جديدة إلى محفظتك!`;
+        }
 
         await sendWhatsAppMessage(order.customerPhone, statusMsg);
 
-        res.json({ success: true });
+        res.json({ success: true, earnedPoints });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
     }
@@ -381,16 +443,6 @@ app.get('/api/users', async (req, res) => {
     }
 });
 
-io.on('connection', (socket) => {
-    activeVisitors++;
-    io.emit('live_update', activeVisitors);
-
-    socket.on('disconnect', () => {
-        activeVisitors = Math.max(0, activeVisitors - 1);
-        io.emit('live_update', activeVisitors);
-    });
-});
-
 sequelize.sync().then(async () => {
     const existingCoupon = await Coupon.findOne({ where: { code: 'CYBER20' } });
     if (!existingCoupon) {
@@ -412,6 +464,6 @@ sequelize.sync().then(async () => {
 
     const PORT = process.env.PORT || 3000;
     server.listen(PORT, () => {
-        console.log(`🚀 CyberStore Enterprise Fintech Server running on port ${PORT}`);
+        console.log(`🚀 CyberStore Enterprise Marketplace running on port ${PORT}`);
     });
 });

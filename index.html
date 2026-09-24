@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CyberStore | Fintech Payment Gateway</title>
+    <title>CyberStore | Marketplace & Auctions</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     
@@ -309,6 +309,7 @@
     <nav id="main-nav">
         <div class="logo">CYBER<span>STORE</span> ⚡</div>
         <div class="nav-actions">
+            <button class="btn-cyber btn-alt" onclick="openSellModal()" style="padding: 7px 12px; font-size: 12px;">🏷️ بيع منتجك</button>
             <button class="btn-cyber" onclick="openTrackModal()" style="padding: 7px 12px; font-size: 12px;">📍 تتبع</button>
             <button class="btn-cyber btn-alt" onclick="openCartModal()" style="padding: 7px 12px; font-size: 12px;">🛒 السلة <span id="cart-count">0</span></button>
             <div id="auth-nav-container"></div>
@@ -317,8 +318,8 @@
 
     <div id="store-view" class="store-container">
         <div class="cyber-hero">
-            <h1>بوابة الدفع المالي الذكية والمزادات الحية</h1>
-            <p>منصة تجارية متكاملة مع بوابات دفع محلية ودولية موثقة وتتبع لحظي.</p>
+            <h1>منصة التجارة والمزادات وسوق المواطنين</h1>
+            <p>تسوق، شارك في المزادات الحية، أو أضف منتجاتك للبيع عبر سوق المواطنين المعتمد.</p>
         </div>
 
         <!-- قسم المزادات الحية -->
@@ -356,13 +357,14 @@
     <div id="dashboard-view" class="dashboard-container">
         <div class="sidebar">
             <div>
-                <h3>Fintech Admin</h3>
+                <h3>Marketplace Admin</h3>
                 <div class="live-badge">رادار الزوار: <span id="live-count-display">1</span> متصل 🔴</div>
             </div>
             <div class="sidebar-links">
-                <a onclick="switchTab('analytics')" id="tab-analytics" class="active">📊 التقارير والتدقيق</a>
-                <a onclick="switchTab('add-product')" id="tab-add">➕ رفع منتج</a>
-                <a onclick="switchTab('manage-auction')" id="tab-auction">⚡ إدارة المزادات</a>
+                <a onclick="switchTab('analytics')" id="tab-analytics" class="active">📊 التقارير المالية</a>
+                <a onclick="switchTab('add-product')" id="tab-add">➕ رفع منتج رسمي</a>
+                <a onclick="switchTab('manage-auction')" id="tab-auction">⚡ إدارة وتعديل المزادات</a>
+                <a onclick="switchTab('manage-citizen-products')" id="tab-citizen-products">📋 منتجات المواطنين (بانتظار الموافقة)</a>
                 <a onclick="switchTab('view-orders')" id="tab-orders">📦 إدارة الطلبات والأموال</a>
                 <a onclick="switchTab('view-users')" id="tab-users">👥 العملاء (VIP)</a>
                 <a style="color: var(--accent-red); font-weight: bold;" onclick="logout()">خروج</a>
@@ -380,31 +382,53 @@
             
             <div id="sec-add-product" class="admin-section">
                 <div style="background: var(--bg-surface); padding: 25px; border-radius: 16px; border: 1px solid var(--border-neon); max-width: 600px; backdrop-filter: blur(15px);">
-                    <h2 style="color: var(--primary-neon); margin-bottom: 15px; font-size: 20px;">رفع منتج جديد 🖼️</h2>
+                    <h2 style="color: var(--primary-neon); margin-bottom: 15px; font-size: 20px;">رفع منتج رسمي للمتجر 🖼️</h2>
                     <div class="input-group"><label>اسم المنتج</label><input type="text" id="p-name"></div>
                     <div class="input-group"><label>السعر (IQD)</label><input type="number" id="p-price"></div>
                     <div class="input-group"><label>التصنيف</label>
                         <select id="p-category"><option value="أجهزة">أجهزة و PC</option><option value="ألعاب">ألعاب وبطاقات</option><option value="إكسسوارات">إكسسوارات</option></select>
                     </div>
                     <div class="input-group">
-                        <label>صورة المنتج (رابط صورة خارجي مباشر)</label>
+                        <label>رابط صورة المنتج المباشر</label>
                         <input type="text" id="p-image-url" placeholder="https://example.com/image.jpg">
                     </div>
                     <button class="btn-cyber" style="width: 100%; padding: 12px;" onclick="addNewProductByUrl()">نشر المنتج في المتجر 🚀</button>
                 </div>
             </div>
 
+            <!-- إدارة وتعديل وحذف المزادات -->
             <div id="sec-manage-auction" class="admin-section">
-                <div style="background: var(--bg-surface); padding: 25px; border-radius: 16px; border: 1px solid var(--border-neon); max-width: 600px; backdrop-filter: blur(15px);">
-                    <h2 style="color: var(--secondary-neon); margin-bottom: 15px; font-size: 20px;">إنشاء وتحديث المزاد الحي ⚡</h2>
+                <div style="background: var(--bg-surface); padding: 25px; border-radius: 16px; border: 1px solid var(--border-neon); max-width: 600px; backdrop-filter: blur(15px); margin-bottom: 25px;">
+                    <h2 style="color: var(--secondary-neon); margin-bottom: 15px; font-size: 20px;">إنشاء مزاد حي جديد ⚡</h2>
                     <div class="input-group"><label>اسم المنتج المعروض للمزاد</label><input type="text" id="auc-title" placeholder="مثال: بطاقة RTX 4090"></div>
                     <div class="input-group"><label>السعر الابتدائي (IQD)</label><input type="number" id="auc-price" placeholder="1500000"></div>
                     <div class="input-group"><label>مدة المزاد (بالساعات)</label><input type="number" id="auc-hours" value="5"></div>
-                    <div class="input-group">
-                        <label>صورة المنتج (رابط خارجي مباشر)</label>
-                        <input type="text" id="auc-img" placeholder="https://example.com/image.jpg">
-                    </div>
-                    <button class="btn-cyber btn-alt" style="width: 100%; padding: 12px;" onclick="createNewAuction()">إطلاق المزاد الحي فوراً 🚀</button>
+                    <div class="input-group"><label>رابط صورة المنتج</label><input type="text" id="auc-img" placeholder="https://example.com/image.jpg"></div>
+                    <button class="btn-cyber btn-alt" style="width: 100%; padding: 12px;" onclick="createNewAuction()">إطلاق المزاد 🚀</button>
+                </div>
+
+                <div style="background: var(--bg-surface); padding: 25px; border-radius: 16px; border: 1px solid var(--border-neon); backdrop-filter: blur(15px);">
+                    <h3 style="color: var(--primary-neon); margin-bottom: 15px; font-size: 18px;">المزادات الحالية (تعديل أو حذف)</h3>
+                    <div id="admin-auctions-list" style="display:flex; flex-direction:column; gap:10px;"></div>
+                </div>
+            </div>
+
+            <!-- إدارة منتجات المواطنين -->
+            <div id="sec-manage-citizen-products" class="admin-section">
+                <h2 style="margin-bottom: 20px; text-shadow: var(--glow-purple);">منتجات المواطنين المعروضة للبيع (مراجعة وموافقة)</h2>
+                <div class="enterprise-table-container">
+                    <table class="enterprise-table">
+                        <thead>
+                            <tr>
+                                <th>البائع (رقم الهاتف)</th>
+                                <th>اسم المنتج والصورة</th>
+                                <th>السعر والتصنيف</th>
+                                <th>الحالة</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="citizen-products-tbody"></tbody>
+                    </table>
                 </div>
             </div>
 
@@ -438,6 +462,22 @@
         </div>
     </div>
 
+    <!-- نافذة بيع منتج للمواطن -->
+    <div class="modal-overlay" id="sell-modal">
+        <div class="modal-box">
+            <h2>سوق المواطنين: اعرض منتجك للبيع 🏷️</h2>
+            <p style="font-size:12px; color:var(--text-muted); margin-bottom:15px; text-align:center;">أضف تفاصيل جهازك أو منتجك، وسيتم مراجعته ونشره في المتجر فور موافقة الإدارة.</p>
+            <div class="input-group"><label>اسم المنتج أو الجهاز</label><input type="text" id="sell-name" placeholder="مثال: لابتوب Core i7 مستعمل نظيف"></div>
+            <div class="input-group"><label>السعر المطلوب (IQD)</label><input type="number" id="sell-price" placeholder="450000"></div>
+            <div class="input-group"><label>التصنيف</label>
+                <select id="sell-category"><option value="أجهزة">أجهزة و PC</option><option value="ألعاب">ألعاب وبطاقات</option><option value="إكسسوارات">إكسسوارات</option></select>
+            </div>
+            <div class="input-group"><label>رابط صورة المنتج</label><input type="text" id="sell-img" placeholder="https://example.com/image.jpg"></div>
+            <button class="btn-cyber" style="width: 100%; padding: 11px; margin-bottom: 8px;" onclick="submitCitizenProduct()">إرسال للإدارة للموافقة والنشر ✅</button>
+            <button style="background:none; border:none; color:var(--text-muted); cursor:pointer; width:100%; font-size:13px;" onclick="closeSellModal()">إغلاق</button>
+        </div>
+    </div>
+
     <!-- السلة والدفع -->
     <div class="modal-overlay" id="cart-modal">
         <div class="modal-box">
@@ -458,7 +498,6 @@
         </div>
     </div>
 
-    <!-- بوابة الدفع المتقدمة -->
     <div class="modal-overlay" id="checkout-modal">
         <div class="modal-box">
             <div id="payment-processor" class="processing-overlay">
@@ -487,7 +526,6 @@
             </div>
             <input type="hidden" id="selected-payment" value="نقداً عند الاستلام">
 
-            <!-- تعليمات ورقم التحويل تظهر ديناميكياً حسب وسيلة الدفع -->
             <div id="payment-instructions" style="background: rgba(0,243,255,0.05); border: 1px solid var(--border-neon); padding: 12px; border-radius: 9px; margin-bottom: 15px; font-size: 12px; display: none;">
                 <p id="pay-info-text" style="color: var(--primary-neon); margin-bottom: 8px; font-weight: bold;"></p>
                 <div class="input-group" style="margin-bottom:0;">
@@ -543,10 +581,10 @@
             <button onclick="toggleAIChat()" style="background:none; border:none; color:#fff; cursor:pointer; font-size:16px;">✕</button>
         </div>
         <div id="ai-messages-container" style="flex: 1; padding: 15px; overflow-y: auto; font-size: 13px; display: flex; flex-direction: column; gap: 10px;">
-            <div style="background: rgba(0,243,255,0.1); padding: 10px; border-radius: 10px; border-right: 3px solid var(--primary-neon);">مرحباً بك! أنا مساعد بوابات الدفع والمزادات الحية. اسألني عن طرق التحويل وسأرشدك فوراً!</div>
+            <div style="background: rgba(0,243,255,0.1); padding: 10px; border-radius: 10px; border-right: 3px solid var(--primary-neon);">مرحباً بك! أنا مساعد بوابات الدفع وسوق المواطنين. اسألني عما تحتاجه وسأرشدك فوراً!</div>
         </div>
         <div style="padding: 12px; border-top: 1px solid var(--border-neon); display: flex; gap: 8px;">
-            <input type="text" id="ai-user-input" placeholder="اسأل عن الدفع أو المزادات..." style="flex:1; padding:10px; background:rgba(0,0,0,0.8); border:1px solid var(--border-neon); color:#fff; border-radius:8px; outline:none; font-size:13px;" onkeypress="if(event.key==='Enter') sendAIPrompt()">
+            <input type="text" id="ai-user-input" placeholder="اسأل عن بيع منتج أو مزاد..." style="flex:1; padding:10px; background:rgba(0,0,0,0.8); border:1px solid var(--border-neon); color:#fff; border-radius:8px; outline:none; font-size:13px;" onkeypress="if(event.key==='Enter') sendAIPrompt()">
             <button class="btn-cyber" onclick="sendAIPrompt()" style="padding: 8px 14px;">إرسال</button>
         </div>
     </div>
@@ -631,13 +669,19 @@
                 const res = await fetch('/api/auctions');
                 const auctions = await res.json();
                 if(auctions && auctions.length > 0) {
-                    currentActiveAuction = auctions[0];
-                    document.getElementById('auction-title').innerText = currentActiveAuction.title;
-                    document.getElementById('auction-price').innerText = Number(currentActiveAuction.currentPrice).toLocaleString() + ' IQD';
-                    document.getElementById('auction-bidder').innerText = currentActiveAuction.highestBidder;
-                    document.getElementById('auction-img').src = currentActiveAuction.image;
-                    startAuctionTimer(new Date(currentActiveAuction.endTime));
+                    const active = auctions.find(a => a.status === 'active');
+                    if(active) {
+                        currentActiveAuction = active;
+                        document.getElementById('auction-title').innerText = active.title;
+                        document.getElementById('auction-price').innerText = Number(active.currentPrice).toLocaleString() + ' IQD';
+                        document.getElementById('auction-bidder').innerText = active.highestBidder;
+                        document.getElementById('auction-img').src = active.image;
+                        startAuctionTimer(new Date(active.endTime));
+                    } else {
+                        document.getElementById('auction-title').innerText = "لا يوجد مزاد نشط حالياً";
+                    }
                 }
+                if(currentUser && currentUser.role === 'admin') loadAdminAuctionsList(auctions);
             } catch(e) {}
         }
 
@@ -703,18 +747,54 @@
             }
         }
 
+        function loadAdminAuctionsList(auctions) {
+            const list = document.getElementById('admin-auctions-list');
+            if(!list) return;
+            list.innerHTML = auctions.map(a => `
+                <div style="background:rgba(255,255,255,0.03); padding:12px; border-radius:10px; display:flex; justify-content:space-between; align-items:center; gap:10px; font-size:13px;">
+                    <div><b>${a.title}</b> | السعر: ${Number(a.currentPrice).toLocaleString()} IQD | الحالة: ${a.status}</div>
+                    <div style="display:flex; gap:6px;">
+                        <button class="btn-cyber" style="padding:5px 10px; font-size:11px;" onclick="editAuction('${a.id}', '${a.title}', ${a.currentPrice})">تعديل</button>
+                        <button class="btn-cyber btn-alt" style="padding:5px 10px; font-size:11px; border-color:var(--accent-red); color:var(--accent-red);" onclick="deleteAuction('${a.id}')">حذف</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function editAuction(id, oldTitle, oldPrice) {
+            const newTitle = prompt("أدخل اسم المزاد الجديد:", oldTitle);
+            const newPrice = prompt("أدخل السعر الحالي الجديد:", oldPrice);
+            if(!newTitle || !newPrice) return;
+
+            await fetch(`/api/auctions/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title: newTitle, currentPrice: Number(newPrice), status: 'active' })
+            });
+            alert("تم تحديث المزاد بنجاح!");
+            loadLiveAuctions();
+        }
+
+        async function deleteAuction(id) {
+            if(!confirm("هل أنت متأكد من حذف هذا المزاد؟")) return;
+            await fetch(`/api/auctions/${id}`, { method: 'DELETE' });
+            alert("تم حذف المزاد.");
+            loadLiveAuctions();
+        }
+
         const socket = io();
         socket.on('live_update', (count) => {
             document.getElementById('live-count-display').innerText = count;
         });
 
         socket.on('auction_update', (auction) => {
-            currentActiveAuction = auction;
-            document.getElementById('auction-title').innerText = auction.title;
-            document.getElementById('auction-price').innerText = Number(auction.currentPrice).toLocaleString() + ' IQD';
-            document.getElementById('auction-bidder').innerText = auction.highestBidder;
-            document.getElementById('auction-img').src = auction.image;
+            loadLiveAuctions();
             playNotificationSound();
+        });
+
+        socket.on('product_update', () => {
+            loadProducts();
+            if(currentUser && currentUser.role === 'admin') loadCitizenProducts();
         });
 
         function toggleAIChat() {
@@ -753,7 +833,7 @@
         socket.on('new_order_received', (order) => {
             playNotificationSound();
             if(currentUser && currentUser.role === 'admin') {
-                alert(`🚨 تنبيه مالي: وصل طلب جديد برقم ${order.transactionId} بقيمة ${order.finalTotal.toLocaleString()} IQD عبر (${order.paymentMethod})!`);
+                alert(`🚨 تنبيه مالي: وصل طلب جديد برقم ${order.transactionId} بقيمة ${order.finalTotal.toLocaleString()} IQD!`);
                 loadAdminOrders();
                 loadAdminStats();
             }
@@ -835,6 +915,42 @@
             } else alert("الرمز غير صحيح");
         }
         function logout() { currentUser = null; localStorage.removeItem('cyberstore_user'); location.reload(); }
+
+        // سوق المواطنين: فتح وغلق نافذة البيع
+        function openSellModal() {
+            if (!currentUser) {
+                alert("⚠️ يرجى تسجيل الدخول أولاً لتتمكن من عرض منتجك للبيع.");
+                openAuthModal();
+                return;
+            }
+            document.getElementById('sell-modal').classList.add('active');
+        }
+        function closeSellModal() { document.getElementById('sell-modal').classList.remove('active'); }
+
+        async function submitCitizenProduct() {
+            const name = document.getElementById('sell-name').value.trim();
+            const price = document.getElementById('sell-price').value;
+            const category = document.getElementById('sell-category').value;
+            const image = document.getElementById('sell-img').value.trim();
+
+            if(!name || !price || !image) return alert("يرجى تعبئة كافة الحقول مع رابط الصورة.");
+
+            const res = await fetch('/api/products', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, price, category, image, sellerPhone: currentUser.phone, status: 'pending' })
+            });
+            const data = await res.json();
+            if(data.success) {
+                alert("✅ تم إرسال منتجك بنجاح إلى الإدارة للمراجعة والموافقة!");
+                closeSellModal();
+                document.getElementById('sell-name').value = '';
+                document.getElementById('sell-price').value = '';
+                document.getElementById('sell-img').value = '';
+            } else {
+                alert("فشل إرسال المنتج.");
+            }
+        }
 
         async function loadProducts() { try { const res = await fetch('/api/products'); allProducts = await res.json(); renderProducts(allProducts); } catch (err) {} }
         function renderProducts(products) {
@@ -920,10 +1036,10 @@
                 infoText.innerHTML = `📱 قم بالتحويل الفوري لمبلغ <b>${calcTotal.toLocaleString()} IQD</b> إلى محفظة زين كاش التجارية: <b style="color:var(--accent-gold); font-size:14px;">07831333337</b> ثم أدخل رقم عملية التحويل أدناه:`;
             } else if (method === 'ماستركارد') {
                 instBox.style.display = 'block';
-                infoText.innerHTML = `💳 قم بالتحويل إلى ماستركارد المتجر المعتمد ثم أدخل رقم الإيصال المالي المكون من 8 أرقام أدناه:`;
+                infoText.innerHTML = `💳 قم بالتحويل إلى ماستركارد المتجر المعتمد ثم أدخل رقم الإيصال المالي أدناه:`;
             } else {
                 instBox.style.display = 'block';
-                infoText.innerHTML = `🌐 أدخل رقم معاملة تحويل الـ PayPal الخاص بك أدناه لتدقيق الحساب:`;
+                infoText.innerHTML = `🌐 أدخل رقم معاملة تحويل الـ PayPal الخاص بك أدناه:`;
             }
         }
 
@@ -967,7 +1083,7 @@
                     processor.style.display = 'none';
                     
                     let itemsSummary = userCart.map(item => `- ${item.name} (${Number(item.price).toLocaleString()} IQD)`).join('\n');
-                    let waMessage = `⚡ *CyberStore Fintech - تدقيق مالي*\n\nمرحباً الإدارة، تم إرسال طلب ومعاملة جديدة للتدقيق:\n\n👤 العميل: *${name}*\n📞 الهاتف: *${phone}*\n📌 العنوان: *${address}*\n💳 طريقة الدفع: *${method}*\n🧾 رقم الإيصال: *${receiptId || 'نقداً'}*\n\n🛒 *المنتجات:*\n${itemsSummary}\n\n💰 *الإجمالي: ${calcTotal.toLocaleString()} IQD*`;
+                    let waMessage = `⚡ *CyberStore Marketplace - تدقيق مالي*\n\nمرحباً الإدارة، تم إرسال طلب جديد للتدقيق:\n\n👤 العميل: *${name}*\n📞 الهاتف: *${phone}*\n📌 العنوان: *${address}*\n💳 طريقة الدفع: *${method}*\n🧾 رقم الإيصال: *${receiptId || 'نقداً'}*\n\n🛒 *المنتجات:*\n${itemsSummary}\n\n💰 *الإجمالي: ${calcTotal.toLocaleString()} IQD*`;
                     
                     let merchantWhatsApp = "9647831333337"; 
                     let waEncodedUrl = `https://wa.me/${merchantWhatsApp}?text=${encodeURIComponent(waMessage)}`;
@@ -996,8 +1112,8 @@
             } else cont.innerHTML = '<p>لا توجد طلبات مسجلة بهذا الرقم.</p>';
         }
 
-        function showDashboard() { document.getElementById('store-view').classList.add('hidden-el'); document.getElementById('main-nav').classList.add('hidden-el'); document.getElementById('dashboard-view').classList.add('active-dashboard'); switchTab('analytics'); }
-        function switchTab(tab) { document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active-section')); document.querySelectorAll('.sidebar-links a').forEach(a => a.classList.remove('active')); document.getElementById('sec-' + tab).classList.add('active-section'); document.getElementById('tab-' + tab).classList.add('active'); if(tab === 'view-orders') loadAdminOrders(); if(tab === 'view-users') loadAdminUsers(); if(tab === 'analytics') loadAdminStats(); }
+        function showDashboard() { document.getElementById('store-view').classList.add('hidden-el'); document.getElementById('main-nav').classList.add('hidden-el'); document.getElementById('dashboard-view').classList.add('active-dashboard'); switchTab('analytics'); loadCitizenProducts(); }
+        function switchTab(tab) { document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active-section')); document.querySelectorAll('.sidebar-links a').forEach(a => a.classList.remove('active')); document.getElementById('sec-' + tab).classList.add('active-section'); document.getElementById('tab-' + tab).classList.add('active'); if(tab === 'view-orders') loadAdminOrders(); if(tab === 'view-users') loadAdminUsers(); if(tab === 'analytics') loadAdminStats(); if(tab === 'manage-citizen-products') loadCitizenProducts(); if(tab === 'manage-auction') loadLiveAuctions(); }
         
         async function loadAdminStats() {
             try {
@@ -1014,20 +1130,65 @@
             const category = document.getElementById('p-category').value; 
             const image = document.getElementById('p-image-url').value;
 
-            if(!name || !price || !image) {
-                return alert("يرجى إدخال اسم المنتج، السعر، ورابط الصورة.");
-            }
+            if(!name || !price || !image) return alert("يرجى إدخال اسم المنتج، السعر، ورابط الصورة.");
 
             await fetch('/api/products', { 
                 method: 'POST', 
                 headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify({ name, price, image, category }) 
+                body: JSON.stringify({ name, price, image, category, status: 'approved', sellerPhone: 'admin' }) 
             }); 
-            alert("تم نشر المنتج في المتجر بنجاح! 🚀"); 
+            alert("تم نشر المنتج رسمياً في المتجر! 🚀"); 
             loadProducts();
             document.getElementById('p-name').value = '';
             document.getElementById('p-price').value = '';
             document.getElementById('p-image-url').value = '';
+        }
+
+        async function loadCitizenProducts() {
+            try {
+                const res = await fetch('/api/admin/products');
+                const products = await res.json();
+                const citizenList = products.filter(p => p.sellerPhone !== 'admin');
+                const tbody = document.getElementById('citizen-products-tbody');
+                
+                if(!citizenList || citizenList.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">لا توجد منتجات معروضة من المواطنين حالياً</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = citizenList.map(p => `
+                    <tr>
+                        <td style="color:var(--primary-neon); font-weight:bold;">${p.sellerPhone}</td>
+                        <td>
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                <img src="${p.image}" style="width:40px; height:40px; border-radius:6px; object-fit:cover;">
+                                <span>${p.name}</span>
+                            </div>
+                        </td>
+                        <td>${Number(p.price).toLocaleString()} IQD (${p.category})</td>
+                        <td><span style="padding:3px 8px; border-radius:6px; font-size:11px; background:${p.status==='approved'?'rgba(0,255,102,0.1)':'rgba(255,183,0,0.1)'}; color:${p.status==='approved'?'var(--accent-green)':'var(--accent-gold)'};">${p.status === 'approved' ? 'معتمد ومنشور ✅' : 'بانتظار الموافقة ⏳'}</span></td>
+                        <td>
+                            ${p.status !== 'approved' ? `<button onclick="approveCitizenProduct('${p.id}')" style="background:var(--accent-green); color:#000; border:none; padding:5px 10px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:11px; margin-left:5px;">موافقة ونشر ✅</button>` : ''}
+                            <button onclick="deleteCitizenProduct('${p.id}')" style="background:var(--accent-red); color:#fff; border:none; padding:5px 10px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:11px;">حذف ❌</button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch(e) {}
+        }
+
+        async function approveCitizenProduct(id) {
+            await fetch(`/api/products/${id}/approve`, { method: 'PUT' });
+            alert("✅ تم اعتماد ونشر منتج المواطن في المتجر الرئيسي بنجاح!");
+            loadCitizenProducts();
+            loadProducts();
+        }
+
+        async function deleteCitizenProduct(id) {
+            if(!confirm("هل أنت متأكد من حذف هذا المنتج؟")) return;
+            await fetch(`/api/products/${id}`, { method: 'DELETE' });
+            alert("تم حذف المنتج.");
+            loadCitizenProducts();
+            loadProducts();
         }
 
         async function loadAdminOrders() {
@@ -1095,7 +1256,7 @@
         }
 
         async function verifyPayment(orderId) {
-            if(!confirm("هل تحققت من وصول الأموال إلى محفظة المتجر وتود اعتماد وتحويل الطلب إلى مكتمل؟")) return;
+            if(!confirm("هل تحققت من وصول الأموال وتود اعتماد الطلب وإرسال رسالة الواتساب واحتساب نقاط الولاء للمواطن؟")) return;
             
             const res = await fetch(`/api/orders/${orderId}/status`, {
                 method: 'PUT',
@@ -1105,7 +1266,7 @@
             
             const data = await res.json();
             if(data.success) {
-                alert("✅ تم تأكيد التدقيق المالي وإضافة الإيرادات واحتساب النقاط بنجاح!");
+                alert(`✅ تم تأكيد التدقيق المالي وإرسال رسالة الواتساب للمواطن بنجاح!`);
                 loadAdminOrders();
                 loadAdminStats();
             }
@@ -1113,7 +1274,7 @@
 
         async function updateOrderStatus(id, newStatus, currentPaymentStatus) { 
             await fetch(`/api/orders/${id}/status`, { method: 'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({status: newStatus, paymentStatus: currentPaymentStatus}) });
-            alert("تم تحديث حالة الطلب وإرسال إشعار الواتساب للعميل! 📱");
+            alert("تم تحديث حالة الطلب وإرسال إشعار الواتساب للمواطن! 📱");
             loadAdminOrders();
         }
 
