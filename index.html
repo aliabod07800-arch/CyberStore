@@ -3,101 +3,307 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CyberStore | Enterprise Command</title>
+    <title>CyberStore | 3D Space Enterprise</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;900&display=swap');
-        :root { --bg-base: #030407; --bg-surface: rgba(12, 14, 22, 0.85); --border-neon: rgba(0, 243, 255, 0.2); --primary-neon: #00f3ff; --secondary-neon: #bc13fe; --accent-green: #00ff66; --accent-gold: #ffb700; --accent-red: #ff0055; --text-main: #ffffff; --text-muted: #8b93a5; --glow-cyan: 0 0 25px rgba(0, 243, 255, 0.35); --glow-purple: 0 0 25px rgba(188, 19, 254, 0.35); }
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Tajawal', sans-serif; }
-        body { background-color: var(--bg-base); color: var(--text-main); overflow-x: hidden; min-height: 100vh; display: flex; flex-direction: column; background-image: linear-gradient(to right, rgba(0,243,255,0.02) 1px, transparent 1px), linear-gradient(to bottom, rgba(188,19,254,0.02) 1px, transparent 1px); background-size: 40px 40px; }
-        nav { display: flex; justify-content: space-between; align-items: center; padding: 15px 40px; background: rgba(3, 4, 7, 0.9); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border-neon); position: sticky; top: 0; z-index: 1000; }
-        .logo { font-size: 26px; font-weight: 900; color: #fff; text-shadow: var(--glow-cyan); letter-spacing: 2px; }
+        :root { 
+            --bg-base: #010205; 
+            --bg-surface: rgba(10, 12, 24, 0.85); 
+            --border-neon: rgba(0, 243, 255, 0.3); 
+            --primary-neon: #00f3ff; 
+            --secondary-neon: #bc13fe; 
+            --accent-green: #00ff66; 
+            --accent-gold: #ffb700; 
+            --accent-red: #ff0055; 
+            --text-main: #ffffff; 
+            --text-muted: #94a3b8; 
+            --glow-cyan: 0 0 30px rgba(0, 243, 255, 0.4); 
+            --glow-purple: 0 0 30px rgba(188, 19, 254, 0.4); 
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Tajawal', sans-serif; -webkit-tap-highlight-color: transparent; }
+        
+        body { 
+            background-color: var(--bg-base); 
+            color: var(--text-main); 
+            overflow-x: hidden; 
+            min-height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            perspective: 1200px;
+        }
+
+        #space-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        nav { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 15px 25px; 
+            background: rgba(1, 2, 5, 0.9); 
+            backdrop-filter: blur(25px); 
+            border-bottom: 1px solid var(--border-neon); 
+            position: sticky; 
+            top: 0; 
+            z-index: 1000; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .logo { font-size: 22px; font-weight: 900; color: #fff; text-shadow: var(--glow-cyan); letter-spacing: 1px; }
         .logo span { color: var(--secondary-neon); text-shadow: var(--glow-purple); }
-        .nav-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
-        .btn-cyber { background: transparent; color: var(--text-main); border: 1px solid var(--primary-neon); padding: 8px 18px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 700; transition: 0.3s; box-shadow: 0 0 10px rgba(0, 243, 255, 0.1) inset; }
-        .btn-cyber:hover:not(:disabled) { background: var(--primary-neon); color: #000; box-shadow: var(--glow-cyan); transform: translateY(-2px); }
-        .btn-alt { border-color: var(--secondary-neon); }
-        .btn-alt:hover:not(:disabled) { background: var(--secondary-neon); box-shadow: var(--glow-purple); }
-        .store-container { padding: 40px; flex: 1; max-width: 1600px; margin: 0 auto; width: 100%; transition: 0.3s; }
-        .cyber-hero { text-align: center; margin-bottom: 40px; padding: 50px 20px; background: var(--bg-surface); border: 1px solid var(--border-neon); border-radius: 20px; backdrop-filter: blur(15px); }
-        .cyber-hero h1 { font-size: 38px; font-weight: 900; margin-bottom: 15px; color: #fff; text-shadow: var(--glow-cyan); }
-        .cyber-hero p { color: var(--text-muted); font-size: 16px; max-width: 700px; margin: 0 auto; }
-        .tools-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; gap: 20px; flex-wrap: wrap; background: rgba(0,0,0,0.4); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); }
-        .search-box { flex: 1; min-width: 250px; }
-        .search-box input { width: 100%; padding: 12px 20px; border-radius: 30px; border: 1px solid var(--border-neon); background: rgba(0,0,0,0.6); color: #fff; outline: none; transition: 0.3s; }
-        .category-filters { display: flex; gap: 10px; flex-wrap: wrap; }
-        .filter-btn { background: rgba(255,255,255,0.05); border: 1px solid transparent; padding: 8px 16px; border-radius: 20px; color: #fff; cursor: pointer; transition: 0.3s; }
+        
+        .nav-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        
+        /* أزرار الهولوغرام والعمق المتطورة */
+        .btn-cyber { 
+            background: linear-gradient(135deg, rgba(0, 243, 255, 0.08), rgba(188, 19, 254, 0.08)); 
+            color: var(--text-main); 
+            border: 1px solid var(--primary-neon); 
+            padding: 8px 16px; 
+            border-radius: 10px; 
+            cursor: pointer; 
+            font-size: 13px; 
+            font-weight: 700; 
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); 
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.15) inset, 0 5px 15px rgba(0,0,0,0.3); 
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
+            transform: translateZ(10px);
+        }
+
+        .btn-cyber::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 243, 255, 0.4), transparent);
+            transition: 0.6s;
+        }
+
+        .btn-cyber:hover::before { left: 100%; }
+
+        .btn-cyber:hover:not(:disabled) { 
+            background: var(--primary-neon); 
+            color: #000; 
+            box-shadow: 0 0 35px var(--primary-neon), 0 10px 25px rgba(0,0,0,0.5); 
+            transform: translateY(-3px) scale(1.02); 
+            border-color: #fff;
+        }
+
+        .btn-alt { 
+            border-color: var(--secondary-neon); 
+            background: linear-gradient(135deg, rgba(188, 19, 254, 0.08), rgba(0, 243, 255, 0.08));
+            box-shadow: 0 0 20px rgba(188, 19, 254, 0.15) inset, 0 5px 15px rgba(0,0,0,0.3); 
+        }
+        .btn-alt:hover:not(:disabled) { 
+            background: var(--secondary-neon); 
+            box-shadow: 0 0 35px var(--secondary-neon), 0 10px 25px rgba(0,0,0,0.5); 
+        }
+
+        .store-container { padding: 25px; flex: 1; max-width: 1600px; margin: 0 auto; width: 100%; z-index: 1; }
+
+        .cyber-hero { 
+            text-align: center; 
+            margin-bottom: 30px; 
+            padding: 40px 15px; 
+            background: var(--bg-surface); 
+            border: 1px solid var(--border-neon); 
+            border-radius: 20px; 
+            backdrop-filter: blur(20px); 
+            box-shadow: 0 20px 50px rgba(0,0,0,0.6), var(--glow-cyan);
+        }
+        .cyber-hero h1 { font-size: 32px; font-weight: 900; margin-bottom: 12px; color: #fff; text-shadow: 0 0 20px var(--primary-neon); }
+        .cyber-hero p { color: var(--text-muted); font-size: 14px; max-width: 700px; margin: 0 auto; }
+
+        .tools-bar { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 25px; 
+            gap: 15px; 
+            flex-wrap: wrap; 
+            background: var(--bg-surface); 
+            padding: 15px; 
+            border-radius: 14px; 
+            border: 1px solid var(--border-neon); 
+            backdrop-filter: blur(15px);
+        }
+        .search-box { flex: 1; min-width: 220px; }
+        .search-box input { 
+            width: 100%; 
+            padding: 12px 18px; 
+            border-radius: 30px; 
+            border: 1px solid var(--border-neon); 
+            background: rgba(1, 2, 5, 0.8); 
+            color: #fff; 
+            outline: none; 
+            transition: 0.3s; 
+            font-size: 14px;
+        }
+        .search-box input:focus { border-color: var(--primary-neon); box-shadow: var(--glow-cyan); }
+        
+        .category-filters { display: flex; gap: 8px; flex-wrap: wrap; }
+        .filter-btn { 
+            background: rgba(255,255,255,0.03); 
+            border: 1px solid rgba(255,255,255,0.1); 
+            padding: 8px 15px; 
+            border-radius: 20px; 
+            color: #fff; 
+            cursor: pointer; 
+            transition: 0.3s; 
+            font-size: 13px;
+        }
         .filter-btn.active, .filter-btn:hover { background: var(--secondary-neon); border-color: var(--secondary-neon); box-shadow: var(--glow-purple); }
-        .products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 25px; }
-        .product-card { background: var(--bg-surface); padding: 15px; border-radius: 16px; border: 1px solid var(--border-neon); text-align: center; transition: 0.4s; backdrop-filter: blur(10px); display: flex; flex-direction: column; justify-content: space-between; }
-        .product-card:hover { transform: translateY(-8px); box-shadow: var(--glow-purple); border-color: var(--secondary-neon); }
-        .product-image-wrap { width: 100%; height: 220px; border-radius: 12px; overflow: hidden; margin-bottom: 15px; }
+
+        .products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }
+        
+        .product-card { 
+            background: var(--bg-surface); 
+            padding: 15px; 
+            border-radius: 18px; 
+            border: 1px solid var(--border-neon); 
+            text-align: center; 
+            transition: transform 0.2s ease, box-shadow 0.3s ease, border-color 0.3s ease; 
+            backdrop-filter: blur(15px); 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: space-between; 
+            box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+            transform-style: preserve-3d;
+        }
+        .product-card:hover { 
+            border-color: var(--secondary-neon); 
+            box-shadow: var(--glow-purple), 0 20px 40px rgba(0,0,0,0.6); 
+        }
+        .product-image-wrap { width: 100%; height: 200px; border-radius: 12px; overflow: hidden; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.05); }
         .product-card img { width: 100%; height: 100%; object-fit: cover; transition: 0.5s; }
-        .product-price { color: var(--primary-neon); font-size: 18px; font-weight: 900; margin-bottom: 15px; }
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0, 0.85); backdrop-filter: blur(10px); display: flex; justify-content: center; align-items: center; z-index: 9999; opacity: 0; pointer-events: none; transition: 0.3s; }
+        .product-card:hover img { transform: scale(1.08); }
+        .product-price { color: var(--primary-neon); font-size: 18px; font-weight: 900; margin-bottom: 12px; text-shadow: 0 0 10px rgba(0,243,255,0.3); }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(1, 2, 5, 0.85); backdrop-filter: blur(20px); display: flex; justify-content: center; align-items: center; z-index: 9999; opacity: 0; pointer-events: none; transition: 0.4s; padding: 15px; }
         .modal-overlay.active { opacity: 1; pointer-events: all; }
-        .modal-box { background: rgba(12, 14, 22, 0.95); padding: 30px; border-radius: 20px; border: 1px solid var(--primary-neon); width: 480px; max-width: 95%; max-height: 90vh; overflow-y: auto; text-align: right; position: relative; }
-        .modal-box h2 { text-align: center; color: var(--primary-neon); margin-bottom: 20px; }
+        
+        .modal-box { 
+            background: rgba(10, 12, 24, 0.98); 
+            padding: 25px; 
+            border-radius: 20px; 
+            border: 1px solid var(--primary-neon); 
+            width: 460px; 
+            max-width: 100%; 
+            max-height: 90vh; 
+            overflow-y: auto; 
+            text-align: right; 
+            position: relative; 
+            box-shadow: 0 25px 60px rgba(0,0,0,0.8), var(--glow-cyan);
+        }
+        .modal-box h2 { text-align: center; color: var(--primary-neon); margin-bottom: 18px; text-shadow: 0 0 10px rgba(0,243,255,0.3); font-size: 20px; }
+        
         .input-group { margin-bottom: 15px; }
-        .input-group label { display: block; margin-bottom: 6px; color: var(--text-muted); font-size: 13px; font-weight: bold;}
-        .input-group input, .input-group textarea, .input-group select { width: 100%; padding: 12px; background: rgba(0,0,0, 0.6); border: 1px solid var(--border-neon); color: #fff; border-radius: 8px; outline: none; font-family: inherit; }
+        .input-group label { display: block; margin-bottom: 5px; color: var(--text-muted); font-size: 12px; font-weight: bold;}
+        .input-group input, .input-group textarea, .input-group select { 
+            width: 100%; 
+            padding: 11px 14px; 
+            background: rgba(1, 2, 5, 0.9); 
+            border: 1px solid var(--border-neon); 
+            color: #fff; 
+            border-radius: 9px; 
+            outline: none; 
+            font-family: inherit; 
+            transition: 0.3s; 
+            font-size: 14px;
+        }
         .input-group input:focus, .input-group textarea:focus { border-color: var(--primary-neon); box-shadow: var(--glow-cyan); }
-        .payment-methods { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
-        .pay-method { flex: 1; min-width: 80px; text-align: center; padding: 10px; border: 1px solid var(--border-neon); border-radius: 8px; cursor: pointer; transition: 0.3s; font-size: 13px; }
-        .pay-method.selected { background: var(--primary-neon); color: #000; font-weight: bold; box-shadow: var(--glow-cyan); }
-        .processing-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); border-radius: 20px; display:flex; flex-direction:column; justify-content:center; align-items:center; z-index: 10; display: none; }
-        .spinner { width: 50px; height: 50px; border: 5px solid rgba(0,243,255,0.2); border-top-color: var(--primary-neon); border-radius: 50%; animation: spin 1s linear infinite; }
+        
+        .payment-methods { display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap; }
+        .pay-method { flex: 1; min-width: 75px; text-align: center; padding: 10px; border: 1px solid var(--border-neon); border-radius: 9px; cursor: pointer; transition: 0.3s; font-size: 12px; background: rgba(255,255,255,0.02); }
+        .pay-method.selected { background: var(--primary-neon); color: #000; font-weight: bold; box-shadow: var(--glow-cyan); border-color: var(--primary-neon); }
+
+        .processing-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background:rgba(1,2,5,0.95); border-radius: 20px; display:flex; flex-direction:column; justify-content:center; align-items:center; z-index: 10; display: none; }
+        .spinner { width: 45px; height: 45px; border: 4px solid rgba(0,243,255,0.15); border-top-color: var(--primary-neon); border-radius: 50%; animation: spin 1s linear infinite; box-shadow: var(--glow-cyan); }
         @keyframes spin { to { transform: rotate(360deg); } }
         
-        /* Dashboard Enterprise Styles */
+        /* لوحة القيادة المحدثة والمتطورة (Enterprise Dashboard) */
         .dashboard-container { display: none; height: 100vh; width: 100vw; position: fixed; top: 0; left: 0; z-index: 3000; background: var(--bg-base); }
-        .dashboard-container.active-dashboard { display: flex; }
-        .sidebar { width: 280px; background: rgba(6, 8, 13, 0.98); border-left: 1px solid var(--border-neon); padding: 30px 20px; display: flex; flex-direction: column; position: relative; }
-        .sidebar h3 { color: var(--secondary-neon); margin-bottom: 20px; font-size: 24px; text-align: center; text-shadow: var(--glow-purple); }
-        .live-badge { background: rgba(255, 0, 85, 0.1); border: 1px solid var(--accent-red); color: var(--accent-red); text-align: center; padding: 10px; border-radius: 8px; margin-bottom: 30px; font-weight: bold; animation: pulse 2s infinite; }
+        .dashboard-container.active-dashboard { display: flex; flex-direction: column; }
+        
+        @media(min-width: 768px) {
+            .dashboard-container.active-dashboard { flex-direction: row; }
+        }
+
+        .sidebar { width: 100%; background: rgba(5, 7, 15, 0.98); border-bottom: 1px solid var(--border-neon); padding: 15px 20px; display: flex; flex-direction: row; align-items: center; justify-content: space-between; flex-wrap: wrap; z-index: 10; }
+        @media(min-width: 768px) {
+            .sidebar { width: 280px; height: 100vh; border-bottom: none; border-left: 1px solid var(--border-neon); padding: 30px 20px; flex-direction: column; align-items: stretch; justify-content: flex-start; }
+        }
+        .sidebar h3 { color: var(--secondary-neon); margin-bottom: 10px; font-size: 20px; text-align: center; text-shadow: var(--glow-purple); }
+        
+        .live-badge { background: rgba(255, 0, 85, 0.1); border: 1px solid var(--accent-red); color: var(--accent-red); text-align: center; padding: 8px; border-radius: 8px; margin-bottom: 15px; font-size: 13px; font-weight: bold; animation: pulse 2s infinite; box-shadow: 0 0 15px rgba(255,0,85,0.2); }
         @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(255,0,85,0.4); } 70% { box-shadow: 0 0 0 10px rgba(255,0,85,0); } 100% { box-shadow: 0 0 0 0 rgba(255,0,85,0); } }
-        .sidebar-links a { display: block; color: var(--text-muted); text-decoration: none; padding: 14px 18px; margin-bottom: 12px; border-radius: 8px; cursor: pointer; transition: 0.3s; font-weight: 500; font-size: 16px; }
-        .sidebar-links a:hover { background: rgba(255,255,255,0.05); }
-        .sidebar-links a.active { background: rgba(188, 19, 254, 0.15); color: #fff; border-right: 4px solid var(--secondary-neon); box-shadow: 0 0 10px rgba(188,19,254,0.1); }
-        .dashboard-content { flex: 1; padding: 40px; overflow-y: auto; background: var(--bg-base); }
+        
+        .sidebar-links { display: flex; gap: 8px; overflow-x: auto; width: 100%; }
+        @media(min-width: 768px) {
+            .sidebar-links { display: block; overflow-x: visible; }
+        }
+        .sidebar-links a { display: block; color: var(--text-muted); text-decoration: none; padding: 10px 14px; margin-bottom: 8px; border-radius: 8px; cursor: pointer; transition: 0.3s; font-weight: 500; font-size: 13px; white-space: nowrap; }
+        .sidebar-links a:hover { background: rgba(255,255,255,0.05); color: #fff; }
+        .sidebar-links a.active { background: rgba(188, 19, 254, 0.2); color: #fff; border-right: 4px solid var(--secondary-neon); box-shadow: 0 0 15px rgba(188,19,254,0.2); }
+        
+        .dashboard-content { flex: 1; padding: 20px; overflow-y: auto; background: var(--bg-base); }
+        @media(min-width: 768px) { .dashboard-content { padding: 40px; } }
+        
         .admin-section { display: none; animation: fadeIn 0.4s; }
         .admin-section.active-section { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 25px; margin-bottom: 40px; }
-        .stat-card { background: var(--bg-surface); padding: 25px; border-radius: 16px; border: 1px solid var(--border-neon); text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
-        .stat-card p { font-size: 36px; font-weight: 900; margin: 0; }
-        .enterprise-table-container { width: 100%; overflow-x: auto; background: var(--bg-surface); border-radius: 16px; border: 1px solid var(--border-neon); box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
-        .enterprise-table { width: 100%; border-collapse: collapse; text-align: right; }
-        .enterprise-table th { background: rgba(0, 243, 255, 0.08); padding: 18px 20px; color: var(--primary-neon); font-size: 15px; border-bottom: 1px solid var(--border-neon); white-space: nowrap; }
-        .enterprise-table td { padding: 18px 20px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 14px; vertical-align: middle; }
-        .select-status { background: #000; color: #fff; border: 1px solid var(--border-neon); padding: 8px; border-radius: 6px; outline: none; cursor: pointer; }
+        
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 18px; margin-bottom: 30px; }
+        .stat-card { background: var(--bg-surface); padding: 20px; border-radius: 16px; border: 1px solid var(--border-neon); text-align: center; box-shadow: 0 15px 35px rgba(0,0,0,0.4); backdrop-filter: blur(15px); }
+        .stat-card p { font-size: 30px; font-weight: 900; margin-top: 8px; }
+        
+        .enterprise-table-container { width: 100%; overflow-x: auto; background: var(--bg-surface); border-radius: 16px; border: 1px solid var(--border-neon); box-shadow: 0 15px 35px rgba(0,0,0,0.4); backdrop-filter: blur(15px); }
+        .enterprise-table { width: 100%; border-collapse: collapse; text-align: right; min-width: 700px; }
+        .enterprise-table th { background: rgba(0, 243, 255, 0.08); padding: 14px 16px; color: var(--primary-neon); font-size: 13px; border-bottom: 1px solid var(--border-neon); white-space: nowrap; }
+        .enterprise-table td { padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 13px; vertical-align: middle; }
+        .select-status { background: #010205; color: #fff; border: 1px solid var(--border-neon); padding: 6px; border-radius: 6px; outline: none; cursor: pointer; font-size: 12px; }
+        
         .hidden-el { display: none !important; }
-        @media (max-width: 768px) { nav { flex-direction: column; gap: 15px; padding: 15px; } .sidebar { width: 100%; border-left: none; border-bottom: 1px solid var(--border-neon); padding: 15px; flex-direction: row; flex-wrap: wrap; justify-content: space-between;} .sidebar h3 { margin-bottom: 5px; width: 100%; } .live-badge { width: 100%; margin-bottom: 15px; } .sidebar-links { display: flex; width: 100%; overflow-x: auto; gap: 10px; } .dashboard-content, .store-container { padding: 20px; } .tools-bar { flex-direction: column; } }
     </style>
 </head>
 <body>
 
+    <canvas id="space-canvas"></canvas>
+
     <nav id="main-nav">
         <div class="logo">CYBER<span>STORE</span> ⚡</div>
         <div class="nav-actions">
-            <button class="btn-cyber" onclick="openTrackModal()">📍 تتبع طلبي</button>
-            <button class="btn-cyber btn-alt" onclick="openCartModal()">🛒 السلة <span id="cart-count">0</span></button>
+            <button class="btn-cyber" onclick="openTrackModal()" style="padding: 7px 12px; font-size: 12px;">📍 تتبع</button>
+            <button class="btn-cyber btn-alt" onclick="openCartModal()" style="padding: 7px 12px; font-size: 12px;">🛒 السلة <span id="cart-count">0</span></button>
             <div id="auth-nav-container"></div>
         </div>
     </nav>
 
     <div id="store-view" class="store-container">
         <div class="cyber-hero">
-            <h1>مركز التسوق التقني الأول</h1>
-            <p>منصة أمنية متكاملة، يرجى تسجيل الدخول برقم الهاتف للتمكن من الشراء.</p>
+            <h1>مركز التسوق التقني الفضائي</h1>
+            <p>منصة تجارية ثلاثية الأبعاد مؤمنة، متوافقة كلياً مع الهواتف، مع إشعارات تفاعلية عبر الواتساب.</p>
         </div>
         <div class="tools-bar">
             <div class="category-filters" id="category-filters">
                 <button class="filter-btn active" onclick="filterProducts('الكل')">الكل</button>
-                <button class="filter-btn" onclick="filterProducts('أجهزة')">أجهزة و PC</button>
-                <button class="filter-btn" onclick="filterProducts('ألعاب')">ألعاب وبطاقات</button>
+                <button class="filter-btn" onclick="filterProducts('أجهزة')">أجهزة</button>
+                <button class="filter-btn" onclick="filterProducts('ألعاب')">ألعاب</button>
                 <button class="filter-btn" onclick="filterProducts('إكسسوارات')">إكسسوارات</button>
             </div>
             <div class="search-box">
@@ -107,22 +313,24 @@
         <div class="products-grid" id="products-list"></div>
     </div>
 
-    <!-- مركز القيادة (Enterprise Dashboard) -->
+    <!-- لوحة القيادة المتطورة للادارة (Enterprise Dashboard) -->
     <div id="dashboard-view" class="dashboard-container">
         <div class="sidebar">
-            <h3>Enterprise Admin</h3>
-            <div class="live-badge">رادار الزوار: <span id="live-count-display">1</span> متصل 🔴</div>
+            <div>
+                <h3>Enterprise Admin</h3>
+                <div class="live-badge">رادار الزوار: <span id="live-count-display">1</span> متصل 🔴</div>
+            </div>
             <div class="sidebar-links">
-                <a onclick="switchTab('analytics')" id="tab-analytics" class="active">📊 نظرة عامة</a>
-                <a onclick="switchTab('add-product')" id="tab-add">➕ رفع منتج جديد</a>
-                <a onclick="switchTab('view-orders')" id="tab-orders">📦 إدارة المعاملات</a>
-                <a onclick="switchTab('view-users')" id="tab-users">👥 قاعدة العملاء (VIP)</a>
-                <a style="color: var(--accent-red); font-weight: bold; margin-top:20px;" onclick="logout()">خروج</a>
+                <a onclick="switchTab('analytics')" id="tab-analytics" class="active">📊 التقارير</a>
+                <a onclick="switchTab('add-product')" id="tab-add">➕ رفع منتج</a>
+                <a onclick="switchTab('view-orders')" id="tab-orders">📦 الطلبات والدفع</a>
+                <a onclick="switchTab('view-users')" id="tab-users">👥 العملاء (VIP)</a>
+                <a style="color: var(--accent-red); font-weight: bold;" onclick="logout()">خروج</a>
             </div>
         </div>
         <div class="dashboard-content">
             <div id="sec-analytics" class="admin-section active-section">
-                <h2 style="margin-bottom: 25px; text-shadow: var(--glow-cyan);">التقارير المالية والتشغيلية</h2>
+                <h2 style="margin-bottom: 20px; text-shadow: var(--glow-cyan);">التقارير المالية والتشغيلية</h2>
                 <div class="stats-grid">
                     <div class="stat-card"><h4>إجمالي الطلبات</h4><p id="stat-orders" style="color:var(--primary-neon);">0</p></div>
                     <div class="stat-card"><h4>الإيرادات (IQD)</h4><p id="stat-revenue" style="color:var(--secondary-neon);">0</p></div>
@@ -131,36 +339,45 @@
             </div>
             
             <div id="sec-add-product" class="admin-section">
-                <div style="background: var(--bg-surface); padding: 35px; border-radius: 16px; border: 1px solid var(--border-neon); max-width: 600px;">
-                    <h2 style="color: var(--primary-neon); margin-bottom: 20px;">رفع منتج جديد 🖼️</h2>
+                <div style="background: var(--bg-surface); padding: 25px; border-radius: 16px; border: 1px solid var(--border-neon); max-width: 600px; backdrop-filter: blur(15px);">
+                    <h2 style="color: var(--primary-neon); margin-bottom: 15px; font-size: 20px;">رفع منتج جديد 🖼️</h2>
                     <div class="input-group"><label>اسم المنتج</label><input type="text" id="p-name"></div>
                     <div class="input-group"><label>السعر (IQD)</label><input type="number" id="p-price"></div>
                     <div class="input-group"><label>التصنيف</label>
                         <select id="p-category"><option value="أجهزة">أجهزة و PC</option><option value="ألعاب">ألعاب وبطاقات</option><option value="إكسسوارات">إكسسوارات</option></select>
                     </div>
                     <div class="input-group">
-                        <label>صورة المنتج (اختر صورة من جهازك)</label>
-                        <input type="file" id="p-image-file" accept="image/*" style="padding:10px;">
+                        <label>صورة المنتج (من جهازك)</label>
+                        <input type="file" id="p-image-file" accept="image/*" style="padding:8px;">
                     </div>
-                    <button class="btn-cyber" style="width: 100%; padding: 14px;" onclick="addNewProductWithImage()">نشر المنتج في المتجر 🚀</button>
+                    <button class="btn-cyber" style="width: 100%; padding: 12px;" onclick="addNewProductWithImage()">نشر المنتج 🚀</button>
                 </div>
             </div>
 
+            <!-- قسم إدارة الطلبات وحالة الدفع المطور -->
             <div id="sec-view-orders" class="admin-section">
-                <h2 style="margin-bottom: 25px; text-shadow: var(--glow-cyan);">تتبع الشحنات والمدفوعات والمواقع الجغرافية</h2>
+                <h2 style="margin-bottom: 20px; text-shadow: var(--glow-cyan);">تتبع الطلبات وحالة الدفع والشحن</h2>
                 <div class="enterprise-table-container">
                     <table class="enterprise-table">
-                        <thead><tr><th>TXN</th><th>بيانات العميل والموقع</th><th>الدفع</th><th>تحديث الحالة</th></tr></thead>
+                        <thead>
+                            <tr>
+                                <th>TXN</th>
+                                <th>العميل ورقم الهاتف</th>
+                                <th>المنتجات المبلغ</th>
+                                <th>حالة الدفع</th>
+                                <th>حالة الشحنة والإجراءات</th>
+                            </tr>
+                        </thead>
                         <tbody id="orders-table-body"></tbody>
                     </table>
                 </div>
             </div>
 
             <div id="sec-view-users" class="admin-section">
-                <h2 style="margin-bottom: 25px; text-shadow: var(--glow-purple);">قاعدة بيانات العملاء المسجلين (CRM)</h2>
+                <h2 style="margin-bottom: 20px; text-shadow: var(--glow-purple);">قاعدة بيانات العملاء (CRM)</h2>
                 <div class="enterprise-table-container">
                     <table class="enterprise-table">
-                        <thead><tr><th>ID</th><th>رقم الهاتف المسجل</th><th>إجمالي المدفوعات</th><th>تاريخ التسجيل</th></tr></thead>
+                        <thead><tr><th>ID</th><th>رقم الهاتف</th><th>إجمالي المشتريات</th><th>التسجيل</th></tr></thead>
                         <tbody id="users-table-body"></tbody>
                     </table>
                 </div>
@@ -168,86 +385,177 @@
         </div>
     </div>
 
-    <!-- السلة والدفع (محمية بتسجيل الدخول) -->
+    <!-- السلة والدفع والتأكيد عبر الواتساب -->
     <div class="modal-overlay" id="cart-modal">
         <div class="modal-box">
             <h2>السلة 🛒</h2>
-            <div id="cart-items-container" style="max-height: 150px; overflow-y:auto; margin-bottom:15px;"></div>
-            <div class="input-group" style="display:flex; gap:10px;">
+            <div id="cart-items-container" style="max-height: 140px; overflow-y:auto; margin-bottom:12px;"></div>
+            <div class="input-group" style="display:flex; gap:8px;">
                 <input type="text" id="promo-code" placeholder="كود الخصم (CYBER20)" style="flex:1;">
-                <button class="btn-cyber" onclick="applyCoupon()">تفعيل</button>
+                <button class="btn-cyber" onclick="applyCoupon()" style="padding: 8px 12px;">تفعيل</button>
             </div>
-            <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; margin-bottom: 10px;">
-                <div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>المجموع الفرعي:</span><span id="summ-subtotal">0</span></div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>الخصم:</span><span id="summ-discount" style="color:var(--accent-red);">0</span></div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:5px; border-bottom:1px solid #333; padding-bottom:5px;"><span>التوصيل:</span><span id="summ-shipping">5000</span></div>
-                <div style="display:flex; justify-content:space-between; margin-top:5px; font-weight:bold; color:var(--primary-neon);"><span>الإجمالي النهائي:</span><span id="summ-total">0</span></div>
+            <div style="background: rgba(255,255,255,0.03); padding: 12px; border-radius: 9px; margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.05); font-size: 13px;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>المجموع الفرعي:</span><span id="summ-subtotal">0</span></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>الخصم:</span><span id="summ-discount" style="color:var(--accent-red);">0</span></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px; border-bottom:1px solid #222; padding-bottom:4px;"><span>التوصيل:</span><span id="summ-shipping">5000</span></div>
+                <div style="display:flex; justify-content:space-between; margin-top:4px; font-weight:bold; color:var(--primary-neon);"><span>الإجمالي النهائي:</span><span id="summ-total">0</span></div>
             </div>
-            <button class="btn-cyber" style="width: 100%; margin-bottom: 10px;" onclick="openCheckoutModal()">متابعة الشحن والدفع 💳</button>
-            <button style="background:none; border:none; color:var(--text-muted); width:100%; cursor:pointer;" onclick="closeCartModal()">إغلاق</button>
+            <button class="btn-cyber" style="width: 100%; margin-bottom: 8px; padding: 11px;" onclick="openCheckoutModal()">متابعة الشحن والدفع 💳</button>
+            <button style="background:none; border:none; color:var(--text-muted); width:100%; cursor:pointer; font-size: 13px;" onclick="closeCartModal()">إغلاق</button>
         </div>
     </div>
 
+    <!-- نافذة إتمام الطلب وظهور زر توجيه الواتساب للتاكيد -->
     <div class="modal-overlay" id="checkout-modal">
         <div class="modal-box">
             <div id="payment-processor" class="processing-overlay">
-                <div class="spinner"></div><h3 style="color: var(--primary-neon); margin-top:20px;" id="process-text">جاري المعالجة...</h3>
+                <div class="spinner"></div><h3 style="color: var(--primary-neon); margin-top:15px; font-size:16px;" id="process-text">جاري معالجة الطلب...</h3>
             </div>
-            <h2>بيانات الشحن والموقع الدقيق 🔒</h2>
-            <div class="input-group"><label>الاسم الثنائي (مطلوب)</label><input type="text" id="cust-name" placeholder="الاسم الحقيقي لضمان التوصيل"></div>
+            <h2>تأكيد الطلب وإرسال الواتساب 🔒</h2>
+            <div class="input-group"><label>الاسم الثنائي الحقيقي</label><input type="text" id="cust-name" placeholder="الاسم الكامل لضمان التوصيل"></div>
             <div class="input-group"><label>رقم الهاتف المسجل</label><input type="tel" id="cust-phone" readonly style="color: var(--primary-neon); background: rgba(0,243,255,0.05);"></div>
             
             <div class="input-group">
-                <label>العنوان بالتفصيل أو نقطة الدالة</label>
+                <label>العنوان بالتفصيل</label>
                 <textarea id="cust-address" rows="2" placeholder="المحافظة، المنطقة، أقرب نقطة دالة"></textarea>
             </div>
 
             <div class="input-group">
-                <button type="button" class="btn-cyber btn-alt" style="width: 100%; font-size: 13px; padding: 10px;" onclick="getGeoLocation()">📍 تحديد موقعي الحالي GPS (موصى به)</button>
-                <input type="text" id="cust-gps" placeholder="إحداثيات الموقع (ستظهر هنا تلقائياً)" readonly style="margin-top: 8px; font-size: 12px; color: var(--primary-neon);">
+                <button type="button" class="btn-cyber btn-alt" style="width: 100%; font-size: 12px; padding: 9px;" onclick="getGeoLocation()">📍 تحديد موقعي الحالي GPS</button>
+                <input type="text" id="cust-gps" placeholder="إحداثيات الموقع (ستظهر تلقائياً)" readonly style="margin-top: 6px; font-size: 11px; color: var(--primary-neon);">
             </div>
             
-            <label style="color:var(--text-muted); font-size:13px; margin-bottom:8px; display:block;">اختر بوابة الدفع:</label>
+            <label style="color:var(--text-muted); font-size:12px; margin-bottom:6px; display:block;">اختر طريقة الدفع:</label>
             <div class="payment-methods">
-                <div class="pay-method selected" onclick="selectPayment(this, 'الدفع عند الاستلام')">نقداً 💵</div>
+                <div class="pay-method selected" onclick="selectPayment(this, 'نقداً عند الاستلام')">نقداً 💵</div>
                 <div class="pay-method" onclick="selectPayment(this, 'زين كاش')">زين كاش 📱</div>
                 <div class="pay-method" onclick="selectPayment(this, 'PayPal')">PayPal 🌐</div>
             </div>
-            <input type="hidden" id="selected-payment" value="الدفع عند الاستلام">
+            <input type="hidden" id="selected-payment" value="نقداً عند الاستلام">
             
-            <button id="normal-checkout-btn" class="btn-cyber" style="width: 100%; padding: 12px; margin-bottom: 10px;" onclick="submitFinalOrder()">تأكيد الطلب نهائياً ✅</button>
-            <button style="background:none; border:none; color:var(--text-muted); cursor:pointer; width:100%;" onclick="closeCheckoutModal()">الرجوع</button>
+            <button id="normal-checkout-btn" class="btn-cyber" style="width: 100%; padding: 11px; margin-bottom: 8px;" onclick="submitFinalOrder()">إتمام الطلب وتوليد رابط الواتساب ✅</button>
+            
+            <!-- خيار توجيه المستخدم المباشر للواتساب لتأكيد الطلب -->
+            <div id="whatsapp-redirect-box" class="hidden-el" style="text-align: center; margin-top: 10px; background: rgba(0,255,102,0.08); border: 1px solid var(--accent-green); padding: 15px; border-radius: 12px;">
+                <p style="font-size: 13px; margin-bottom: 10px; color: var(--accent-green); font-weight: bold;">✅ تم حفظ طلبك بنجاح! انقر أدناه لإرسال التفاصيل وتأكيد الطلب عبر الواتساب فوراً:</p>
+                <a id="whatsapp-confirm-link" href="#" target="_blank" class="btn-cyber" style="display: inline-block; background: var(--accent-green); color: #000; border-color: var(--accent-green); text-decoration: none; padding: 10px 20px; font-weight: bold;">تأكيد الطلب عبر الواتساب 💬</a>
+            </div>
+
+            <button style="background:none; border:none; color:var(--text-muted); cursor:pointer; width:100%; margin-top:8px; font-size: 13px;" onclick="closeCheckoutModal()">إغلاق</button>
         </div>
     </div>
 
-    <!-- المصادقة الإجبارية -->
+    <!-- المصادقة والتتبع -->
     <div class="modal-overlay" id="auth-modal">
         <div class="modal-box">
-            <h2 id="auth-title">تسجيل الدخول الإجباري 🔒</h2>
-            <p style="text-align: center; color: var(--text-muted); font-size: 13px; margin-bottom: 15px;">يجب تسجيل الدخول برقم هاتفك العراقي للتمكن من فتح السلة والشراء.</p>
+            <h2>تسجيل الدخول الإجباري 🔒</h2>
+            <p style="text-align: center; color: var(--text-muted); font-size: 12px; margin-bottom: 12px;">أدخل رقم هاتفك العراقي للتمكن من السلة والشراء.</p>
             <div id="step-phone">
-                <div class="input-group"><label>رقم الهاتف العراقي</label><input type="tel" id="phone-number" placeholder="07XXXXXXXXX"></div>
-                <button class="btn-cyber" style="width: 100%; padding: 12px;" onclick="sendWhatsAppCode()">طلب كود التحقق عبر الواتساب 📱</button>
+                <div class="input-group"><label>رقم الهاتف</label><input type="tel" id="phone-number" placeholder="07XXXXXXXXX"></div>
+                <button class="btn-cyber" style="width: 100%; padding: 11px;" onclick="sendWhatsAppCode()">طلب كود الـ OTP عبر الواتساب 📱</button>
             </div>
             <div id="step-otp" class="hidden-el">
-                <div class="input-group"><label>الرمز السري</label><input type="text" id="otp-code" style="text-align: center; letter-spacing: 5px; font-size: 20px;"></div>
-                <button class="btn-cyber" style="width: 100%; padding: 12px;" onclick="verifyOTP()">تأكيد ودخول 🚀</button>
+                <div class="input-group"><label>الرمز السري</label><input type="text" id="otp-code" style="text-align: center; letter-spacing: 4px; font-size: 18px;"></div>
+                <button class="btn-cyber" style="width: 100%; padding: 11px;" onclick="verifyOTP()">تأكيد ودخول 🚀</button>
             </div>
-            <button style="background:none; border:none; color:var(--text-muted); margin-top:20px; cursor:pointer; width:100%;" onclick="closeAuthModal()">إغلاق</button>
+            <button style="background:none; border:none; color:var(--text-muted); margin-top:15px; cursor:pointer; width:100%; font-size: 13px;" onclick="closeAuthModal()">إغلاق</button>
         </div>
     </div>
 
     <div class="modal-overlay" id="track-modal">
         <div class="modal-box">
             <h2>تتبع الطلب 📍</h2>
-            <div class="input-group"><label>رقم الهاتف المسجل بالطلب</label><input type="tel" id="track-phone" placeholder="07XXXXXXXXX"></div>
-            <button class="btn-cyber" style="width: 100%; padding: 12px; margin-bottom: 15px;" onclick="trackMyOrder()">استعلام 🔎</button>
-            <div id="track-results" style="text-align: right; max-height: 250px; overflow-y: auto;"></div>
-            <button style="background: none; border: none; color: var(--text-muted); cursor: pointer; width: 100%; margin-top:10px;" onclick="closeTrackModal()">إغلاق</button>
+            <div class="input-group"><label>رقم الهاتف المسجل</label><input type="tel" id="track-phone" placeholder="07XXXXXXXXX"></div>
+            <button class="btn-cyber" style="width: 100%; padding: 11px; margin-bottom: 12px;" onclick="trackMyOrder()">استعلام 🔎</button>
+            <div id="track-results" style="text-align: right; max-height: 200px; overflow-y: auto; font-size: 13px;"></div>
+            <button style="background: none; border: none; color: var(--text-muted); cursor: pointer; width: 100%; margin-top:8px; font-size: 13px;" onclick="closeTrackModal()">إغلاق</button>
         </div>
     </div>
 
     <script>
+        // محرك الفضاء والنجوم والنيازك الثلاثية الأبعاد
+        const canvas = document.getElementById('space-canvas');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+        let stars = [];
+        let meteors = [];
+
+        function resizeCanvas() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        for (let i = 0; i < 150; i++) {
+            stars.push({
+                x: Math.random() * width,
+                y: Math.random() * height,
+                radius: Math.random() * 1.3,
+                alpha: Math.random(),
+                speed: Math.random() * 0.04 + 0.01
+            });
+        }
+
+        function createMeteor() {
+            return {
+                x: Math.random() * width + width * 0.2,
+                y: -50,
+                length: Math.random() * 70 + 30,
+                speed: Math.random() * 7 + 5,
+                angle: Math.PI / 4,
+                opacity: Math.random() * 0.6 + 0.3
+            };
+        }
+        for(let i=0; i<2; i++) meteors.push(createMeteor());
+
+        function animateSpace() {
+            ctx.clearRect(0, 0, width, height);
+            ctx.fillStyle = '#ffffff';
+            stars.forEach(star => {
+                ctx.globalAlpha = star.alpha;
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+                ctx.fill();
+                star.alpha += star.speed;
+                if (star.alpha > 1 || star.alpha < 0.1) star.speed = -star.speed;
+            });
+
+            ctx.lineWidth = 2;
+            meteors.forEach((meteor, index) => {
+                ctx.strokeStyle = `rgba(0, 243, 255, ${meteor.opacity})`;
+                ctx.beginPath();
+                ctx.moveTo(meteor.x, meteor.y);
+                ctx.lineTo(meteor.x - meteor.length * Math.cos(meteor.angle), meteor.y + meteor.length * Math.sin(meteor.angle));
+                ctx.stroke();
+                meteor.x -= meteor.speed;
+                meteor.y += meteor.speed;
+                if (meteor.y > height + 100 || meteor.x < -100) {
+                    meteors[index] = createMeteor();
+                }
+            });
+            requestAnimationFrame(animateSpace);
+        }
+        animateSpace();
+
+        // تفاعل الـ 3D Tilt للبطاقات
+        document.addEventListener('mousemove', (e) => {
+            document.querySelectorAll('.product-card').forEach(card => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                if (x >= 0 && x <= rect.width && y >= 0 && y <= rect.height) {
+                    const centerX = rect.width / 2;
+                    const centerY = rect.height / 2;
+                    const rotateX = (y - centerY) / 12;
+                    const rotateY = (centerX - x) / 12;
+                    card.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-5px)`;
+                } else {
+                    card.style.transform = `rotateX(0deg) rotateY(0deg) translateY(0px)`;
+                }
+            });
+        });
+
         let allProducts = [], userCart = [], currentUser = null, discountMultiplier = 1;
         let calcSubtotal = 0, calcDiscount = 0, calcShipping = 5000, calcTotal = 0;
         let customerGPSCoords = '';
@@ -260,7 +568,7 @@
         socket.on('new_order_received', (order) => {
             playNotificationSound();
             if(currentUser && currentUser.role === 'admin') {
-                alert(`🚨 تنبيه: وصل طلب شراء جديد برقم ${order.transactionId} بقيمة ${order.finalTotal.toLocaleString()} IQD!`);
+                alert(`🚨 تنبيه: وصل طلب جديد برقم ${order.transactionId} بقيمة ${order.finalTotal.toLocaleString()} IQD!`);
                 loadAdminOrders();
                 loadAdminStats();
             }
@@ -289,9 +597,9 @@
         function updateAuthUI() {
             const nav = document.getElementById('auth-nav-container');
             if (currentUser) {
-                if (currentUser.role === 'admin') nav.innerHTML = `<button class="btn-cyber" style="border-color:var(--secondary-neon);" onclick="showDashboard()">مركز القيادة ⚙️</button>`;
-                else nav.innerHTML = `<span style="color:var(--primary-neon); margin-left:15px; font-weight:bold;">${currentUser.phone}</span> <button class="btn-cyber btn-alt" style="border-color:var(--accent-red); color:var(--accent-red);" onclick="logout()">خروج</button>`;
-            } else { nav.innerHTML = `<button class="btn-cyber" onclick="openAuthModal()">دخول / تسجيل</button>`; }
+                if (currentUser.role === 'admin') nav.innerHTML = `<button class="btn-cyber" style="border-color:var(--secondary-neon); padding: 7px 12px; font-size:12px;" onclick="showDashboard()">الإدارة ⚙️</button>`;
+                else nav.innerHTML = `<span style="color:var(--primary-neon); margin-left:8px; font-size:12px; font-weight:bold;">${currentUser.phone}</span> <button class="btn-cyber btn-alt" style="border-color:var(--accent-red); color:var(--accent-red); padding: 7px 10px; font-size:12px;" onclick="logout()">خروج</button>`;
+            } else { nav.innerHTML = `<button class="btn-cyber" style="padding: 7px 12px; font-size:12px;" onclick="openAuthModal()">دخول</button>`; }
         }
 
         function openAuthModal() { document.getElementById('auth-modal').classList.add('active'); }
@@ -304,7 +612,7 @@
         }
 
         function getGeoLocation() {
-            if (!navigator.geolocation) return alert("متصفحك لا يدعم تحديد الموقع الجغرافي.");
+            if (!navigator.geolocation) return alert("متصفحك لا يدعم تحديد الموقع.");
             alert("جاري تحديد موقعك الجغرافي...");
             navigator.geolocation.getCurrentPosition(
                 (position) => {
@@ -313,16 +621,16 @@
                     customerGPSCoords = `https://maps.google.com/?q=${lat},${lon}`;
                     document.getElementById('cust-gps').value = `تم تحديد الموقع بنجاح ✅ (${lat.toFixed(4)}, ${lon.toFixed(4)})`;
                 },
-                (error) => { alert("تعذر تحديد الموقع. يرجى تفعيل خدمات الموقع (GPS)."); }
+                (error) => { alert("تعذر تحديد الموقع. تفعيل GPS مطلوب."); }
             );
         }
 
         async function sendWhatsAppCode() { 
             const phone = document.getElementById('phone-number').value;
-            if(!isValidIraqiPhone(phone)) return alert("يرجى إدخال رقم هاتف عراقي حقيقي مكون من 11 رقم");
+            if(!isValidIraqiPhone(phone)) return alert("يرجى إدخال رقم هاتف عراقي صحيح مكون من 11 رقم");
             const res = await fetch('/api/send-otp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone }) });
             if((await res.json()).success) { 
-                alert("تم إرسال كود التحقق إلى واتساب الخاص بك بنجاح! 📱");
+                alert("تم إرسال كود التحقق عبر الواتساب! 📱");
                 document.getElementById('step-phone').classList.add('hidden-el'); 
                 document.getElementById('step-otp').classList.remove('hidden-el'); 
             }
@@ -336,19 +644,18 @@
                 currentUser = { phone: data.phone, role: data.role };
                 localStorage.setItem('cyberstore_user', JSON.stringify(currentUser));
                 closeAuthModal(); updateAuthUI();
-                alert("تم تسجيل الدخول بنجاح! يمكنك الآن تصفح السلة وإتمام الشراء.");
+                alert("تم تسجيل الدخول بنجاح!");
                 if(data.role === 'admin') showDashboard();
             } else alert("الرمز غير صحيح");
         }
         function logout() { currentUser = null; localStorage.removeItem('cyberstore_user'); location.reload(); }
 
-        /* المنتجات والسلة المحمية بتسجيل الدخول */
         async function loadProducts() { try { const res = await fetch('/api/products'); allProducts = await res.json(); renderProducts(allProducts); } catch (err) {} }
         function renderProducts(products) {
             const grid = document.getElementById('products-list'); grid.innerHTML = '';
             products.forEach(p => {
                 grid.innerHTML += `<div class="product-card">
-                    <div><div class="product-image-wrap"><img src="${p.image}"></div><span style="font-size: 11px; color: var(--text-muted); background:rgba(255,255,255,0.1); padding:4px 10px; border-radius:12px;">${p.category}</span><h3 style="margin-top:12px;">${p.name}</h3><div class="product-price">${Number(p.price).toLocaleString()} IQD</div></div>
+                    <div><div class="product-image-wrap"><img src="${p.image}"></div><span style="font-size: 11px; color: var(--text-muted); background:rgba(255,255,255,0.03); padding:3px 8px; border-radius:10px;">${p.category}</span><h3 style="margin-top:10px; font-size:16px;">${p.name}</h3><div class="product-price">${Number(p.price).toLocaleString()} IQD</div></div>
                     <button class="btn-cyber" onclick='addToCart(${JSON.stringify(p)})'>إضافة للسلة 🛒</button></div>`;
             });
         }
@@ -356,20 +663,19 @@
         function searchProducts() { const term = document.getElementById('search-input').value.toLowerCase(); renderProducts(allProducts.filter(p => p.name.toLowerCase().includes(term))); }
         
         function addToCart(product) { 
-            // التحقق الإجباري من تسجيل الدخول عند الإضافة للسلة أو محاولة الشراء
             if (!currentUser) {
-                alert("⚠️ تنبيه أمني: يرجى تسجيل الدخول برقم هاتفك أولاً للتمكن من إضافة المنتجات للسلة وإتمام الشراء.");
+                alert("⚠️ يرجى تسجيل الدخول أولاً لإضافة المنتجات للسلة.");
                 openAuthModal();
                 return;
             }
             userCart.push(product); 
             document.getElementById('cart-count').innerText = userCart.length; 
-            alert("تمت إضافة المنتج إلى السلة بنجاح! 🛒");
+            alert("تمت إضافة المنتج للسلة! 🛒");
         }
 
         function openCartModal() { 
             if (!currentUser) {
-                alert("⚠️ تنبيه أمني: يرجى تسجيل الدخول أولاً لعرض محتويات السلة.");
+                alert("⚠️ يرجى تسجيل الدخول أولاً لعرض السلة.");
                 openAuthModal();
                 return;
             }
@@ -382,7 +688,7 @@
             const cont = document.getElementById('cart-items-container');
             if (userCart.length === 0) { cont.innerHTML = '<p style="text-align:center;">السلة فارغة</p>'; calcTotal=0; updateInvoiceUI(); return; }
             cont.innerHTML = ''; calcSubtotal = 0;
-            userCart.forEach((item, i) => { calcSubtotal += Number(item.price) || 0; cont.innerHTML += `<div style="display:flex; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:5px;"><span>${item.name}</span><span style="color:var(--primary-neon);">${Number(item.price).toLocaleString()}</span><button style="background:none;border:none;color:var(--accent-red);cursor:pointer;" onclick="removeFromCart(${i})">✕</button></div>`; });
+            userCart.forEach((item, i) => { calcSubtotal += Number(item.price) || 0; cont.innerHTML += `<div style="display:flex; justify-content:space-between; margin-bottom:6px; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:4px; font-size:13px;"><span>${item.name}</span><span style="color:var(--primary-neon);">${Number(item.price).toLocaleString()}</span><button style="background:none;border:none;color:var(--accent-red);cursor:pointer;" onclick="removeFromCart(${i})">✕</button></div>`; });
             updateInvoiceUI();
         }
         function updateInvoiceUI() {
@@ -405,8 +711,8 @@
             if(userCart.length===0) return; 
             closeCartModal(); 
             document.getElementById('checkout-modal').classList.add('active'); 
-            // تعبئة رقم الهاتف المسجل تلقائياً لراحة العميل
             document.getElementById('cust-phone').value = currentUser.phone;
+            document.getElementById('whatsapp-redirect-box').classList.add('hidden-el');
         }
 
         function closeCheckoutModal() { document.getElementById('checkout-modal').classList.remove('active'); document.getElementById('payment-processor').style.display = 'none'; }
@@ -422,21 +728,21 @@
             const address = document.getElementById('cust-address').value.trim(); 
             const method = document.getElementById('selected-payment').value;
             
-            if(name.length < 5 || !name.includes(' ')) return alert("عذراً، يجب إدخال اسمك الثنائي الحقيقي لضمان التوصيل السليم.");
-            if(!isValidIraqiPhone(phone)) return alert("رقم الهاتف غير مسجل بشكل صحيح.");
-            if(address.length < 5) return alert("يرجى كتابة تفاصيل العنوان.");
+            if(name.length < 5 || !name.includes(' ')) return alert("يجب إدخال اسمك الثنائي الحقيقي.");
+            if(!isValidIraqiPhone(phone)) return alert("رقم الهاتف غير صحيح.");
+            if(address.length < 5) return alert("يرجى إدخال تفاصيل العنوان.");
 
             let finalAddressWithGPS = address;
             if (customerGPSCoords) {
-                finalAddressWithGPS += ` | 🌍 إحداثيات الخريطة: ${customerGPSCoords}`;
+                finalAddressWithGPS += ` | 🌍 GPS: ${customerGPSCoords}`;
             }
 
-            let paymentStatus = method === 'الدفع عند الاستلام' ? 'معلق' : 'مكتمل';
+            let paymentStatus = method === 'نقداً عند الاستلام' ? 'معلق' : 'مكتمل';
 
             const processor = document.getElementById('payment-processor'); 
             processor.style.display = 'flex';
-            document.getElementById('process-text').innerText = `جاري إرسال الطلب وحفظ الموقع الجغرافي...`;
-            await new Promise(r => setTimeout(r, 1500)); 
+            document.getElementById('process-text').innerText = `جاري حفظ الطلب وتوليد بيانات الواتساب...`;
+            await new Promise(r => setTimeout(r, 1200)); 
 
             try {
                 const res = await fetch('/api/orders', { 
@@ -452,17 +758,30 @@
                         paymentStatus 
                     }) 
                 });
-                if((await res.json()).success) { 
-                    alert("🌟 تم تسجيل طلبك وإرسال تفاصيل الإشعارات الفورية عبر الواتساب بنجاح!"); 
-                    userCart=[]; document.getElementById('cart-count').innerText='0'; discountMultiplier=1; customerGPSCoords=''; closeCheckoutModal(); 
+                const data = await res.json();
+                if(data.success) { 
+                    processor.style.display = 'none';
+                    
+                    // إعداد نص رسالة الواتساب التفاعلية التي تتضمن التفاصيل ورقم الهاتف وسعر المنتج
+                    let itemsSummary = userCart.map(item => `- ${item.name} (${Number(item.price).toLocaleString()} IQD)`).join('\n');
+                    let waMessage = `⚡ *CyberStore Global - تأكيد طلب*\n\nمرحباً الإدارة، أود تأكيد طلبي الجديد:\n\n👤 العميل: *${name}*\n📞 الهاتف: *${phone}*\n📌 العنوان: *${address}*\n💳 طريقة الدفع: *${method}*\n\n🛒 *المنتجات المطلوبة:*\n${itemsSummary}\n\n💰 *الإجمالي النهائي: ${calcTotal.toLocaleString()} IQD*\n\nرقم المعاملة: *${data.order.transactionId}*`;
+                    
+                    // رقم الواتساب الرسمي للتاجر (يمكنك تغيير هذا الرقم برقمك الخاص)
+                    let merchantWhatsApp = "9647831333337"; 
+                    let waEncodedUrl = `https://wa.me/${merchantWhatsApp}?text=${encodeURIComponent(waMessage)}`;
+                    
+                    document.getElementById('whatsapp-confirm-link').href = waEncodedUrl;
+                    document.getElementById('whatsapp-redirect-box').classList.remove('hidden-el');
+                    document.getElementById('normal-checkout-btn').style.display = 'none';
+
+                    userCart=[]; document.getElementById('cart-count').innerText='0'; discountMultiplier=1; customerGPSCoords='';
                 }
             } catch(e) {
-                alert("حدث خطأ أثناء الاتصال بالخادم.");
+                alert("حدث خطأ في الاتصال بالخادم.");
                 processor.style.display = 'none';
             }
         }
 
-        /* التتبع */
         function openTrackModal() { document.getElementById('track-modal').classList.add('active'); }
         function closeTrackModal() { document.getElementById('track-modal').classList.remove('active'); }
         async function trackMyOrder() {
@@ -471,19 +790,20 @@
             const res = await fetch('/api/track-order', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({phone}) });
             const data = await res.json(); const cont = document.getElementById('track-results');
             if(data.orders && data.orders.length > 0) {
-                cont.innerHTML = data.orders.map(o => `<div style="background:rgba(255,255,255,0.05); padding:15px; border-radius:10px; margin-bottom:12px; border-right: 4px solid var(--primary-neon);"><p style="font-size:13px;">المعاملة: ${o.transactionId}</p><p>بتاريخ: ${new Date(o.createdAt).toLocaleDateString()} | <b>${o.finalTotal.toLocaleString()} IQD</b></p><div><span style="background:rgba(0,255,102,0.1); color:var(--accent-green); padding:4px 8px; border-radius:8px; font-size:12px;">${o.status}</span></div></div>`).join('');
+                cont.innerHTML = data.orders.map(o => `<div style="background:rgba(255,255,255,0.03); padding:12px; border-radius:8px; margin-bottom:10px; border-right: 4px solid var(--primary-neon);"><p style="font-size:12px;">TXN: ${o.transactionId}</p><p><b>${Number(o.finalTotal).toLocaleString()} IQD</b> | الدفع: ${o.paymentStatus}</p><div><span style="background:rgba(0,255,102,0.1); color:var(--accent-green); padding:3px 6px; border-radius:6px; font-size:11px;">${o.status}</span></div></div>`).join('');
             } else cont.innerHTML = '<p>لا توجد طلبات مسجلة بهذا الرقم.</p>';
         }
 
-        /* لوحة الإدارة */
         function showDashboard() { document.getElementById('store-view').classList.add('hidden-el'); document.getElementById('main-nav').classList.add('hidden-el'); document.getElementById('dashboard-view').classList.add('active-dashboard'); switchTab('analytics'); }
         function switchTab(tab) { document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active-section')); document.querySelectorAll('.sidebar-links a').forEach(a => a.classList.remove('active')); document.getElementById('sec-' + tab).classList.add('active-section'); document.getElementById('tab-' + tab).classList.add('active'); if(tab === 'view-orders') loadAdminOrders(); if(tab === 'view-users') loadAdminUsers(); if(tab === 'analytics') loadAdminStats(); }
         
         async function loadAdminStats() {
-            const res = await fetch('/api/stats'); const stats = await res.json();
-            document.getElementById('stat-orders').innerText = stats.ordersCount; 
-            document.getElementById('stat-revenue').innerText = (stats.totalRevenue || 0).toLocaleString(); 
-            document.getElementById('stat-users').innerText = stats.usersCount;
+            try {
+                const res = await fetch('/api/stats'); const stats = await res.json();
+                document.getElementById('stat-orders').innerText = stats.ordersCount; 
+                document.getElementById('stat-revenue').innerText = (stats.totalRevenue || 0).toLocaleString(); 
+                document.getElementById('stat-users').innerText = stats.usersCount;
+            } catch(e) {}
         }
 
         function addNewProductWithImage() {
@@ -493,7 +813,7 @@
             const fileInput = document.getElementById('p-image-file');
 
             if(!name || !price || fileInput.files.length === 0) {
-                return alert("يرجى إدخال اسم المنتج، السعر، واختيار صورة من جهازك.");
+                return alert("يرجى إدخال البيانات واختيار صورة.");
             }
 
             const reader = new FileReader();
@@ -505,7 +825,7 @@
                     headers: { 'Content-Type': 'application/json' }, 
                     body: JSON.stringify({ name, price, image: base64Image, category }) 
                 }); 
-                alert("تم رفع الصورة والمنتج بنجاح! 🚀"); 
+                alert("تم رفع المنتج بنجاح! 🚀"); 
                 loadProducts();
                 document.getElementById('p-name').value = '';
                 document.getElementById('p-price').value = '';
@@ -513,57 +833,83 @@
             };
         }
 
+        // لوحة التحكم المطورة لتتبع الطلبات وحالة الدفع
         async function loadAdminOrders() {
-            const res = await fetch('/api/orders'); const orders = await res.json();
-            const tbody = document.getElementById('orders-table-body');
-            if(orders.length === 0) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">لا توجد طلبات</td></tr>'; return; }
-            tbody.innerHTML = orders.map((o) => {
-                const paymentBadge = o.paymentStatus === 'مكتمل' ? '<span style="color:var(--accent-green); font-size:11px;">مكتمل ✅</span>' : '<span style="color:var(--accent-gold); font-size:11px;">معلق ⏳</span>';
-                let addressText = o.customerAddress;
-                let mapLink = '';
-                if (addressText.includes('https://maps.google.com/')) {
-                    const parts = addressText.split('| 🌍 إحداثيات الخريطة: ');
-                    addressText = parts[0];
-                    mapLink = `<br><a href="${parts[1]}" target="_blank" style="color: var(--primary-neon); font-size: 12px; font-weight: bold;">🗺️ عرض موقع العميل على الخريطة</a>`;
+            try {
+                const res = await fetch('/api/orders'); 
+                const orders = await res.json();
+                const tbody = document.getElementById('orders-table-body');
+                
+                if(!orders || orders.length === 0) { 
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">لا توجد طلبات مسجلة حالياً</td></tr>'; 
+                    return; 
                 }
+                
+                tbody.innerHTML = orders.map((o) => {
+                    const paymentBadge = o.paymentStatus === 'مكتمل' ? '<span style="color:var(--accent-green); font-size:11px;">مكتمل ✅</span>' : '<span style="color:var(--accent-gold); font-size:11px;">معلق ⏳</span>';
+                    let addressText = o.customerAddress || 'عنوان غير متوفر';
+                    let mapLink = '';
+                    
+                    if (addressText.includes('https://maps.google.com/')) {
+                        const parts = addressText.split('| 🌍 GPS: ');
+                        addressText = parts[0];
+                        mapLink = `<br><a href="${parts[1]}" target="_blank" style="color: var(--primary-neon); font-size: 11px; font-weight: bold;">🗺️ عرض موقع الخريطة</a>`;
+                    }
 
-                return `<tr>
-                    <td style="font-size:12px; font-family:monospace;">${o.transactionId}</td>
-                    <td>
-                        <div style="font-weight:bold;">${o.customerName}</div>
-                        <div style="font-size:12px; color:var(--primary-neon);">${o.customerPhone}</div>
-                        <div style="font-size:12px; color:var(--text-muted);">${addressText} ${mapLink}</div>
-                    </td>
-                    <td>
-                        <div style="color:var(--secondary-neon); font-weight:bold;">${(o.finalTotal || 0).toLocaleString()} IQD</div>
-                        <div style="font-size:12px; color:var(--text-muted);">${o.paymentMethod} (${paymentBadge})</div>
-                    </td>
-                    <td>
-                        <select class="select-status" onchange="updateOrderStatus('${o.id}', this.value, '${o.paymentStatus}')" style="margin-bottom:5px;">
-                            <option value="قيد المعالجة ⏳" ${o.status === 'قيد المعالجة ⏳' ? 'selected' : ''}>قيد المعالجة</option>
-                            <option value="جاري الشحن 🚚" ${o.status === 'جاري الشحن 🚚' ? 'selected' : ''}>جاري الشحن</option>
-                            <option value="تم التوصيل ✅" ${o.status === 'تم التوصيل ✅' ? 'selected' : ''}>تم التوصيل</option>
-                            <option value="ملغي ❌" ${o.status === 'ملغي ❌' ? 'selected' : ''}>ملغـي</option>
-                        </select>
-                    </td>
-                </tr>`;
-            }).join('');
+                    // عرض قائمة المنتجات المباعة داخل جدول الطلبات
+                    let itemsHtml = '';
+                    if(o.items && Array.isArray(o.items)) {
+                        itemsHtml = o.items.map(it => `<div style="font-size:11px; color:var(--text-muted);">• ${it.name} (${Number(it.price).toLocaleString()} IQD)</div>`).join('');
+                    }
+
+                    return `<tr>
+                        <td style="font-size:11px; font-family:monospace;">${o.transactionId}</td>
+                        <td>
+                            <div style="font-weight:bold; font-size:13px;">${o.customerName}</div>
+                            <div style="font-size:12px; color:var(--primary-neon);">${o.customerPhone}</div>
+                            <div style="font-size:11px; color:var(--text-muted);">${addressText} ${mapLink}</div>
+                        </td>
+                        <td>
+                            ${itemsHtml}
+                            <div style="color:var(--secondary-neon); font-weight:bold; margin-top:4px;">الإجمالي: ${Number(o.finalTotal || 0).toLocaleString()} IQD</div>
+                        </td>
+                        <td>
+                            <div style="font-size:12px; font-weight:bold;">${o.paymentMethod}</div>
+                            <div>${paymentBadge}</div>
+                        </td>
+                        <td>
+                            <select class="select-status" onchange="updateOrderStatus('${o.id}', this.value, '${o.paymentStatus}')">
+                                <option value="قيد المعالجة ⏳" ${o.status === 'قيد المعالجة ⏳' ? 'selected' : ''}>قيد المعالجة</option>
+                                <option value="جاري الشحن 🚚" ${o.status === 'جاري الشحن 🚚' ? 'selected' : ''}>جاري الشحن</option>
+                                <option value="تم التوصيل ✅" ${o.status === 'تم التوصيل ✅' ? 'selected' : ''}>تم التوصيل</option>
+                                <option value="ملغي ❌" ${o.status === 'ملغي ❌' ? 'selected' : ''}>ملغـي</option>
+                            </select>
+                        </td>
+                    </tr>`;
+                }).join('');
+            } catch (err) {
+                console.error("خطأ في تحميل الطلبات:", err);
+            }
         }
 
         async function updateOrderStatus(id, newStatus, currentPaymentStatus) { 
-            let paymentStatus = currentPaymentStatus; if(newStatus === 'تم التوصيل ✅') paymentStatus = 'مكتمل'; 
+            let paymentStatus = currentPaymentStatus; 
+            if(newStatus === 'تم التوصيل ✅') paymentStatus = 'مكتمل'; 
             await fetch(`/api/orders/${id}/status`, { method: 'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({status: newStatus, paymentStatus}) });
-            alert("تم تحديث حالة الطلب وإرسال إشعار فوري للعميل عبر الواتساب! 📱");
+            alert("تم تحديث حالة الطلب وإرسال إشعار الواتساب للعميل! 📱");
+            loadAdminOrders();
         }
 
         async function loadAdminUsers() {
-            const res = await fetch('/api/users'); const users = await res.json();
-            const tbody = document.getElementById('users-table-body');
-            if(users.length === 0) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">لا يوجد عملاء مسجلين</td></tr>'; return; }
-            tbody.innerHTML = users.map((u) => {
-                const roleBadge = u.role === 'admin' ? '🛡️ مدير' : '👤 عميل';
-                return `<tr><td>${u.id}</td><td style="color:var(--primary-neon); font-weight:bold;">${u.phone} (${roleBadge})</td><td style="color:var(--accent-green); font-weight:bold;">${(u.totalSpent || 0).toLocaleString()} IQD</td><td style="font-size:12px; color:var(--text-muted);">${new Date(u.createdAt).toLocaleDateString()}</td></tr>`;
-            }).join('');
+            try {
+                const res = await fetch('/api/users'); const users = await res.json();
+                const tbody = document.getElementById('users-table-body');
+                if(!users || users.length === 0) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">لا يوجد عملاء مسجلين</td></tr>'; return; }
+                tbody.innerHTML = users.map((u) => {
+                    const roleBadge = u.role === 'admin' ? '🛡️ مدير' : '👤 عميل';
+                    return `<tr><td>${u.id}</td><td style="color:var(--primary-neon); font-weight:bold;">${u.phone} (${roleBadge})</td><td style="color:var(--accent-green); font-weight:bold;">${(u.totalSpent || 0).toLocaleString()} IQD</td><td style="font-size:12px; color:var(--text-muted);">${new Date(u.createdAt).toLocaleDateString()}</td></tr>`;
+                }).join('');
+            } catch(e) {}
         }
     </script>
 </body>
