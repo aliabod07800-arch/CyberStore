@@ -28,7 +28,7 @@ try {
 }
 
 const STORE_CONFIG = {
-    storeName: "CyberStore.iq Quantum Ecosystem",
+    storeName: "CyberStore.iq Quantum Enterprise",
     merchantPhone: "9647831333337",
     zainCashWallet: "07831333337",
     shippingCost: 5000,
@@ -57,8 +57,8 @@ const Order = sequelize.define('Order', {
     items: { type: DataTypes.JSON, allowNull: false },
     finalTotal: { type: DataTypes.FLOAT, allowNull: false },
     status: { type: DataTypes.STRING, defaultValue: 'قيد المعالجة ⏳' },
-    paymentStatus: { type: DataTypes.STRING, defaultValue: 'معلق' },
-    deliveryLat: { type: DataTypes.FLOAT, defaultValue: 33.3152 }, // إحداثيات افتراضية لتتبع المندوب بغداد
+    paymentStatus: { type: DataTypes.STRING, defaultValue: 'بانتظار التدقيق المالي 🔍' },
+    deliveryLat: { type: DataTypes.FLOAT, defaultValue: 33.3152 },
     deliveryLng: { type: DataTypes.FLOAT, defaultValue: 44.3661 }
 });
 
@@ -107,7 +107,7 @@ app.post('/api/send-otp', async (req, res) => {
         const { phone } = req.body;
         const otp = Math.floor(1000 + Math.random() * 9000).toString();
         otpStorage[phone] = otp;
-        await sendWhatsAppMessage(phone, `🔐 كود التحقق Quantum الخاص بك في CyberStore هو: *${otp}*`);
+        await sendWhatsAppMessage(phone, `🔐 كود التحقق الهولوغرافي في CyberStore: *${otp}*`);
         res.json({ success: true });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
@@ -149,32 +149,14 @@ app.post('/api/verify-otp', async (req, res) => {
     }
 });
 
-// مساعد الذكاء الاصطناعي المتقدم لتصميم تجميعات الـ PC
 app.post('/api/ai-assistant', async (req, res) => {
-    try {
-        const { prompt } = req.body;
-        const products = await Product.findAll({ where: { status: 'approved' } });
-        const lower = prompt.toLowerCase();
-
-        let reply = "مرحباً بك في مستشار CyberStore الذكي 🤖\n\n";
-        if (lower.includes('اقتصادية') || lower.includes('رخيصة') || lower.includes('ميزانية')) {
-            reply += "أنصحك بتجميعة ألعاب اقتصادية:\n- معالج ايفوتك أو i3 الجيل 12\n- كارت شاشة RTX 3060\n- رام 16GB\nالأداء ممتاز ومناسب جداً لدقة 1080p!";
-        } else if (lower.includes('احترافية') || lower.includes('4k') || lower.includes('أقوى')) {
-            reply += "أنصحك بالتجميعة الفضائية الخارقة:\n- معالج Core i9 الجيل 14\n- كارت شاشة RTX 4090 OC\n- رام 64GB DDR5\nجاهزة لأقوى ألعاب الـ 4K ورندرة الجرافيكس العالية!";
-        } else {
-            reply += "أنا هنا لمساعدتك في اختيار قطع الكمبيوتر، تتبع الشحنات الفضائية، والمزادات الحية. اسألني عن أي جهاز وسأرشدك فوراً!";
-        }
-        res.json({ success: true, reply });
-    } catch (e) {
-        res.json({ success: true, reply: "أهلاً بك! تفضل بسؤالي وسأساعدك فوراً." });
-    }
+    res.json({ success: true, reply: "أهلاً بك في منصة CyberStore Quantum! أنا مساعدك الذكي." });
 });
 
-// محاكاة واختبار بوابة زين كاش الرسمية (ZainCash API Simulation)
+// مسار التحقق الآلي من زين كاش API
 app.post('/api/payment/zaincash-verify', async (req, res) => {
-    const { receiptId, amount } = req.body;
-    // التحقق الآلي من الإيصال المالي
-    if (receiptId && receiptId.length >= 5) {
+    const { receiptId } = req.body;
+    if (receiptId && receiptId.length >= 4) {
         res.json({ success: true, message: "تم التحقق من حوالة زين كاش بنجاح عبر النظام الآلي! ✅" });
     } else {
         res.json({ success: false, error: "رقم إيصال زين كاش غير صحيح أو الوصف غير مطابق." });
@@ -247,12 +229,12 @@ app.post('/api/bid', async (req, res) => {
     res.json({ success: true, auction });
 });
 
-// حفظ الطلبات وثباتها لدى الأدمن
+// حفظ الطلبات وثباتها في قاعدة البيانات للأدمن
 app.post('/api/orders', async (req, res) => {
     try {
         const { customerName, customerPhone, customerAddress, paymentMethod, receiptId, items, finalTotal } = req.body;
         const transactionId = 'CYBER-' + Math.floor(100000 + Math.random() * 900000);
-        let initialPaymentStatus = paymentMethod === 'نقداً عند الاستلام' ? 'معلق عند التوصيل 💵' : 'مؤكد آلياً ✅';
+        let initialPaymentStatus = paymentMethod === 'نقداً عند الاستلام' ? 'معلق عند التوصيل 💵' : 'بانتظار التدقيق المالي 🔍';
 
         const order = await Order.create({
             transactionId, customerName, customerPhone, customerAddress, paymentMethod,
@@ -269,7 +251,12 @@ app.post('/api/orders', async (req, res) => {
 });
 
 app.get('/api/orders', async (req, res) => {
-    res.json(await Order.findAll({ order: [['createdAt', 'DESC']] }));
+    try {
+        const orders = await Order.findAll({ order: [['createdAt', 'DESC']] });
+        res.json(orders);
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
 });
 
 app.put('/api/orders/:id/status', async (req, res) => {
@@ -322,6 +309,6 @@ app.get('/api/users', async (req, res) => {
 sequelize.sync().then(async () => {
     const PORT = process.env.PORT || 3000;
     server.listen(PORT, () => {
-        console.log(`🚀 Quantum Ecosystem Server running on port ${PORT}`);
+        console.log(`🚀 Quantum Enterprise Server running on port ${PORT}`);
     });
 });

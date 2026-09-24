@@ -41,7 +41,7 @@
 
         .store-container { padding: 30px; flex: 1; max-width: 1650px; margin: 0 auto; width: 100%; z-index: 1; }
         
-        .cyber-hero { text-align: center; margin-bottom: 35px; padding: 55px 20px; background: var(--bg-surface); border: 1px solid var(--border-neon); border-radius: 28px; backdrop-filter: blur(25px); box-shadow: 0 25px 60px rgba(0,0,0,0.9), var(--glow-cyan); position: relative; overflow: hidden; }
+        .cyber-hero { text-align: center; margin-bottom: 35px; padding: 55px 20px; background: var(--bg-surface); border: 1px solid var(--border-neon); border-radius: 28px; backdrop-filter: blur(25px); box-shadow: 0 25px 60px rgba(0,0,0,0.9), var(--glow-cyan); }
         .cyber-hero h1 { font-size: 38px; font-weight: 900; margin-bottom: 12px; color: #fff; text-shadow: 0 0 30px var(--primary-neon); }
         .cyber-hero p { color: var(--text-muted); font-size: 15px; max-width: 750px; margin: 0 auto; line-height: 1.6; }
 
@@ -293,7 +293,6 @@
             </div>
             <input type="hidden" id="selected-payment" value="نقداً عند الاستلام">
             
-            <!-- قسم التحقق الآلي من زين كاش عبر API -->
             <div id="payment-instructions" style="background:rgba(0,243,255,0.05); padding:13px; border-radius:10px; margin-bottom:16px; display:none; font-size:12px;">
                 <p id="pay-info-text" style="color:var(--primary-neon); margin-bottom:8px; font-weight:bold;"></p>
                 <div class="input-group" style="margin-bottom:8px;"><label>رقم إيصال الحوالة / العملية:</label><input type="text" id="cust-receipt" placeholder="أدخل رقم العملية"></div>
@@ -327,30 +326,13 @@
         </div>
     </div>
 
-    <!-- نافذة تتبع الشحنات مع الخريطة الحيّة وتتبع المندوب GPS -->
     <div class="modal-overlay" id="track-modal">
         <div class="modal-box">
-            <h2>تتبع الطلب وحركة المندوب GPS 📍</h2>
+            <h2>تتبع الطلب 📍</h2>
             <div class="input-group"><label>رقم الهاتف</label><input type="tel" id="track-phone" placeholder="07XXXXXXXXX"></div>
             <button class="btn-cyber" style="width:100%; padding:12px; margin-bottom:14px;" onclick="trackMyOrder()">استعلام 🔎</button>
             <div id="track-results" style="text-align:right; max-height:240px; overflow-y:auto; font-size:13px;"></div>
-            <button style="background:none; border:none; color:var(--text-muted); cursor:pointer; width:100%; margin-top:10px;" onclick="closeTrackModal()">إغلاق</button>
-        </div>
-    </div>
-
-    <!-- شات المساعد الذكي المتقدم (AI Assistant 2.0) لتصميم التجميعات -->
-    <div id="ai-chat-bubble" onclick="toggleAIChat()" style="position: fixed; bottom: 25px; left: 25px; background: linear-gradient(135deg, var(--primary-neon), var(--secondary-neon)); color: #000; width: 60px; height: 60px; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 9998; box-shadow: var(--glow-cyan); font-size: 24px; font-weight: bold;">🤖</div>
-    <div id="ai-chat-box" style="position: fixed; bottom: 95px; left: 25px; width: 360px; max-width: 90vw; height: 480px; background: rgba(10, 15, 32, 0.96); border: 1px solid var(--primary-neon); border-radius: 22px; z-index: 9998; display: none; flex-direction: column; backdrop-filter: blur(25px); box-shadow: 0 25px 60px rgba(0,0,0,0.95), var(--glow-cyan);">
-        <div style="padding: 15px; border-bottom: 1px solid var(--border-neon); display: flex; justify-content: space-between; align-items: center; background: rgba(0,243,255,0.06);">
-            <span style="color: var(--primary-neon); font-weight: bold;">⚡ مستشار CyberStore الذكي (AI 2.0)</span>
-            <button onclick="toggleAIChat()" style="background:none; border:none; color:#fff; cursor:pointer; font-size:16px;">✕</button>
-        </div>
-        <div id="ai-messages-container" style="flex: 1; padding: 15px; overflow-y: auto; font-size: 13px; display: flex; flex-direction: column; gap: 10px;">
-            <div style="background: rgba(0,243,255,0.1); padding: 10px; border-radius: 10px; border-right: 3px solid var(--primary-neon);">مرحباً بك! أنا مستشار الـ AI. اسألني عن تجميعات PC اقتصادية أو احترافية وسأرشدك فوراً!</div>
-        </div>
-        <div style="padding: 12px; border-top: 1px solid var(--border-neon); display: flex; gap: 8px;">
-            <input type="text" id="ai-user-input" placeholder="اطلب تجميعة أو اسأل عن جهاز..." style="flex:1; padding:10px; background:rgba(0,0,0,0.85); border:1px solid var(--border-neon); color:#fff; border-radius:8px; outline:none; font-size:13px;" onkeypress="if(event.key==='Enter') sendAIPrompt()">
-            <button class="btn-cyber" onclick="sendAIPrompt()" style="padding: 8px 14px;">إرسال</button>
+            <button style="background:none; border:none; color:var(--text-muted); cursor:pointer; width:100%;" onclick="closeTrackModal()">إغلاق</button>
         </div>
     </div>
 
@@ -451,26 +433,6 @@
         async function deleteAuction(id) {
             await fetch(`/api/auctions/${id}`, { method: 'DELETE' });
             loadLiveAuctions();
-        }
-
-        function toggleAIChat() {
-            const box = document.getElementById('ai-chat-box');
-            box.style.display = box.style.display === 'flex' ? 'none' : 'flex';
-        }
-
-        async function sendAIPrompt() {
-            const input = document.getElementById('ai-user-input');
-            const text = input.value.trim();
-            if(!text) return;
-            const cont = document.getElementById('ai-messages-container');
-            cont.innerHTML += `<div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 10px; text-align: left; color:#fff;">${text}</div>`;
-            input.value = '';
-            cont.scrollTop = cont.scrollHeight;
-
-            const res = await fetch('/api/ai-assistant', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: text }) });
-            const data = await res.json();
-            cont.innerHTML += `<div style="background: rgba(0,243,255,0.1); padding: 10px; border-radius: 10px; border-right: 3px solid var(--primary-neon);">${data.reply}</div>`;
-            cont.scrollTop = cont.scrollHeight;
         }
 
         const socket = io();
@@ -626,7 +588,6 @@
             if(data.success) {
                 document.getElementById('payment-processor').style.display = 'none';
                 
-                // رسالة واتساب دقيقة ومفصلة تتضمن (اسم المنتج، المبلغ، رقم الهاتف، رقم الوصل)
                 let itemsList = userCart.map(it => `- ${it.name} (${Number(it.price).toLocaleString()} IQD)`).join('\n');
                 let waMsg = `⚡ *CyberStore Quantum - طلب جديد*\n\n👤 اسم العميل: *${name}*\n📞 رقم الهاتف: *${phone}*\n📌 العنوان: *${address}*\n💳 طريقة الدفع: *${method}*\n🧾 رقم الوصل: *${receiptId || 'نقداً'}*\n\n🛒 *المنتجات المطلوبة:*\n${itemsList}\n\n💰 *الإجمالي النهائي: ${calcTotal.toLocaleString()} IQD*`;
                 
@@ -675,25 +636,35 @@
         async function deleteCitizenProduct(id) { await fetch(`/api/products/${id}`, { method: 'DELETE' }); loadCitizenProducts(); loadProducts(); }
 
         async function loadAdminOrders() {
-            const res = await fetch('/api/orders'); const orders = await res.json();
-            const tbody = document.getElementById('orders-table-body');
-            if(!orders || orders.length === 0) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">لا توجد طلبات محفوظة حالياً</td></tr>'; return; }
-            tbody.innerHTML = orders.map(o => {
-                let itemsHtml = '';
-                if(o.items && Array.isArray(o.items)) {
-                    itemsHtml = o.items.map(it => `<div style="font-size:11px; color:var(--text-muted);">• ${it.name} (${Number(it.price).toLocaleString()} IQD)</div>`).join('');
+            try {
+                const res = await fetch('/api/orders'); 
+                const orders = await res.json();
+                const tbody = document.getElementById('orders-table-body');
+                
+                if(!orders || orders.length === 0) { 
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">لا توجد طلبات محفوظة حالياً</td></tr>'; 
+                    return; 
                 }
-                return `<tr>
-                    <td><b>${o.transactionId}</b><br><span style="color:var(--accent-gold);">إيصال: ${o.receiptId}</span></td>
-                    <td><b>${o.customerName}</b><br><span style="color:var(--primary-neon);">${o.customerPhone}</span><br><span style="font-size:11px; color:#aaa;">${o.customerAddress}</span></td>
-                    <td>${itemsHtml}<div style="color:var(--secondary-neon); font-weight:bold; margin-top:4px;">الإجمالي: ${Number(o.finalTotal).toLocaleString()} IQD</div></td>
-                    <td><b>${o.paymentMethod}</b><br><span style="color:#aaa;">${o.paymentStatus}</span></td>
-                    <td>
-                        ${o.paymentStatus !== 'مكتمل ✅' ? `<button onclick="verifyPayment('${o.id}')" style="background:var(--accent-gold); color:#000; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-weight:bold; margin-bottom:4px;">تأكيد الدفع 💵</button>` : '<span style="color:var(--accent-green); font-weight:bold;">مؤكد ✅</span>'}
-                        <select class="select-status" onchange="updateOrderStatus('${o.id}', this.value, '${o.paymentStatus}')"><option value="قيد المعالجة ⏳" ${o.status==='قيد المعالجة ⏳'?'selected':''}>قيد المعالجة</option><option value="جاري الشحن 🚚" ${o.status==='جاري الشحن 🚚'?'selected':''}>جاري الشحن</option><option value="تم التوصيل ✅" ${o.status==='تم التوصيل ✅'?'selected':''}>تم التوصيل</option></select>
-                    </td>
-                </tr>`;
-            }).join('');
+                
+                tbody.innerHTML = orders.map(o => {
+                    let itemsHtml = '';
+                    if(o.items && Array.isArray(o.items)) {
+                        itemsHtml = o.items.map(it => `<div style="font-size:11px; color:var(--text-muted);">• ${it.name} (${Number(it.price).toLocaleString()} IQD)</div>`).join('');
+                    }
+                    return `<tr>
+                        <td><b>${o.transactionId}</b><br><span style="color:var(--accent-gold);">إيصال: ${o.receiptId}</span></td>
+                        <td><b>${o.customerName}</b><br><span style="color:var(--primary-neon);">${o.customerPhone}</span><br><span style="font-size:11px; color:#aaa;">${o.customerAddress}</span></td>
+                        <td>${itemsHtml}<div style="color:var(--secondary-neon); font-weight:bold; margin-top:4px;">الإجمالي: ${Number(o.finalTotal).toLocaleString()} IQD</div></td>
+                        <td><b>${o.paymentMethod}</b><br><span style="color:#aaa;">${o.paymentStatus}</span></td>
+                        <td>
+                            ${o.paymentStatus !== 'مكتمل ✅' ? `<button onclick="verifyPayment('${o.id}')" style="background:var(--accent-gold); color:#000; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-weight:bold; margin-bottom:4px;">تأكيد الدفع 💵</button>` : '<span style="color:var(--accent-green); font-weight:bold;">مؤكد ✅</span>'}
+                            <select class="select-status" onchange="updateOrderStatus('${o.id}', this.value, '${o.paymentStatus}')"><option value="قيد المعالجة ⏳" ${o.status==='قيد المعالجة ⏳'?'selected':''}>قيد المعالجة</option><option value="جاري الشحن 🚚" ${o.status==='جاري الشحن 🚚'?'selected':''}>جاري الشحن</option><option value="تم التوصيل ✅" ${o.status==='تم التوصيل ✅'?'selected':''}>تم التوصيل</option></select>
+                        </td>
+                    </tr>`;
+                }).join('');
+            } catch(e) {
+                console.error("خطأ في جلب الطلبات للإدارة:", e);
+            }
         }
 
         async function verifyPayment(id) {
