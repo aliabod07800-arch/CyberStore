@@ -30,7 +30,7 @@ try {
 }
 
 const STORE_CONFIG = {
-    storeName: "CyberStore.iq Marketplace",
+    storeName: "CyberStore.iq Holographic Marketplace",
     merchantPhone: "9647831333337",
     zainCashWallet: "07831333337",
     shippingCost: 5000,
@@ -102,23 +102,25 @@ async function sendWhatsAppMessage(phone, message) {
 
 const otpStorage = {};
 
+// إرسال الكود الحقيقي حصرياً عبر الواتساب دون قبول أكواد وهمية
 app.post('/api/send-otp', async (req, res) => {
     try {
         const { phone } = req.body;
         const otp = Math.floor(1000 + Math.random() * 9000).toString();
         otpStorage[phone] = otp;
-        await sendWhatsAppMessage(phone, `🔐 كود التحقق في CyberStore: *${otp}*`);
+        await sendWhatsAppMessage(phone, `🔐 كود التحقق الخاص بك في CyberStore هو: *${otp}*\nلا تقم بمشاركته مع أي شخص.`);
         res.json({ success: true });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
     }
 });
 
+// التحقق الصارم من الـ OTP المرسل فعلياً عبر الواتساب
 app.post('/api/verify-otp', async (req, res) => {
     try {
         const { phone, otp } = req.body;
-        if ((otpStorage[phone] && otpStorage[phone] === otp) || otp === '1234' || otp === '0000') {
-            if (otpStorage[phone]) delete otpStorage[phone];
+        if (otpStorage[phone] && otpStorage[phone] === otp) {
+            delete otpStorage[phone];
             let user = await User.findOne({ where: { phone } });
             const ADMIN_PHONE = '07831333337'; 
             let role = (phone === ADMIN_PHONE) ? 'admin' : 'customer';
@@ -133,7 +135,7 @@ app.post('/api/verify-otp', async (req, res) => {
             }
             res.json({ success: true, phone: user.phone, username: user.username, role: user.role, points: user.cyberPoints });
         } else {
-            res.status(400).json({ success: false, error: 'رمز التحقق غير صحيح' });
+            res.status(400).json({ success: false, error: 'رمز التحقق غير صحيح أو منتهي الصلاحية' });
         }
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
@@ -141,7 +143,7 @@ app.post('/api/verify-otp', async (req, res) => {
 });
 
 app.post('/api/ai-assistant', async (req, res) => {
-    res.json({ success: true, reply: "أهلاً بك في CyberStore! أنا مساعدك التقني الذكي." });
+    res.json({ success: true, reply: "أهلاً بك في منصة CyberStore الهولوغرافي! أنا مساعدك الذكي." });
 });
 
 app.get('/api/products', async (req, res) => {
@@ -214,7 +216,6 @@ app.post('/api/bid', async (req, res) => {
     res.json({ success: true, auction });
 });
 
-// استقبال الطلبات وحفظها بدقة لتظهر فوراً لدى الأدمن
 app.post('/api/orders', async (req, res) => {
     try {
         const { customerName, customerPhone, customerAddress, paymentMethod, receiptId, items, finalTotal } = req.body;
@@ -222,16 +223,8 @@ app.post('/api/orders', async (req, res) => {
         let initialPaymentStatus = paymentMethod === 'نقداً عند الاستلام' ? 'معلق عند التوصيل 💵' : 'بانتظار التدقيق المالي 🔍';
 
         const order = await Order.create({
-            transactionId,
-            customerName,
-            customerPhone,
-            customerAddress,
-            paymentMethod,
-            receiptId: receiptId || 'نقداً',
-            items,
-            finalTotal,
-            status: 'قيد المعالجة ⏳',
-            paymentStatus: initialPaymentStatus
+            transactionId, customerName, customerPhone, customerAddress, paymentMethod,
+            receiptId: receiptId || 'نقداً', items, finalTotal, status: 'قيد المعالجة ⏳', paymentStatus: initialPaymentStatus
         });
 
         io.emit('new_order_received', order);
@@ -242,15 +235,10 @@ app.post('/api/orders', async (req, res) => {
 });
 
 app.get('/api/orders', async (req, res) => {
-    try {
-        const orders = await Order.findAll({ order: [['createdAt', 'DESC']] });
-        res.json(orders);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+    const orders = await Order.findAll({ order: [['createdAt', 'DESC']] });
+    res.json(orders);
 });
 
-// تأكيد الطلب وحساب النقاط وإرسال الواتساب حصرياً للعميل العادي
 app.put('/api/orders/:id/status', async (req, res) => {
     try {
         const { status, paymentStatus } = req.body;
@@ -310,6 +298,6 @@ app.get('/api/users', async (req, res) => {
 sequelize.sync().then(async () => {
     const PORT = process.env.PORT || 3000;
     server.listen(PORT, () => {
-        console.log(`🚀 Server running on port ${PORT}`);
+        console.log(`🚀 Holographic Server running on port ${PORT}`);
     });
 });
