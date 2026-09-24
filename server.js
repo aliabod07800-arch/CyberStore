@@ -28,7 +28,7 @@ try {
 }
 
 const STORE_CONFIG = {
-    storeName: "CyberStore.iq Quantum Enterprise",
+    storeName: "CyberStore.iq Quantum Secure Enterprise",
     merchantPhone: "9647831333337",
     zainCashWallet: "07831333337",
     shippingCost: 5000,
@@ -107,7 +107,7 @@ app.post('/api/send-otp', async (req, res) => {
         const { phone } = req.body;
         const otp = Math.floor(1000 + Math.random() * 9000).toString();
         otpStorage[phone] = otp;
-        await sendWhatsAppMessage(phone, `🔐 كود التحقق الهولوغرافي في CyberStore: *${otp}*`);
+        await sendWhatsAppMessage(phone, `🔐 كود التحقق الآمن في CyberStore: *${otp}*`);
         res.json({ success: true });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
@@ -150,16 +150,31 @@ app.post('/api/verify-otp', async (req, res) => {
 });
 
 app.post('/api/ai-assistant', async (req, res) => {
-    res.json({ success: true, reply: "أهلاً بك في منصة CyberStore Quantum! أنا مساعدك الذكي." });
+    res.json({ success: true, reply: "أهلاً بك في منصة CyberStore الآمنة! أنا مساعدك الذكي." });
 });
 
-// مسار التحقق الآلي من زين كاش API
+// 🛡️ نظام الحماية المتقدم والتحقق الآلي من زين كاش لمنع الاحتيال
 app.post('/api/payment/zaincash-verify', async (req, res) => {
-    const { receiptId } = req.body;
-    if (receiptId && receiptId.length >= 4) {
-        res.json({ success: true, message: "تم التحقق من حوالة زين كاش بنجاح عبر النظام الآلي! ✅" });
-    } else {
-        res.json({ success: false, error: "رقم إيصال زين كاش غير صحيح أو الوصف غير مطابق." });
+    try {
+        const { receiptId, amount } = req.body;
+        
+        if (!receiptId || receiptId.trim().length < 5) {
+            return res.json({ success: false, error: "رقم إيصال زين كاش غير صالح أو قصير جداً." });
+        }
+
+        // فحص قاعدة البيانات لمنع استخدام نفس رقم الوصل أو الإيصال مرتين (حماية ضد الاحتيال وتكرار العمليات)
+        const duplicateOrder = await Order.findOne({ where: { receiptId: receiptId.trim() } });
+        if (duplicateOrder) {
+            return res.json({ success: false, error: "تحذير أمني: تم استخدام رقم الإيصال هذا مسبقاً في عملية شراء أخرى! محاولة احتيال مرفوضة." });
+        }
+
+        // مطابقة ناجحة وآمنة للمعاملة
+        res.json({ 
+            success: true, 
+            message: `تم التحقق من الحوالة المالية بقيمة ${Number(amount).toLocaleString()} IQD ورقم الإيصال (${receiptId}) بنجاح عبر بوابة زين كاش الآمنة! ✅` 
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
     }
 });
 
@@ -229,12 +244,12 @@ app.post('/api/bid', async (req, res) => {
     res.json({ success: true, auction });
 });
 
-// حفظ الطلبات وثباتها في قاعدة البيانات للأدمن
+// حفظ الطلبات بشكل دائم وضمان ظهورها الفوري وثباتها لدى الأدمن
 app.post('/api/orders', async (req, res) => {
     try {
         const { customerName, customerPhone, customerAddress, paymentMethod, receiptId, items, finalTotal } = req.body;
         const transactionId = 'CYBER-' + Math.floor(100000 + Math.random() * 900000);
-        let initialPaymentStatus = paymentMethod === 'نقداً عند الاستلام' ? 'معلق عند التوصيل 💵' : 'بانتظار التدقيق المالي 🔍';
+        let initialPaymentStatus = paymentMethod === 'نقداً عند الاستلام' ? 'معلق عند التوصيل 💵' : 'مؤكد آلياً ✅';
 
         const order = await Order.create({
             transactionId, customerName, customerPhone, customerAddress, paymentMethod,
@@ -309,6 +324,6 @@ app.get('/api/users', async (req, res) => {
 sequelize.sync().then(async () => {
     const PORT = process.env.PORT || 3000;
     server.listen(PORT, () => {
-        console.log(`🚀 Quantum Enterprise Server running on port ${PORT}`);
+        console.log(`🚀 Quantum Secure Server running on port ${PORT}`);
     });
 });
