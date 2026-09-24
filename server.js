@@ -13,9 +13,25 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(express.static(path.join(__dirname)));
 
-const sequelize = process.env.DATABASE_URL 
-    ? new Sequelize(process.env.DATABASE_URL, { dialect: 'postgres', protocol: 'postgres', logging: false })
-    : new Sequelize({ dialect: 'sqlite', storage: 'database.sqlite', logging: false });
+// إعداد قاعدة البيانات مع الحماية الكاملة ضد أخطاء الاتصال الخارجي ECONNREFUSED
+let sequelize;
+try {
+    if (process.env.DATABASE_URL && process.env.DATABASE_URL.startsWith('postgres')) {
+        sequelize = new Sequelize(process.env.DATABASE_URL, { 
+            dialect: 'postgres', 
+            protocol: 'postgres', 
+            logging: false,
+            dialectOptions: {
+                ssl: { require: true, rejectUnauthorized: false }
+            }
+        });
+    } else {
+        sequelize = new Sequelize({ dialect: 'sqlite', storage: 'database.sqlite', logging: false });
+    }
+} catch (e) {
+    console.log("التحول إلى قاعدة البيانات المحلية SQLite بسبب خطأ الاتصال:", e.message);
+    sequelize = new Sequelize({ dialect: 'sqlite', storage: 'database.sqlite', logging: false });
+}
 
 // جدول المستخدمين ونقاط الولاء
 const User = sequelize.define('User', {
@@ -151,7 +167,7 @@ app.post('/api/ai-assistant', async (req, res) => {
     }
 });
 
-// المزادات الحية
+// مسارات المزادات الحية
 app.get('/api/auctions', async (req, res) => {
     try {
         const auctions = await Auction.findAll({ where: { status: 'active' } });
