@@ -13,19 +13,16 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(express.static(path.join(__dirname)));
 
-// إعداد قاعدة البيانات عبر متغيرات البيئة في Render أو SQLite محلياً
 const sequelize = process.env.DATABASE_URL 
     ? new Sequelize(process.env.DATABASE_URL, { dialect: 'postgres', protocol: 'postgres', logging: false })
     : new Sequelize({ dialect: 'sqlite', storage: 'database.sqlite', logging: false });
 
-// جدول المستخدمين
 const User = sequelize.define('User', {
     phone: { type: DataTypes.STRING, unique: true, allowNull: false },
-    role: { type: DataTypes.STRING, defaultValue: 'customer' }, // admin or customer
+    role: { type: DataTypes.STRING, defaultValue: 'customer' },
     totalSpent: { type: DataTypes.FLOAT, defaultValue: 0 }
 });
 
-// جدول الطلبات
 const Order = sequelize.define('Order', {
     transactionId: { type: DataTypes.STRING, unique: true, allowNull: false },
     customerName: { type: DataTypes.STRING, allowNull: false },
@@ -35,10 +32,9 @@ const Order = sequelize.define('Order', {
     items: { type: DataTypes.JSON, allowNull: false },
     finalTotal: { type: DataTypes.FLOAT, allowNull: false },
     status: { type: DataTypes.STRING, defaultValue: 'قيد المعالجة ⏳' },
-    paymentStatus: { type: DataTypes.STRING, defaultValue: 'معلق' } // معلق / مكتمل
+    paymentStatus: { type: DataTypes.STRING, defaultValue: 'معلق' }
 });
 
-// جدول المنتجات
 const Product = sequelize.define('Product', {
     name: { type: DataTypes.STRING, allowNull: false },
     price: { type: DataTypes.FLOAT, allowNull: false },
@@ -46,15 +42,13 @@ const Product = sequelize.define('Product', {
     image: { type: DataTypes.TEXT, allowNull: false }
 });
 
-// جدول الكوبونات
 const Coupon = sequelize.define('Coupon', {
     code: { type: DataTypes.STRING, unique: true, allowNull: false },
-    discount: { type: DataTypes.FLOAT, allowNull: false } // النسبة المئوية للخصم (مثلاً 20 يعني 20%)
+    discount: { type: DataTypes.FLOAT, allowNull: false }
 });
 
 let activeVisitors = 0;
 
-// دالة إرسال رسائل الواتساب عبر UltraMsg API
 async function sendWhatsAppMessage(phone, message) {
     const instance = process.env.ULTRAMSG_INSTANCE;
     const token = process.env.ULTRAMSG_TOKEN;
@@ -76,12 +70,8 @@ async function sendWhatsAppMessage(phone, message) {
     }
 }
 
-// تخزين مؤقت لأكواد الـ OTP
 const otpStorage = {};
 
-// مسارات الـ API
-
-// 1. طلب كود الـ OTP عبر الواتساب
 app.post('/api/send-otp', async (req, res) => {
     try {
         const { phone } = req.body;
@@ -95,7 +85,6 @@ app.post('/api/send-otp', async (req, res) => {
     }
 });
 
-// 2. التحقق من الـ OTP وتسهيل تسجيل الدخول أو إنشاء الحساب
 app.post('/api/verify-otp', async (req, res) => {
     try {
         const { phone, otp } = req.body;
@@ -105,7 +94,6 @@ app.post('/api/verify-otp', async (req, res) => {
             let user = await User.findOne({ where: { phone } });
             let role = 'customer';
             
-            // جعل أول رقم مسجل أو أرقام معينة كمدراء للنظام (يمكنك ضبط رقمك الخاص هنا)
             if (!user) {
                 const userCount = await User.count();
                 if (userCount === 0 || phone === '07831333337') {
@@ -125,7 +113,30 @@ app.post('/api/verify-otp', async (req, res) => {
     }
 });
 
-// 3. جلب المنتجات
+// مسار المساعد الذكي الخبير بالتجميعات والمنتجات
+app.post('/api/ai-assistant', async (req, res) => {
+    try {
+        const { prompt } = req.body;
+        const products = await Product.findAll();
+        
+        let aiReply = "مرحباً بك في CyberStore.iq! أنا مساعدك التقني الذكي. ";
+        const lowerPrompt = prompt.toLowerCase();
+        
+        if (lowerPrompt.includes('تجميعة') || lowerPrompt.includes('بي سي') || lowerPrompt.includes('pc') || lowerPrompt.includes('ألعاب')) {
+            const gamingItems = products.filter(p => p.category === 'أجهزة' || p.category === 'ألعاب');
+            aiReply += `أنصحك بتجميعة احترافية تضم أقوى قطع الـ PC المتوفرة لدينا لضمان أداء عالي وسرعة فائقة.\n\nالمنتجات المقترحة:\n` + gamingItems.map(i => `- ${i.name} بسعر ${i.price.toLocaleString()} IQD`).join('\n') + `\n\nتفضل بإضافتها للسلة واستمتع بقوة الأداء!`;
+        } else if (lowerPrompt.includes('سعر') || lowerPrompt.includes('رخيص') || lowerPrompt.includes('ميزانية')) {
+            aiReply += `لدينا عروض وخيارات تناسب كافة الميزانيات مع ضمان حقيقي وتوصيل سريع لكافة المحافظات العراقية. تصفح الأقسام أو أخبرني بما تحتاجه!`;
+        } else {
+            aiReply += `أنا هنا لمساعدتك في اختيار أفضل الأجهزة والإكسسوارات. اسألني عن أي منتج وسأشرح لك تفاصيله الفنية بدقة!`;
+        }
+
+        res.json({ success: true, reply: aiReply });
+    } catch(e) {
+        res.json({ success: true, reply: "أهلاً بك! تفضل بسؤالي عن أي منتج وسأساعدك فوراً." });
+    }
+});
+
 app.get('/api/products', async (req, res) => {
     try {
         const products = await Product.findAll();
@@ -135,7 +146,6 @@ app.get('/api/products', async (req, res) => {
     }
 });
 
-// 4. إضافة منتج جديد (للأدمن)
 app.post('/api/products', async (req, res) => {
     try {
         const { name, price, category, image } = req.body;
@@ -146,7 +156,6 @@ app.post('/api/products', async (req, res) => {
     }
 });
 
-// 5. إنشاء طلب جديد (يظهر فوراً عند الأدمن بحالة معلق)
 app.post('/api/orders', async (req, res) => {
     try {
         const { customerName, customerPhone, customerAddress, paymentMethod, items, finalTotal, status, paymentStatus } = req.body;
@@ -164,11 +173,9 @@ app.post('/api/orders', async (req, res) => {
             paymentStatus
         });
 
-        // إرسال إشعار فوري عبر الـ WebSocket لكل الأجهزة المتصلة (خصوصاً الأدمن)
         io.emit('new_order_received', order);
 
-        // إرسال إشعار واتساب أولي للعميل بتسجيل الطلب
-        await sendWhatsAppMessage(customerPhone, `⚡ *CyberStore Global*\n\nعزيزي *${customerName}*,\nتم استلام طلبك برقم المعاملة: *${transactionId}* بقيمة *${finalTotal.toLocaleString()} IQD*.\nطريقة الدفع: *${paymentMethod}*\nحالة الدفع الحالية: *${paymentStatus}* (بانتظار مطابقة التحويل).\n\nسنقوم بإعلامك فور الموافقة وشحن الطلب!`);
+        await sendWhatsAppMessage(customerPhone, `⚡ *CyberStore Global*\n\nعزيزي *${customerName}*,\nتم استلام طلبك برقم المعاملة: *${transactionId}* بقيمة *${finalTotal.toLocaleString()} IQD*.\nطريقة الدفع: *${paymentMethod}* (معلق بانتظار التحقق).\n\nسنقوم بإعلامك فور الموافقة وشحن الطلب!`);
 
         res.json({ success: true, order });
     } catch (err) {
@@ -176,7 +183,6 @@ app.post('/api/orders', async (req, res) => {
     }
 });
 
-// 6. جلب الطلبات (للأدمن)
 app.get('/api/orders', async (req, res) => {
     try {
         const orders = await Order.findAll({ order: [['createdAt', 'DESC']] });
@@ -186,7 +192,6 @@ app.get('/api/orders', async (req, res) => {
     }
 });
 
-// 7. تحديث حالة الطلب وتأكيد الدفع وإرسال واتساب للعميل بالموافقة
 app.put('/api/orders/:id/status', async (req, res) => {
     try {
         const { status, paymentStatus } = req.body;
@@ -194,14 +199,12 @@ app.put('/api/orders/:id/status', async (req, res) => {
         
         if (!order) return res.status(404).json({ success: false, error: 'الطلب غير موجود' });
 
-        // إذا أكد المدير استلام الأموال وتحويلها أصبحت الحالة مكتملة، يتم تحديث إجمالي مشتريات العميل
         if(paymentStatus === 'مكتمل' && order.paymentStatus !== 'مكتمل') {
             await User.increment('totalSpent', { by: order.finalTotal, where: { phone: order.customerPhone } });
         }
         
         await Order.update({ status, paymentStatus }, { where: { id: req.params.id } });
 
-        // إرسال رسالة واتساب للعميل بناءً على التحديث
         let statusMsg = `⚡ *CyberStore Global*\n\nعزيزي *${order.customerName}*,\nتم تحديث حالة طلبك (*${order.transactionId}*) إلى:\n👉 *${status}*`;
         
         if (paymentStatus === 'مكتمل') {
@@ -216,7 +219,6 @@ app.put('/api/orders/:id/status', async (req, res) => {
     }
 });
 
-// 8. تتبع الطلبات للعميل برقم الهاتف
 app.post('/api/track-order', async (req, res) => {
     try {
         const { phone } = req.body;
@@ -227,7 +229,6 @@ app.post('/api/track-order', async (req, res) => {
     }
 });
 
-// 9. التحقق من كود الخصم (Promo Code)
 app.post('/api/validate-coupon', async (req, res) => {
     try {
         const { code } = req.body;
@@ -242,7 +243,6 @@ app.post('/api/validate-coupon', async (req, res) => {
     }
 });
 
-// 10. إحصائيات لوحة التحكم للإدارة (Stats)
 app.get('/api/stats', async (req, res) => {
     try {
         const ordersCount = await Order.count();
@@ -259,7 +259,6 @@ app.get('/api/stats', async (req, res) => {
     }
 });
 
-// 11. جلب قائمة العملاء (CRM)
 app.get('/api/users', async (req, res) => {
     try {
         const users = await User.findAll({ order: [['createdAt', 'DESC']] });
@@ -269,7 +268,6 @@ app.get('/api/users', async (req, res) => {
     }
 });
 
-// إدارة اتصالات الـ WebSocket للرادار الحي
 io.on('connection', (socket) => {
     activeVisitors++;
     io.emit('live_update', activeVisitors);
@@ -280,9 +278,7 @@ io.on('connection', (socket) => {
     });
 });
 
-// مزامنة قاعدة البيانات وتشغيل السيرفر
 sequelize.sync().then(async () => {
-    // إنشاء كوبون افتراضي تجريبي
     const existingCoupon = await Coupon.findOne({ where: { code: 'CYBER20' } });
     if (!existingCoupon) {
         await Coupon.create({ code: 'CYBER20', discount: 20 });

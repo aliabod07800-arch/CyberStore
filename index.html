@@ -235,7 +235,7 @@
         .spinner { width: 45px; height: 45px; border: 4px solid rgba(0,243,255,0.15); border-top-color: var(--primary-neon); border-radius: 50%; animation: spin 1s linear infinite; box-shadow: var(--glow-cyan); }
         @keyframes spin { to { transform: rotate(360deg); } }
         
-        /* لوحة التحكم المتطورة للإدارة */
+        /* لوحة التحكم للإدارة */
         .dashboard-container { display: none; height: 100vh; width: 100vw; position: fixed; top: 0; left: 0; z-index: 3000; background: var(--bg-base); }
         .dashboard-container.active-dashboard { display: flex; flex-direction: column; }
         
@@ -296,7 +296,7 @@
     <div id="store-view" class="store-container">
         <div class="cyber-hero">
             <h1>مركز التسوق التقني الفضائي</h1>
-            <p>منصة تجارية ثلاثية الأبعاد مؤمنة، متوافقة كلياً مع الهواتف، مع إشعارات تفاعلية وتأكيد الدفع عبر الواتساب.</p>
+            <p>منصة تجارية ثلاثية الأبعاد مؤمنة، مدعومة بالمساعد الذكي للتجميعات وإشعارات الواتساب.</p>
         </div>
         <div class="tools-bar">
             <div class="category-filters" id="category-filters">
@@ -312,7 +312,7 @@
         <div class="products-grid" id="products-list"></div>
     </div>
 
-    <!-- لوحة القيادة المتطورة للإدارة -->
+    <!-- لوحة التحكم للإدارة -->
     <div id="dashboard-view" class="dashboard-container">
         <div class="sidebar">
             <div>
@@ -353,7 +353,6 @@
                 </div>
             </div>
 
-            <!-- قسم إدارة الطلبات وتأكيد الدفع المطور -->
             <div id="sec-view-orders" class="admin-section">
                 <h2 style="margin-bottom: 20px; text-shadow: var(--glow-cyan);">تتبع الطلبات وحالة الدفع والشحن</h2>
                 <div class="enterprise-table-container">
@@ -404,7 +403,6 @@
         </div>
     </div>
 
-    <!-- نافذة إتمام الطلب وتوليد رابط الواتساب -->
     <div class="modal-overlay" id="checkout-modal">
         <div class="modal-box">
             <div id="payment-processor" class="processing-overlay">
@@ -467,6 +465,23 @@
             <button class="btn-cyber" style="width: 100%; padding: 11px; margin-bottom: 12px;" onclick="trackMyOrder()">استعلام 🔎</button>
             <div id="track-results" style="text-align: right; max-height: 200px; overflow-y: auto; font-size: 13px;"></div>
             <button style="background: none; border: none; color: var(--text-muted); cursor: pointer; width: 100%; margin-top:8px; font-size: 13px;" onclick="closeTrackModal()">إغلاق</button>
+        </div>
+    </div>
+
+    <!-- زر المساعد الذكي الخبير العائم (AI Tech Assistant) -->
+    <div id="ai-chat-bubble" onclick="toggleAIChat()" style="position: fixed; bottom: 25px; left: 25px; background: linear-gradient(135deg, var(--primary-neon), var(--secondary-neon)); color: #000; width: 60px; height: 60px; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 9998; box-shadow: 0 0 25px var(--primary-neon); font-size: 24px; font-weight: bold; transition: 0.3s;">🤖</div>
+
+    <div id="ai-chat-box" style="position: fixed; bottom: 95px; left: 25px; width: 350px; max-width: 90vw; height: 450px; background: rgba(10, 12, 24, 0.95); border: 1px solid var(--primary-neon); border-radius: 20px; z-index: 9998; display: none; flex-direction: column; backdrop-filter: blur(20px); box-shadow: 0 20px 50px rgba(0,0,0,0.8), var(--glow-cyan);">
+        <div style="padding: 15px; border-bottom: 1px solid var(--border-neon); display: flex; justify-content: space-between; align-items: center; background: rgba(0,243,255,0.05);">
+            <span style="color: var(--primary-neon); font-weight: bold;">⚡ المساعد التقني الذكي (AI)</span>
+            <button onclick="toggleAIChat()" style="background:none; border:none; color:#fff; cursor:pointer; font-size:16px;">✕</button>
+        </div>
+        <div id="ai-messages-container" style="flex: 1; padding: 15px; overflow-y: auto; font-size: 13px; display: flex; flex-direction: column; gap: 10px;">
+            <div style="background: rgba(0,243,255,0.1); padding: 10px; border-radius: 10px; border-right: 3px solid var(--primary-neon);">مرحباً بك! أنا خبير التجميعات والمنتجات في CyberStore. اسألني عن أي جهاز أو تجميعة وسأشرح لك تفاصيلها فوراً!</div>
+        </div>
+        <div style="padding: 12px; border-top: 1px solid var(--border-neon); display: flex; gap: 8px;">
+            <input type="text" id="ai-user-input" placeholder="اسأل عن تجميعة أو منتج..." style="flex:1; padding:10px; background:rgba(0,0,0,0.8); border:1px solid var(--border-neon); color:#fff; border-radius:8px; outline:none; font-size:13px;" onkeypress="if(event.key==='Enter') sendAIPrompt()">
+            <button class="btn-cyber" onclick="sendAIPrompt()" style="padding: 8px 14px;">إرسال</button>
         </div>
     </div>
 
@@ -551,6 +566,36 @@
                 }
             });
         });
+
+        // وظائف المساعد الذكي
+        function toggleAIChat() {
+            const box = document.getElementById('ai-chat-box');
+            box.style.display = box.style.display === 'flex' ? 'none' : 'flex';
+        }
+
+        async function sendAIPrompt() {
+            const input = document.getElementById('ai-user-input');
+            const text = input.value.trim();
+            if(!text) return;
+
+            const cont = document.getElementById('ai-messages-container');
+            cont.innerHTML += `<div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 10px; text-align: left; color:#fff;">${text}</div>`;
+            input.value = '';
+            cont.scrollTop = cont.scrollHeight;
+
+            try {
+                const res = await fetch('/api/ai-assistant', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt: text })
+                });
+                const data = await res.json();
+                cont.innerHTML += `<div style="background: rgba(0,243,255,0.1); padding: 10px; border-radius: 10px; border-right: 3px solid var(--primary-neon);">${data.reply}</div>`;
+                cont.scrollTop = cont.scrollHeight;
+            } catch(e) {
+                cont.innerHTML += `<div style="background: rgba(255,0,0,0.1); color:var(--accent-red); padding: 10px; border-radius: 10px;">عذراً، حدث خطأ في الاتصال بالمساعد الذكي.</div>`;
+            }
+        }
 
         let allProducts = [], userCart = [], currentUser = null, discountMultiplier = 1;
         let calcSubtotal = 0, calcDiscount = 0, calcShipping = 5000, calcTotal = 0;
@@ -734,8 +779,7 @@
                 finalAddressWithGPS += ` | 🌍 GPS: ${customerGPSCoords}`;
             }
 
-            // تحديد حالة الدفع تلقائياً: نقداً = معلق، زين كاش أو بايبال = معلق بانتظار تأكيد التحويل من الإدارة
-            let paymentStatus = method === 'نقداً عند الاستلام' ? 'معلق' : 'معلق';
+            let paymentStatus = 'معلق';
 
             const processor = document.getElementById('payment-processor'); 
             processor.style.display = 'flex';
@@ -761,7 +805,7 @@
                     processor.style.display = 'none';
                     
                     let itemsSummary = userCart.map(item => `- ${item.name} (${Number(item.price).toLocaleString()} IQD)`).join('\n');
-                    let waMessage = `⚡ *CyberStore Global - تأكيد طلب*\n\nمرحباً الإدارة، أود تأكيد طلبي الجديد:\n\n👤 العميل: *${name}*\n📞 الهاتف: *${phone}*\n📌 العنوان: *${address}*\n💳 طريقة الدفع: *${method}*\n\n🛒 *المنتجات المطلوبة:*\n${itemsSummary}\n\n💰 *الإجمالي النهائي: ${calcTotal.toLocaleString()} IQD*\n\nرقم المعاملة: *${data.order.transactionId}*`;
+                    let waMessage = `⚡ *CyberStore Global - تأكيد طلب*\n\nمرحباً الإدارة، أود تأكيد طلبي الجديد:\n\n👤 العميل: *${name}*\n📞 الهاتف: *${phone}*\n📌 العنوان: *${address}*\n💳 طريقة الدفع: *${method}*\n\n🛒 *المنتجات المطلوبة:*\n${itemsSummary}\n\n💰 *الإجمالي النهائي: ${calcTotal.toLocaleString()} IQD*`;
                     
                     let merchantWhatsApp = "9647831333337"; 
                     let waEncodedUrl = `https://wa.me/${merchantWhatsApp}?text=${encodeURIComponent(waMessage)}`;
@@ -829,7 +873,6 @@
             };
         }
 
-        // لوحة التحكم لتتبع الطلبات وزر تأكيد الدفع الفوري
         async function loadAdminOrders() {
             try {
                 const res = await fetch('/api/orders'); 
