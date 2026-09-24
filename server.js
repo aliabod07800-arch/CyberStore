@@ -13,7 +13,7 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(express.static(path.join(__dirname)));
 
-// إعداد قاعدة البيانات مع الحماية الكاملة ضد أخطاء الاتصال الخارجي ECONNREFUSED
+// إعداد قاعدة البيانات مع الحماية ضد أخطاء الاتصال
 let sequelize;
 try {
     if (process.env.DATABASE_URL && process.env.DATABASE_URL.startsWith('postgres')) {
@@ -29,7 +29,6 @@ try {
         sequelize = new Sequelize({ dialect: 'sqlite', storage: 'database.sqlite', logging: false });
     }
 } catch (e) {
-    console.log("التحول إلى قاعدة البيانات المحلية SQLite بسبب خطأ الاتصال:", e.message);
     sequelize = new Sequelize({ dialect: 'sqlite', storage: 'database.sqlite', logging: false });
 }
 
@@ -115,6 +114,7 @@ app.post('/api/send-otp', async (req, res) => {
     }
 });
 
+// التحقق من الـ OTP ومنح صلاحية الأدمن حصرياً لرقمك الخاص
 app.post('/api/verify-otp', async (req, res) => {
     try {
         const { phone, otp } = req.body;
@@ -124,14 +124,20 @@ app.post('/api/verify-otp', async (req, res) => {
             let user = await User.findOne({ where: { phone } });
             let role = 'customer';
             
+            // 🛑 استبدل هذا الرقم برقم هاتفك الإداري الحقيقي بدقة (مثلاً 07831333337)
+            const ADMIN_PHONE = '07831333337'; 
+            
+            if (phone === ADMIN_PHONE) {
+                role = 'admin';
+            }
+
             if (!user) {
-                const userCount = await User.count();
-                if (userCount === 0 || phone === '07831333337') {
-                    role = 'admin';
-                }
                 user = await User.create({ phone, role });
             } else {
-                role = user.role;
+                if (user.role !== role && phone === ADMIN_PHONE) {
+                    user.role = 'admin';
+                    await user.save();
+                }
             }
 
             res.json({ success: true, phone: user.phone, role: user.role, points: user.cyberPoints });
