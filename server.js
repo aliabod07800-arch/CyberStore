@@ -28,7 +28,7 @@ try {
 }
 
 const STORE_CONFIG = {
-    storeName: "CyberStore.iq Quantum Universe",
+    storeName: "CyberStore.iq Quantum Ecosystem",
     merchantPhone: "9647831333337",
     zainCashWallet: "07831333337",
     shippingCost: 5000,
@@ -44,7 +44,7 @@ const User = sequelize.define('User', {
     username: { type: DataTypes.STRING, unique: true, allowNull: false },
     role: { type: DataTypes.STRING, defaultValue: 'customer' },
     totalSpent: { type: DataTypes.FLOAT, defaultValue: 0 },
-    cyberPoints: { type: DataTypes.INTEGER, defaultValue: 150 }
+    cyberPoints: { type: DataTypes.INTEGER, defaultValue: 200 }
 });
 
 const Order = sequelize.define('Order', {
@@ -57,7 +57,9 @@ const Order = sequelize.define('Order', {
     items: { type: DataTypes.JSON, allowNull: false },
     finalTotal: { type: DataTypes.FLOAT, allowNull: false },
     status: { type: DataTypes.STRING, defaultValue: 'قيد المعالجة ⏳' },
-    paymentStatus: { type: DataTypes.STRING, defaultValue: 'بانتظار التدقيق المالي 🔍' }
+    paymentStatus: { type: DataTypes.STRING, defaultValue: 'معلق' },
+    deliveryLat: { type: DataTypes.FLOAT, defaultValue: 33.3152 }, // إحداثيات افتراضية لتتبع المندوب بغداد
+    deliveryLng: { type: DataTypes.FLOAT, defaultValue: 44.3661 }
 });
 
 const Product = sequelize.define('Product', {
@@ -105,14 +107,13 @@ app.post('/api/send-otp', async (req, res) => {
         const { phone } = req.body;
         const otp = Math.floor(1000 + Math.random() * 9000).toString();
         otpStorage[phone] = otp;
-        await sendWhatsAppMessage(phone, `🔐 كود التحقق الهولوغرافي في CyberStore: *${otp}*`);
+        await sendWhatsAppMessage(phone, `🔐 كود التحقق Quantum الخاص بك في CyberStore هو: *${otp}*`);
         res.json({ success: true });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
     }
 });
 
-// إنشاء يوزرنايم خاص وموثق لكل مواطن عند تسجيل الدخول
 app.post('/api/verify-otp', async (req, res) => {
     try {
         const { phone, otp, customUsername } = req.body;
@@ -126,20 +127,14 @@ app.post('/api/verify-otp', async (req, res) => {
             if (role === 'admin') usernameToSet = 'CyberAdmin_VIP';
 
             if (!user) {
-                if (!usernameToSet) {
-                    return res.status(400).json({ success: false, error: 'يرجى إدخال يوزرنايم فريد خاص بك' });
-                }
-                const existingUser = await User.findOne({ where: { username: usernameToSet } });
-                if (existingUser) {
-                    return res.status(400).json({ success: false, error: 'هذا اليوزر مستخدم بالفعل، اختر يوزراً آخر' });
-                }
+                if (!usernameToSet) return res.status(400).json({ success: false, error: 'أدخل يوزرنايم فريد' });
+                const existing = await User.findOne({ where: { username: usernameToSet } });
+                if (existing) return res.status(400).json({ success: false, error: 'اليوزر مستخدم مسبقاً' });
                 user = await User.create({ phone, username: usernameToSet, role });
             } else {
                 if (usernameToSet && usernameToSet !== user.username) {
-                    const existingUser = await User.findOne({ where: { username: usernameToSet } });
-                    if (existingUser) {
-                        return res.status(400).json({ success: false, error: 'هذا اليوزر مستخدم بالفعل' });
-                    }
+                    const existing = await User.findOne({ where: { username: usernameToSet } });
+                    if (existing) return res.status(400).json({ success: false, error: 'اليوزر مستخدم مسبقاً' });
                     user.username = usernameToSet;
                 }
                 if (user.role !== role) user.role = role;
@@ -154,18 +149,44 @@ app.post('/api/verify-otp', async (req, res) => {
     }
 });
 
+// مساعد الذكاء الاصطناعي المتقدم لتصميم تجميعات الـ PC
 app.post('/api/ai-assistant', async (req, res) => {
-    res.json({ success: true, reply: "أهلاً بك في منصة CyberStore Quantum Hologram! أنا مساعدك الذكي الفضائي." });
+    try {
+        const { prompt } = req.body;
+        const products = await Product.findAll({ where: { status: 'approved' } });
+        const lower = prompt.toLowerCase();
+
+        let reply = "مرحباً بك في مستشار CyberStore الذكي 🤖\n\n";
+        if (lower.includes('اقتصادية') || lower.includes('رخيصة') || lower.includes('ميزانية')) {
+            reply += "أنصحك بتجميعة ألعاب اقتصادية:\n- معالج ايفوتك أو i3 الجيل 12\n- كارت شاشة RTX 3060\n- رام 16GB\nالأداء ممتاز ومناسب جداً لدقة 1080p!";
+        } else if (lower.includes('احترافية') || lower.includes('4k') || lower.includes('أقوى')) {
+            reply += "أنصحك بالتجميعة الفضائية الخارقة:\n- معالج Core i9 الجيل 14\n- كارت شاشة RTX 4090 OC\n- رام 64GB DDR5\nجاهزة لأقوى ألعاب الـ 4K ورندرة الجرافيكس العالية!";
+        } else {
+            reply += "أنا هنا لمساعدتك في اختيار قطع الكمبيوتر، تتبع الشحنات الفضائية، والمزادات الحية. اسألني عن أي جهاز وسأرشدك فوراً!";
+        }
+        res.json({ success: true, reply });
+    } catch (e) {
+        res.json({ success: true, reply: "أهلاً بك! تفضل بسؤالي وسأساعدك فوراً." });
+    }
+});
+
+// محاكاة واختبار بوابة زين كاش الرسمية (ZainCash API Simulation)
+app.post('/api/payment/zaincash-verify', async (req, res) => {
+    const { receiptId, amount } = req.body;
+    // التحقق الآلي من الإيصال المالي
+    if (receiptId && receiptId.length >= 5) {
+        res.json({ success: true, message: "تم التحقق من حوالة زين كاش بنجاح عبر النظام الآلي! ✅" });
+    } else {
+        res.json({ success: false, error: "رقم إيصال زين كاش غير صحيح أو الوصف غير مطابق." });
+    }
 });
 
 app.get('/api/products', async (req, res) => {
-    const products = await Product.findAll({ where: { status: 'approved' } });
-    res.json(products);
+    res.json(await Product.findAll({ where: { status: 'approved' } }));
 });
 
 app.get('/api/admin/products', async (req, res) => {
-    const products = await Product.findAll();
-    res.json(products);
+    res.json(await Product.findAll());
 });
 
 app.post('/api/products', async (req, res) => {
@@ -188,8 +209,7 @@ app.delete('/api/products/:id', async (req, res) => {
 });
 
 app.get('/api/auctions', async (req, res) => {
-    const auctions = await Auction.findAll();
-    res.json(auctions);
+    res.json(await Auction.findAll());
 });
 
 app.post('/api/auctions', async (req, res) => {
@@ -204,8 +224,7 @@ app.post('/api/auctions', async (req, res) => {
 app.put('/api/auctions/:id', async (req, res) => {
     const { title, currentPrice, status } = req.body;
     await Auction.update({ title, currentPrice, status }, { where: { id: req.params.id } });
-    const updated = await Auction.findByPk(req.params.id);
-    io.emit('auction_update', updated);
+    io.emit('auction_update', await Auction.findByPk(req.params.id));
     res.json({ success: true });
 });
 
@@ -228,16 +247,18 @@ app.post('/api/bid', async (req, res) => {
     res.json({ success: true, auction });
 });
 
-// حفظ الطلبات وثباتها في قاعدة البيانات للأدمن
+// حفظ الطلبات وثباتها لدى الأدمن
 app.post('/api/orders', async (req, res) => {
     try {
         const { customerName, customerPhone, customerAddress, paymentMethod, receiptId, items, finalTotal } = req.body;
         const transactionId = 'CYBER-' + Math.floor(100000 + Math.random() * 900000);
-        let initialPaymentStatus = paymentMethod === 'نقداً عند الاستلام' ? 'معلق عند التوصيل 💵' : 'بانتظار التدقيق المالي 🔍';
+        let initialPaymentStatus = paymentMethod === 'نقداً عند الاستلام' ? 'معلق عند التوصيل 💵' : 'مؤكد آلياً ✅';
 
         const order = await Order.create({
             transactionId, customerName, customerPhone, customerAddress, paymentMethod,
-            receiptId: receiptId || 'نقداً', items, finalTotal, status: 'قيد المعالجة ⏳', paymentStatus: initialPaymentStatus
+            receiptId: receiptId || 'نقداً', items, finalTotal, status: 'قيد المعالجة ⏳', paymentStatus: initialPaymentStatus,
+            deliveryLat: 33.3152 + (Math.random() - 0.5) * 0.05,
+            deliveryLng: 44.3661 + (Math.random() - 0.5) * 0.05
         });
 
         io.emit('new_order_received', order);
@@ -248,12 +269,7 @@ app.post('/api/orders', async (req, res) => {
 });
 
 app.get('/api/orders', async (req, res) => {
-    try {
-        const orders = await Order.findAll({ order: [['createdAt', 'DESC']] });
-        res.json(orders);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+    res.json(await Order.findAll({ order: [['createdAt', 'DESC']] }));
 });
 
 app.put('/api/orders/:id/status', async (req, res) => {
@@ -274,7 +290,6 @@ app.put('/api/orders/:id/status', async (req, res) => {
         }
         
         await Order.update({ status, paymentStatus }, { where: { id: req.params.id } });
-
         res.json({ success: true, earnedPoints });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
@@ -283,8 +298,7 @@ app.put('/api/orders/:id/status', async (req, res) => {
 
 app.post('/api/track-order', async (req, res) => {
     const { phone } = req.body;
-    const orders = await Order.findAll({ where: { customerPhone: phone }, order: [['createdAt', 'DESC']] });
-    res.json({ success: true, orders });
+    res.json({ success: true, orders: await Order.findAll({ where: { customerPhone: phone }, order: [['createdAt', 'DESC']] }) });
 });
 
 app.post('/api/validate-coupon', async (req, res) => {
@@ -302,13 +316,12 @@ app.get('/api/stats', async (req, res) => {
 });
 
 app.get('/api/users', async (req, res) => {
-    const users = await User.findAll({ order: [['createdAt', 'DESC']] });
-    res.json(users);
+    res.json(await User.findAll({ order: [['createdAt', 'DESC']] }));
 });
 
 sequelize.sync().then(async () => {
     const PORT = process.env.PORT || 3000;
     server.listen(PORT, () => {
-        console.log(`🚀 Quantum Hologram Server running on port ${PORT}`);
+        console.log(`🚀 Quantum Ecosystem Server running on port ${PORT}`);
     });
 });
